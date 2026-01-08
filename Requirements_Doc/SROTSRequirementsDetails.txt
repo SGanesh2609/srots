@@ -1,0 +1,138 @@
+Roles:
+ADMIN : Who have all the access for the entire application
+SROTS_DEV : Who have access for for entore application except some analytical pages
+CPH : He is like ADMIN of the collge data who have all access for his college entire dat he can performa ny operation under his college,HE can can perform any operation on any section created by anyone.
+STAFF : He have access for some pages and access on particular operations. Such as able to add the jobs,posts and he able to perform CUD operations on things created by him only.
+STUDENT : He able to edit student editable related data only, He is not able to post he able to react the post only such as like and comment and reply.HAve limited access to edit and maipulate mostly able to manipulate only the his data and see the updates in every section .
+
+
+
+User Account Management:
+1.Admin can perform any CRUD operation on any type of user account.
+2.SROTS_DEV perform CRUD operations on the CPH,STAFF and STUDENT Users account
+3.CPH perform CRUD operations on the STAFF and STUDENT Users account
+4.STAFF unable to perform any CRUD operation on any user account
+5.STUDENT unable to perform any CRUD Operation on any user account
+
+(Need to Update CP Admin can manage the things of the CP Staff and STUDENT which are created by him only)
+
+My Profile :(Able to see in the all Portals)
+1.Every user able to see their details in this section with their related data.
+2.For ADMIN,SROTS_DEV,CPH and STAFF able to see the same UI and everthing similar, but STUDENT we have different sections to describe the student data.
+3.Give permission to edit only specific fields not all the fields of his data.
+4.We store the profile image and any other related data of the student in the file structure.
+
+CMS :(Able to see in the ADMIN and SROTS_DEV Portals)
+1.This able to access by the ADMIN and SROTS_DEV users in UI.
+2.It shows the college details in card when we click card then It has three tabs such as Student Directory, CP Users and Managing Accounts related to that specific college.
+3.Student Directory tab which helps to manage the student accound CRUD operations and other realted things. We have the button to restrict and allow the access even the premium_end data is not completed.the access is restricted when the premium_end date is completed.
+4.CP Users tab which helps to manage the CP Users both ADMIN and STAFF acounts handling. We have the button to unable and restrict the access to the user to access the portal.
+5.Managing Accounts tab which helps to managing the students accounts,the admin,srots_dev,cph and staff did not have account expire . The student account only have the expiry, there is premium_start and premium_end date the student able to access the application if his premium_end is not expiry, after expire of 90 days the account need to be deleted automatically.We have one option to extend the user account to 6 months,12 months.
+
+Srots Team:(In ADMIN Portal only)
+1.Able to perform CRUD operation on the SROTS_DEV users accounts.
+
+Students :(In CPH and Staff Portals only)
+1. CPH can perform any CRUD Operation on the STUDENT accounts with three tabs.(Similar to the Student Directory Tab of CMS Section of the ADMIN and SROTS_DEV Portal)
+2. Student Directory Tab how it is in the ADMIN Portal but there is not toggle to restrict or unable the access to the user.Like the user restriction is in the ADMIN and SROTS_DEV portals or hands.
+3.Managing Accounts tab similar to the ADMIN and SROTS_DEV portals but there is option to renew like extend the user account option this can be handle by the SROTS Users only.
+4.College Specification tab here the CPH bale to perform operation on the Branches of their college that is replicated in the other sections branches fetching.
+5.In Staff Portal. STAFF able to see the students list unable to do perform Create,update and delete the students. Able to see the students based on the filters and search bar.Only CPH Have three tabs.
+
+Manage Team:(In CPH Portal Only)
+1. Able to perform the CRUD Operation on the CP Staff. with filters and search bar.
+
+
+
+
+
+Free Courses:
+1.Admin and SROTS_DEV only perform the create, update and delete operations on the free courses.(At now have flag button for this table only)
+2.There is soft delete which make inactive visible to the SROTS Dev and ADMIN only and hard delete removes the data permanently from the DB.If the course is inactive able to makes active after any updating the course record.
+3.Future need to remove the record which are inactive after 60 days like that.
+4.Any User(ADMIN,SROTS_DEV,CPH,STAFF and STUDENT) able to Perform GET Operation on free courses based on the filters (technology like java,ptyhon etc  and platform like youtube,udem,etc) and search bar.
+5.CPH,STAFF and STUDENT do not have access to create, update or delete Free Courses they able to get only with filters and search bar.
+6.We have the Free Courses Section in all five portals with above conditions.
+
+
+Companies :
+1.ADMIN or SROTS_DEV can perform any CRUD operations on the companies db and it acts as global collection of companies.
+2.CPH only able to add the companies to(under) their college like they just add the reference of the companies details created by the ADMIN or SROTS DEV.
+3.CPH able to see the all companies names which are created by the ADMIN or SROTS_DEV when they try to add the companies to their college using add company then we show all companies with status added or not like that.
+4.STAFF and STUDENT able to see the companies which are added by the CPH under their college companies not all companies which are created by the CPH.
+5.We have search bar in ADMIN and SROTS_DEV which are search the companies create by ADMIN and SROTS_DEV. Search bar in CPH,STAFF and STUDENT for search the companies which are added by the CPH.
+6.We have the Companies Section in all five portals with above conditions.
+
+
+
+About College:
+1.For this first we create the static ui layout which s used for every college. In this we have the icons college details with their social links like inkedin, instagram,youtube,facebook and college official website. Along with those we keep five section each section have title description about the section and image related to that section. We prepare one dummy ui layout which used section, social links and other college data like name, address etc. It looks like heir own college website of each specific college. The content of the UI is change based on the college but the Ui layout is same for every college.
+2.Only CPH have the edit access for the About College like s0cial links , about sections , college logo and any other things in this page.
+3.The STAFF and STUDENT able to see the page they did not have access to create section or anything like edit ,create and delete , they able to just see the page.
+4.We have the About college_name section in CPH,STAFF and STUDENT Portals only.
+
+
+
+Posts:
+1.It is works like the internal social media of college, the posts in this section related to user(CPH,STAFF and STUDENT) college only.
+2.CP ADMIN can perform any CRUD Operation on Posts , but STAFF can perform update and delete operation on posts which are created by them. Students unable to create update and delete post they able to see the posts only posted by CPH and STAFF users of their college.
+3.THe students can like or comment on post, CPH can react to any comment and STAFF can react to comment of the posts posted by him only not others. STUDENT and CP Users can interact like conversation on comment reply, the comment can be deleted by Student which is commented by him, CPH can delete any comment and STAFF can delete comments under their created posts.
+4.When created new posts they able to upload the images upto 5 images with 2 or 3 MB and able to add the document also if anything related to post. The Cp Users able to make the comments off like they restrict to give access to comment on the post.
+5.we keep filers like ALL Posts posted by me in the CPH STAFF Portals,and we keep the search bar to get the specific person posts.
+6.We have the Posts Section in CPH,STAFF and STUDENT Portals only.
+
+
+
+
+Calendar:(Calendar & Notices)
+1.In this section we have two tabs Calendar and Notice.CPH can perform any CRUD operations on the Calendar and Event Records. But the STAFF able to perform update or delete on record which are created by them only, the students able to see the events and notices unable to create, update or delete calendar or notices.
+2.In Calendar tab we create events, workshops, classes, etc. In Notice we upload any pdfs related to college or CRT.
+3.We shown the upcoming all events to students which are eligible to those events, but for notice mentioned for all branches.
+4.Make sure the calendar events are notices data are deleted automatically after 3 to 4 months based on the requirement of college.
+5.We have this Section in the CPH, STAFF and STUDENT Portals only
+
+
+
+
+Jobs:
+All Jobs Tab:
+1.The CPH can perform any CRUD Operations on the jobs which are created by anyone in the college. STAFF can able to perform update and delete Operations on the jobs created by them only. STUDENT able to see the job he is unable to create ,update or delete the job.
+2. When CPH or STAFF create the jobs this is shown in the student portal based on the eligibility criteria of the student to that job we validate his details with the job eligibility criteria and we decide whether he is eligible that job or not like that. Based on the eligible criteria and applied or not applied status they filter the jobs and see the jobs. We have the filters on Job Type and Work Mode also, along with filters we have the search bae to get the jobs based on the job title and company name.
+3.After job creation, the Student see the jobs and based on the eligibility status we shown the Apply Job and I'm not interested buttons to apply for job,if he is already appkied then we applied like that. If he is not eligible to job then we show not eligible like that.
+4.After students are applied then he able to download the details of the students who are applied to job in excel which CP Users mention at the time job creation like name,10th marks,b.tech cgpa,etc.
+
+
+5.By clicking the job item , all are getting the full details of job along with status based on the user, in CPH and STAFF they get more tabs one is for upload the results of each round when they upload the result of current then then it reflects in the student Job Tracker tab whether you are passed or failed for that job, another tab he have is applicants it gives statistics who are applied for job with status passed or failed, fourth tab is for it tell who are eligible for this job and able to download the students list file with dtat mention in job creation it helps if anyone unable to apply for job because of various reasons.
+
+
+We have some tools in the Jobs section which helps him to automate result comparison, custom report creation, custom data collection(Three tabs have in the CPH and STAFF Portals only in Jobs Section)
+6.Result Comparator tab: which helps to upload the applicants file or last round results file and current results file they able to download the file which gives each student passed or not file it helps him to upload file in the results tab, able to compare the file based on the option selected by user we give fields of the current round result file which are there in first upload file also. We tell how may pass or fail and the result file able to download in the excel or csv.
+7.Custom Reports tab: here CPH and STAFF able to upload the file and able to remove the fields of the file if they want to remove any unwanted rows or columns of the file. Here we mention about fields and roll numbers they mention whether they are present or not. They able to download the result file in Excel or csv.
+8.Custom Gathering tab: here user can collect the details of the students by mentioning the roll numbers and required fields they want to collect from the list which we showed them. We give  the file in Excel and CSV along with the status if any roll numbers or fields or not there which mentioned by them.
+
+
+
+APP Tracker:(We have in STUDENT Portal only)
+1. We have this section in students portal where we shown the all jobs status of the students applied by him or applied by the CPH, with respect to each round qualified r rejected like that.
+
+
+
+Analytics:(This Section we have in ADMIN and CPH Portal Only)
+ADMIN Portal: Here we give the analytics related to the whole all college placements users and another things in different visual type like graph, bar etc.
+CPH: Her able to see the statistic of their college student ans jobs like how companies cam based how many students or placement on each company,etc.
+
+
+
+Deletion:
+1.I did not implement deletion of data automatically yet based on the requirement we need to delete the past data automatically to remove the unwanted storage.
+
+2.If Student is deleted then automatically all data related to the student need to be deleted.
+3.If CPH or STAFF deleted only their user details need to be delated not all other things like what jobs,posts,calendar,notices he a upload related to the college.
+4.If College is delete then everything related to that college need to be deleted like  users,jobs,calendar,posts,etc
+5.If ADMIN or SROTS_DEV are deleted then only their user related data need to be deleted not other things like his created colleges, free courses and companies need not to be deleted.
+
+
+
+
+
+

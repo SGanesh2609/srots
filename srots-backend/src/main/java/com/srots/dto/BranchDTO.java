@@ -1,0 +1,32 @@
+package com.srots.dto;
+
+import lombok.Data;
+
+public class BranchDTO { 
+	public String name; 
+	public String code;
+	public BranchDTO() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+	public BranchDTO(String name, String code) {
+		super();
+		this.name = name;
+		this.code = code;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public String getCode() {
+		return code;
+	}
+	public void setCode(String code) {
+		this.code = code;
+	} 
+	
+	
+	
+}

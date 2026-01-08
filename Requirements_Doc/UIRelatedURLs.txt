@@ -1,0 +1,10 @@
+The UI URL Links:
+
+current updated one
+https://aistudio.google.com/app/apps/drive/1a01VJ8psU7q4LDthbl3yQOjBxhML3fLa?showPreview=true&showAssistant=true
+
+
+the Reactjs+NextJS+mock data file url:
+it helps to know the sample API request and response of the application helps to develop the backend and we modify the frontend with prompts if we want anything in request body or response attributes how we want to be either request body or response body.
+ 
+https://aistudio.google.com/app/prompts/1jDWwJLCHD3AgVPWxIf0FrMD1NDKp47yV

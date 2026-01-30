@@ -25,6 +25,7 @@ public class CompanyController {
 
     // 1. Get Companies
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF', 'STUDENT')")
     public ResponseEntity<List<CompanyResponse>> getCompanies(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String collegeId) {
@@ -33,6 +34,7 @@ public class CompanyController {
     
  // 1. Get Company by ID
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF', 'STUDENT')")
     public ResponseEntity<CompanyResponse> getById(@PathVariable String id) {
         return ResponseEntity.ok(companyService.getCompanyById(id));
     }
@@ -40,6 +42,7 @@ public class CompanyController {
     // 2. Get Company by Name (Exact match, ignore case)
     // URL Example: /api/v1/companies/find?name=Google
     @GetMapping("/find")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF', 'STUDENT')")
     public ResponseEntity<CompanyResponse> getByName(@RequestParam String name) {
         return ResponseEntity.ok(companyService.getCompanyByName(name));
     }
@@ -76,14 +79,16 @@ public class CompanyController {
 
     // 4. Subscription Management
     @PostMapping("/subscribe")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV') or (hasRole('CPH') and principal.isCollegeHead)")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV') or (hasRole('CPH') and principal.isCollegeHead)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH')")
     public ResponseEntity<Map<String, Boolean>> subscribe(@RequestBody SubscribeRequest request) {
         companyService.subscribe(request);
         return ResponseEntity.ok(Map.of("success", true));
     }
 
     @DeleteMapping("/subscribe/{collegeId}/{companyId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV') or (hasRole('CPH') and principal.isCollegeHead)")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV') or (hasRole('CPH') and principal.isCollegeHead)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH')")
     public ResponseEntity<Map<String, Boolean>> unsubscribe(
             @PathVariable String collegeId, 
             @PathVariable String companyId) {

@@ -48,14 +48,14 @@ public class UserAccountController {
     }
 
     @PostMapping("/cph")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.isCollegeHead)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV') or (hasRole('CPH') and principal.isCollegeHead)")
     public ResponseEntity<?> createCphAccount(
             @org.springframework.web.bind.annotation.RequestBody UserCreateRequest dto) {
         return ResponseEntity.ok(userService.create(dto, "CPH"));
     }
 
     @PostMapping("/student")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.isCollegeHead)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV') or (hasRole('CPH') and principal.isCollegeHead)")
     public ResponseEntity<?> createStudentAccount(
             @org.springframework.web.bind.annotation.RequestBody UserCreateRequest dto) {
         // This will now return UserFullProfileResponse as JSON
@@ -86,7 +86,7 @@ public class UserAccountController {
      * 2. Any user can update their OWN profile (principal.userId == #id).
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or (principal.userId == #id) or hasRole('SROTS_DEV') or (hasRole('CPH') and principal.isCollegeHead)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV') or (principal.userId == #id) or hasRole('SROTS_DEV') or (hasRole('CPH') and principal.isCollegeHead)")
     public ResponseEntity<?> updateAccount(@PathVariable String id, @RequestBody UserCreateRequest dto) {
         return ResponseEntity.ok(userService.update(id, dto));
     }
@@ -95,13 +95,13 @@ public class UserAccountController {
      * CP ADMIN UPDATE: Allows a College Head to update their staff/students specifically.
      */
     @PutMapping("/manage/{id}")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.isCollegeHead)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV') or (hasRole('CPH') and principal.isCollegeHead)")
     public ResponseEntity<?> manageUserAccount(@PathVariable String id, @RequestBody UserCreateRequest dto) {
         return ResponseEntity.ok(userService.update(id, dto));
     }
     
     @PostMapping("/{userId}/upload-photo")
-    @PreAuthorize("hasRole('ADMIN') or (principal.userId == #userId)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV') or (principal.userId == #userId)")
     public ResponseEntity<?> uploadPhoto(
             @PathVariable String userId,
             @RequestParam("file") MultipartFile file,
@@ -130,6 +130,7 @@ public class UserAccountController {
     
     
     @GetMapping("/{collegeCode}/{category}/{userId}/{fileName:.+}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV','CPH', 'STAFF','STUDENT')")
     public ResponseEntity<InputStreamResource> getProfileImage(
             @PathVariable String collegeCode,
             @PathVariable String category,
@@ -154,7 +155,7 @@ public class UserAccountController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.isCollegeHead)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV') or (hasRole('CPH') and principal.isCollegeHead)")
     public ResponseEntity<String> deleteAccount(@PathVariable String id) {
         User user = userService.getById(id);
         
@@ -169,7 +170,7 @@ public class UserAccountController {
     
  // 1. GET ALL USERS (Filtered Global List)
     @GetMapping("/all")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV')")
     public ResponseEntity<List<User>> getAllUsers(
             @RequestParam(name = "branch", required = false) String branch,
             @RequestParam(name = "batch", required = false) Integer batch,

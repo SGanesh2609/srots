@@ -86,7 +86,9 @@ public class AuthController {
 	        }
 
 	        // 5. Generate Token
-	        String token = jwtService.generateToken(user.getUsername());
+//	        String token = jwtService.generateToken(user.getUsername());
+	        String token = jwtService.generateToken(user);
+
 
 	        // 6. Build Response
 	        LoginResponse response = new LoginResponse();

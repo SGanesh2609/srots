@@ -11,6 +11,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -22,10 +24,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.srots.config.UserInfoUserDetails;
 import com.srots.dto.FreeCourseRequest;
 import com.srots.dto.FreeCourseResponse;
 import com.srots.model.FreeCourse.CoursePlatform;
 import com.srots.model.FreeCourse.CourseStatus;
+import com.srots.model.User;
 import com.srots.service.DBMonitoringService;
 import com.srots.service.FreeCourseService;
 
@@ -37,11 +41,13 @@ public class FreeCourseController {
 	@Autowired private DBMonitoringService monitoringService;
 
     @GetMapping("/categories")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV','CPH','STAFF','STUDENT')")
     public ResponseEntity<List<String>> getCategories() {
         return ResponseEntity.ok(service.getCategories());
     }
 
     @GetMapping("/platforms")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV','CPH','STAFF','STUDENT')")
     public ResponseEntity<List<String>> getPlatforms() {
         return ResponseEntity.ok(service.getPlatforms());
     }
@@ -49,6 +55,7 @@ public class FreeCourseController {
     
  // Standard public endpoint (Active only)
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV','CPH','STAFF','STUDENT')")
     public ResponseEntity<Page<FreeCourseResponse>> getAll(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String technology,
@@ -91,6 +98,7 @@ public class FreeCourseController {
     public ResponseEntity<FreeCourseResponse> create(@RequestBody FreeCourseRequest request) {
         return ResponseEntity.ok(service.createCourse(request));
     }
+    
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV')")

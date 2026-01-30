@@ -494,7 +494,7 @@ public class UserAccountServiceImpl implements UserAccountService {
 
 	private String generateUsername(UserCreateRequest dto, User.Role role, College college) {
 		// 1. Validation: CPH and STUDENT MUST have a college for prefixing
-		if ((role == User.Role.CPH || role == User.Role.STUDENT) && college == null) {
+		if ((role == User.Role.CPH || role == User.Role.STAFF || role == User.Role.STUDENT) && college == null) {
 			throw new RuntimeException("A valid College is required to generate usernames for CPH or STUDENT roles.");
 		}
 
@@ -517,9 +517,15 @@ public class UserAccountServiceImpl implements UserAccountService {
 			return "DEV_" + userPart;
 
 		case CPH:
-			String prefix = (dto.getIsCollegeHead() != null && dto.getIsCollegeHead()) ? "CPADMIN_" : "CPSTAFF_";
+//			String prefix = (dto.getIsCollegeHead() != null && dto.getIsCollegeHead()) ? "CPADMIN_" : "CPSTAFF_";
+			String cpadmin = "CPADMIN_";
 			// Example: SRM_CPSTAFF_5544
-			return college.getCode() + "_" + prefix + userPart;
+			return college.getCode() + "_" + cpadmin + userPart;
+		case STAFF:
+//			String prefix = (dto.getIsCollegeHead() != null && dto.getIsCollegeHead()) ? "CPADMIN_" : "CPSTAFF_";
+			String cpstaff = "CPSTAFF_";
+			// Example: SRM_CPSTAFF_5544
+			return college.getCode() + "_" + cpstaff + userPart;
 
 		case STUDENT:
 			if (dto.getStudentProfile() == null || dto.getStudentProfile().getRollNumber() == null) {
@@ -541,7 +547,7 @@ public class UserAccountServiceImpl implements UserAccountService {
 		String suffix;
 		if (role == User.Role.ADMIN || role == User.Role.SROTS_DEV) {
 			suffix = aadhaar.substring(0, 4);
-		} else if (role == User.Role.CPH) {
+		} else if (role == User.Role.CPH || role == User.Role.CPH) {
 			suffix = aadhaar.substring(4, 8);
 		} else {
 			suffix = aadhaar.substring(8, 12); // Last 4 digits for students

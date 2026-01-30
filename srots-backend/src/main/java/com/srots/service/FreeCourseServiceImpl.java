@@ -18,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.srots.config.UserInfoUserDetails;
 import com.srots.dto.FreeCourseRequest;
 import com.srots.dto.FreeCourseResponse;
 import com.srots.exception.ResourceNotFoundException;
@@ -37,9 +38,8 @@ public class FreeCourseServiceImpl implements FreeCourseService {
     @Autowired private AuditLogRepository auditRepo;
     @Autowired private EmailService emailService;
 
-    // Configuration for Scalability
     private static final int EMAIL_BATCH_SIZE = 500; 
-    private static final long BATCH_DELAY_MS = 2000; // 2 seconds delay between batches
+    private static final long BATCH_DELAY_MS = 2000;
 
     @Override
     @Cacheable(value = "courseCategories") 
@@ -56,17 +56,16 @@ public class FreeCourseServiceImpl implements FreeCourseService {
     }
 
     @Override
-    public Page<FreeCourseResponse> listCourses(String query, String tech, FreeCourse.CoursePlatform platform, Pageable pageable) {
+    public Page<FreeCourseResponse> listCourses(String query, String tech, CoursePlatform platform, Pageable pageable) {
         String cleanQuery = (query != null && !query.trim().isEmpty()) ? query : null;
         String techFilter = (tech == null || "All".equalsIgnoreCase(tech)) ? null : tech;
         
-        // Fix: Pass the Enum value as a parameter
         return repo.searchActiveCourses(cleanQuery, techFilter, platform, FreeCourse.CourseStatus.ACTIVE, pageable)
                 .map(this::convertToResponse);
     }
 
     @Override
-    public Page<FreeCourseResponse> listCoursesForAdmin(String query, String tech, FreeCourse.CoursePlatform platform, FreeCourse.CourseStatus status, Pageable pageable) {
+    public Page<FreeCourseResponse> listCoursesForAdmin(String query, String tech, CoursePlatform platform, FreeCourse.CourseStatus status, Pageable pageable) {
         String cleanQuery = (query != null && !query.trim().isEmpty()) ? query : null;
         String techFilter = (tech == null || "All".equalsIgnoreCase(tech)) ? null : tech;
         
@@ -74,14 +73,23 @@ public class FreeCourseServiceImpl implements FreeCourseService {
                 .map(this::convertToResponse);
     }
 
+    /**
+     * FIX: Safe Audit Logging
+     * Prevents ClassCastException by checking principal type.
+     */
     private void logAction(String action, FreeCourse course, String details) {
-        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String userEmail = "System";
+
+        if (principal instanceof UserInfoUserDetails detailsObj) {
+            userEmail = detailsObj.getUsername();
+        }
         
         AuditLog log = new AuditLog();
         log.setAction(action);
         log.setTargetId(course.getId());
         log.setTargetName(course.getName());
-        log.setPerformedBy(currentUser.getEmail());
+        log.setPerformedBy(userEmail);
         log.setDetails(details);
         auditRepo.save(log);
     }
@@ -93,7 +101,6 @@ public class FreeCourseServiceImpl implements FreeCourseService {
         
         course.setStatus(FreeCourse.CourseStatus.INACTIVE);
         repo.save(course);
-        
         logAction("SOFT_DELETE", course, "Course deactivated by Admin");
     }
 
@@ -103,9 +110,7 @@ public class FreeCourseServiceImpl implements FreeCourseService {
         FreeCourse course = repo.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
         
-        // Log BEFORE deleting because once deleted, we can't fetch course details
         logAction("HARD_DELETE", course, "Course permanently removed from database");
-        
         repo.delete(course);
     }
 
@@ -128,6 +133,10 @@ public class FreeCourseServiceImpl implements FreeCourseService {
         repo.save(course);
     }
 
+    /**
+     * FIX: Secure Course Creation
+     * Resolves the 400 Bad Request by fetching the actual User Entity.
+     */
     @Override
     @Transactional
     @CacheEvict(value = "courseCategories", allEntries = true) 
@@ -138,7 +147,13 @@ public class FreeCourseServiceImpl implements FreeCourseService {
             throw new RuntimeException("This course link already exists.");
         }
 
-        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (!(principal instanceof UserInfoUserDetails userDetails)) {
+            throw new RuntimeException("User session invalid or expired");
+        }
+        
+        User currentUser = userRepository.findById(userDetails.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Authenticated user entity not found"));
 
         FreeCourse course = new FreeCourse();
         course.setId(UUID.randomUUID().toString()); 
@@ -147,47 +162,19 @@ public class FreeCourseServiceImpl implements FreeCourseService {
         course.setDescription(dto.getDescription());
         course.setLink(dto.getLink());
         course.setPlatform(dto.getPlatform());
-        course.setPostedBy(currentUser);
+        course.setPostedBy(currentUser); 
         course.setPostedByName(currentUser.getFullName());
 
         FreeCourse savedCourse = repo.save(course);
         
-        // Use a background thread for the batching loop itself 
-        // so the createCourse method returns immediately
         CompletableFuture.runAsync(() -> notifyUsersInBatches(savedCourse));
 
         return convertToResponse(savedCourse);
     }
 
-    private void notifyUsersInBatches(FreeCourse course) {
-        int pageNumber = 0;
-        Page<User> userPage;
-
-        String subject = "New Course: " + course.getName();
-        String body = "Hi, a new course in " + course.getTechnology() + " is available. Check it out: " + course.getLink();
-
-        do {
-            userPage = userRepository.findAll(PageRequest.of(pageNumber, EMAIL_BATCH_SIZE));
-            
-            for (User user : userPage.getContent()) {
-                if (user.getEmail() != null && !user.getEmail().isBlank()) {
-                    // This call is now Async and won't block the loop
-                    emailService.sendEmail(user.getEmail(), subject, body);
-                }
-            }
-            pageNumber++;
-            
-            try {
-                Thread.sleep(BATCH_DELAY_MS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        } while (userPage.hasNext());
-    }
-    
-
     @Override
     @Transactional
+    @CacheEvict(value = "courseCategories", allEntries = true) // Added cache eviction for updates
     public FreeCourseResponse updateCourse(String id, FreeCourseRequest dto) {
         FreeCourse course = repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Course not found"));
         
@@ -208,6 +195,24 @@ public class FreeCourseServiceImpl implements FreeCourseService {
         return convertToResponse(repo.save(course));
     }
 
+    private void notifyUsersInBatches(FreeCourse course) {
+        int pageNumber = 0;
+        Page<User> userPage;
+        String subject = "New Course: " + course.getName();
+        String body = "Hi, a new course in " + course.getTechnology() + " is available. Check it out: " + course.getLink();
+
+        do {
+            userPage = userRepository.findAll(PageRequest.of(pageNumber, EMAIL_BATCH_SIZE));
+            for (User user : userPage.getContent()) {
+                if (user.getEmail() != null && !user.getEmail().isBlank()) {
+                    emailService.sendEmail(user.getEmail(), subject, body);
+                }
+            }
+            pageNumber++;
+            try { Thread.sleep(BATCH_DELAY_MS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        } while (userPage.hasNext());
+    }
+
     private void validateLinkPlatform(String link, CoursePlatform platform) {
         if (link == null || platform == null) return;
         String regex = switch (platform) {
@@ -219,8 +224,6 @@ public class FreeCourseServiceImpl implements FreeCourseService {
         };
         if (!link.matches(regex)) throw new IllegalArgumentException("Invalid " + platform + " URL");
     }
-    
-    
 
     private FreeCourseResponse convertToResponse(FreeCourse entity) {
         FreeCourseResponse res = new FreeCourseResponse();
@@ -233,7 +236,7 @@ public class FreeCourseServiceImpl implements FreeCourseService {
         res.setPostedBy(entity.getPostedByName());
         res.setCreated_at(entity.getCreatedAt());
         res.setStatus(entity.getStatus()); 
-        res.setLastVerifiedAt(entity.getLastVerifiedAt()); // Added
+        res.setLastVerifiedAt(entity.getLastVerifiedAt());
         return res;
     }
 }

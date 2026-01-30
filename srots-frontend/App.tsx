@@ -207,7 +207,7 @@ const App: React.FC = () => {
               <span className="text-[10px] font-black uppercase whitespace-nowrap">College Head</span>
             </button>
 
-            <button onClick={() => quickLogin('STAFF.78234', 'admin')} className="bg-indigo-500 hover:bg-indigo-600 text-white p-4 rounded-2xl shadow-lg border border-indigo-400 flex flex-col items-center gap-2 transition-all active:scale-95">
+            <button onClick={() => quickLogin('SRM_CPSTAFF_kiran', 'SRM_CPSTAFF_KIRAN@3322')} className="bg-indigo-500 hover:bg-indigo-600 text-white p-4 rounded-2xl shadow-lg border border-indigo-400 flex flex-col items-center gap-2 transition-all active:scale-95">
               <Zap size={24} />
               <span className="text-[10px] font-black uppercase whitespace-nowrap">Staff</span>
             </button>

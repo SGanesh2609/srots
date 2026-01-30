@@ -50,8 +50,8 @@ public class UserAccountController {
     @PostMapping("/cph")
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV') or (hasRole('CPH') and principal.isCollegeHead)")
     public ResponseEntity<?> createCphAccount(
-            @org.springframework.web.bind.annotation.RequestBody UserCreateRequest dto) {
-        return ResponseEntity.ok(userService.create(dto, "CPH"));
+            @org.springframework.web.bind.annotation.RequestBody UserCreateRequest dto, @RequestParam String role) {
+        return ResponseEntity.ok(userService.create(dto, role));
     }
 
     @PostMapping("/student")

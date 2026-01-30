@@ -547,7 +547,7 @@ public class UserAccountServiceImpl implements UserAccountService {
 		String suffix;
 		if (role == User.Role.ADMIN || role == User.Role.SROTS_DEV) {
 			suffix = aadhaar.substring(0, 4);
-		} else if (role == User.Role.CPH || role == User.Role.CPH) {
+		} else if (role == User.Role.CPH || role == User.Role.STAFF) {
 			suffix = aadhaar.substring(4, 8);
 		} else {
 			suffix = aadhaar.substring(8, 12); // Last 4 digits for students

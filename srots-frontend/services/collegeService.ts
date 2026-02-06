@@ -18,10 +18,10 @@
 //         return response.data;
 //     },
 
-//     getDashboardMetrics: async (collegeId: string): Promise<DashboardMetrics> => {
-//         const response = await api.get(`/colleges/${collegeId}/analytics`);
-//         return response.data;
-//     },
+    // getDashboardMetrics: async (collegeId: string): Promise<DashboardMetrics> => {
+    //     const response = await api.get(`/colleges/${collegeId}/analytics`);
+    //     return response.data;
+    // },
 
 //     // Synced with Java: @GetMapping("/college/{collegeId}/role/CPH")
 //     searchCPUsers: async (collegeId: string, query: string): Promise<User[]> => {
@@ -207,14 +207,70 @@ import api from './api';
 import { College, User, AddressFormData } from '../types';
 
 export const CollegeService = {
-  searchColleges: async (query: string): Promise<College[]> => {
-    const response = await api.get('/colleges', { params: { query } });
-    return response.data;
-  },
 
+  // Get full college (for view in all portals)
   getCollegeById: async (collegeId: string): Promise<College> => {
     const response = await api.get(`/colleges/${collegeId}`);
     return response.data;
+  },
+
+  // getDashboardMetrics: async (collegeId: string): Promise<DashboardMetrics> => {
+  //   const response = await api.get(`/colleges/${collegeId}/metrics`); // Adjust endpoint if backend uses different path
+  //   return response.data;
+  // },
+
+  // === PARTIAL UPDATES (Enterprise: granular, efficient, auditable) ===
+
+  // Update Logo (multipart, backend handles old file delete)
+  updateCollegeLogo: async (collegeId: string, file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post(`/colleges/${collegeId}/logo`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data; // returns new URL
+  },
+
+  // Update Social Media (partial body)
+  updateSocialMedia: async (collegeId: string, links: Record<string, string>): Promise<any> => {
+    const response = await api.put(`/colleges/${collegeId}/social`, links);
+    return response.data;
+  },
+
+  // Add About Section
+  addAboutSection: async (collegeId: string, data: { title: string; content: string; image?: string }): Promise<any> => {
+    const response = await api.post(`/colleges/${collegeId}/about`, data);
+    return response.data; // returns new section with ID/audit
+  },
+
+  // Update One About Section
+  updateAboutSection: async (
+    collegeId: string,
+    sectionId: string,
+    data: { title: string; content: string; image?: string }
+  ): Promise<any> => {
+    const response = await api.put(`/colleges/${collegeId}/about/${sectionId}`, data);
+    return response.data;
+  },
+
+  // Delete One About Section (backend cleans old image)
+  deleteAboutSection: async (collegeId: string, sectionId: string): Promise<void> => {
+    await api.delete(`/colleges/${collegeId}/about/${sectionId}`);
+  },
+
+  // === FILE UPLOAD (Synced with backend /colleges/upload) ===
+  uploadFile: async (file: File, collegeCode: string, category: string): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('collegeCode', collegeCode);
+    formData.append('category', category);
+
+    const response = await api.post('/colleges/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    // Backend returns { url: "..." } → extract url
+    return response.data.url || response.data;
   },
 
   // NEW: Get real-time stats (students, CP users, jobs)
@@ -324,4 +380,5 @@ export const CollegeService = {
     link.click();
     link.remove();
   },
+
 };

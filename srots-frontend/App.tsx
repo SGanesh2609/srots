@@ -309,7 +309,7 @@ const App: React.FC = () => {
         } />
 
         {/* Student */}
-        <Route path="/student/*" element={
+        {/* <Route path="/student/*" element={
           <ProtectedRoute allowedRoles={[Role.STUDENT]}>
             <Layout 
               user={currentUser} 
@@ -324,10 +324,10 @@ const App: React.FC = () => {
               />
             </Layout>
           </ProtectedRoute>
-        } />
+        } /> */}
 
         {/* CP / Staff */}
-        <Route path="/cp/*" element={
+        {/* <Route path="/cp/*" element={
           <ProtectedRoute allowedRoles={[Role.CPH, Role.STAFF]}>
             <Layout 
               user={currentUser} 
@@ -342,7 +342,54 @@ const App: React.FC = () => {
               />
             </Layout>
           </ProtectedRoute>
+        } /> */}
+
+        <Route path="/cp/*" element={
+          <ProtectedRoute allowedRoles={[Role.CPH, Role.STAFF]}>
+            <Layout 
+              user={currentUser} 
+              onNavigate={(view) => {
+                const prefix = 'cp';
+                navigate(`/${prefix}/${view}`);
+              }} 
+              currentView={location.pathname.split('/').pop() || 'jobs'}
+              onLogout={handleLogout}
+            >
+              <CPUserPortal 
+                view={location.pathname.split('/').pop() || 'jobs'} 
+                user={currentUser} 
+                onUpdateUser={(u) => dispatch(updateUser(u))} 
+              />
+            </Layout>
+          </ProtectedRoute>
         } />
+
+        <Route path="/student/*" element={
+          <ProtectedRoute allowedRoles={[Role.STUDENT]}>
+            <Layout 
+              user={currentUser} 
+              onNavigate={(view) => {
+                const prefix = 'student';
+                navigate(`/${prefix}/${view}`);
+              }} 
+              currentView={location.pathname.split('/').pop() || 'jobs'}
+              onLogout={handleLogout}
+            >
+              <StudentPortal 
+                view={location.pathname.split('/').pop() || 'jobs'} 
+                student={currentUser as any} 
+                onUpdateUser={(u) => dispatch(updateUser(u))} 
+              />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        {/* // For About College dynamic title: in AboutCollegeComponent, change h2:
+        <h2 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+          About {college.name} {isCPH && <Sparkles className="text-amber-400" size={24} />}
+        </h2> */}
+
+        
 
         <Route path="/unauthorized" element={<div className="min-h-screen flex items-center justify-center text-2xl font-bold text-red-600">Access Denied</div>} />
         <Route path="*" element={<Navigate to={getDefaultDashboard(currentUser.role)} replace />} />

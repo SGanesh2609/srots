@@ -254,6 +254,15 @@ export interface College {
   landline?: string; // Added landline for CollegeFormModal
 }
 
+export interface CollegeAboutSection {
+  id: string;
+  title: string;
+  content: string;
+  image?: string;
+  lastModifiedBy?: string;
+  lastModifiedAt?: string;
+}
+
 export type MarkFormat = 'Percentage' | 'CGPA' | 'Grade' | 'Marks';
 
 /**
@@ -395,7 +404,7 @@ export interface Notice {
   fileUrl?: string;    // DB: 'file_url'
 }
 
-export interface GlobalCompany { id: string; name: string; website: string; description: string; logo?: string; headquarters?: string; }
+export interface GlobalCompany { id: string; name: string; website: string; description: string; logo?: string; headquarters?: string; isSubscribed?: boolean; }
 export interface FreeCourse { id: string; name: string; technology: string; platform: CoursePlatform; description: string; link: string; postedBy: string; status: CourseStatus; lastVerifiedAt?: string; }
 
 // Added missing enums for FreeCourses

@@ -135,16 +135,29 @@ import api from './api';
 import { GlobalCompany, FreeCourse, User, Role, CourseStatus, AddressFormData } from '../types';
 
 export const CompanyService = {
-  // --- Hiring Partners (Companies) ---
-  searchGlobalCompanies: async (query: string, collegeId?: string): Promise<GlobalCompany[]> => {
-    const response = await api.get('/companies', { params: { query, collegeId } });
-    return response.data;
-  },
+// --- Hiring Partners (Companies) ---
+searchGlobalCompanies: async (query: string, collegeId?: string): Promise<GlobalCompany[]> => {
+  const params: any = { query };
+  if (collegeId) params.collegeId = collegeId;
+  
+  const response = await api.get('/companies', { params });
+  const data = response.data;
+  
+  // Handle both List and {content: [...]} responses safely
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.content)) return data.content;
+  return [];
+},
 
-  searchCollegeCompanies: async (collegeId: string, query: string): Promise<GlobalCompany[]> => {
-    const response = await api.get('/companies', { params: { collegeId, query, linkedOnly: 'true' } });
-    return response.data;
-  },
+searchCollegeCompanies: async (collegeId: string, query: string): Promise<GlobalCompany[]> => {
+  const params = { collegeId, query, linkedOnly: 'true' };
+  const response = await api.get('/companies', { params });
+  const data = response.data;
+  
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.content)) return data.content;
+  return [];
+},
 
   createGlobalCompany: async (data: any) => {
     const response = await api.post('/companies', data);
@@ -201,11 +214,6 @@ export const CompanyService = {
     };
   },
 
-//   createFreeCourse: async (courseData: Partial<FreeCourse>, postedBy: string) => {
-//     const payload = { ...courseData, postedBy };
-//     const response = await api.post('/free-courses', payload);
-//     return response.data;
-//   },
   createFreeCourse: async (courseData: Partial<FreeCourse>) => {
     // Ensure platform is uppercase string (matches enum)
     const payload = {

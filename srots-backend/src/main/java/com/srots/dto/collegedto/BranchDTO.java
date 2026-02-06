@@ -1,4 +1,4 @@
-package com.srots.dto;
+package com.srots.dto.collegedto;
 
 import lombok.Data;
 

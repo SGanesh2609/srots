@@ -23,41 +23,35 @@ public class CompanyController {
     @Autowired private CompanyService companyService;
     @Autowired private FileService fileService;
 
-    // 1. Get Companies
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF', 'STUDENT')")
     public ResponseEntity<List<CompanyResponse>> getCompanies(
             @RequestParam(required = false) String query,
-            @RequestParam(required = false) String collegeId) {
-        return ResponseEntity.ok(companyService.getCompanies(query, collegeId));
+            @RequestParam(required = false) String collegeId,
+            @RequestParam(required = false, defaultValue = "false") boolean linkedOnly) {
+        return ResponseEntity.ok(companyService.getCompanies(query, collegeId, linkedOnly));
     }
-    
- // 1. Get Company by ID
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF', 'STUDENT')")
     public ResponseEntity<CompanyResponse> getById(@PathVariable String id) {
         return ResponseEntity.ok(companyService.getCompanyById(id));
     }
 
-    // 2. Get Company by Name (Exact match, ignore case)
-    // URL Example: /api/v1/companies/find?name=Google
     @GetMapping("/find")
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF', 'STUDENT')")
     public ResponseEntity<CompanyResponse> getByName(@RequestParam String name) {
         return ResponseEntity.ok(companyService.getCompanyByName(name));
     }
 
-    // 2. Upload Company Logo
     @PostMapping("/upload")
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV')")
     public ResponseEntity<UploadResponse> uploadLogo(
             @RequestParam("file") MultipartFile file) {
-        // Companies are global, so we pass null for collegeCode and "Company" for category
         String url = fileService.uploadFile(file, null, "Company");
         return ResponseEntity.ok(new UploadResponse(url, file.getOriginalFilename()));
     }
 
-    // 3. Global Management
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV')")
     public ResponseEntity<CompanyResponse> create(@RequestBody CompanyRequest request) {
@@ -77,9 +71,7 @@ public class CompanyController {
         return ResponseEntity.ok(Map.of("message", "Company deleted successfully"));
     }
 
-    // 4. Subscription Management
     @PostMapping("/subscribe")
-//    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV') or (hasRole('CPH') and principal.isCollegeHead)")
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH')")
     public ResponseEntity<Map<String, Boolean>> subscribe(@RequestBody SubscribeRequest request) {
         companyService.subscribe(request);
@@ -87,10 +79,9 @@ public class CompanyController {
     }
 
     @DeleteMapping("/subscribe/{collegeId}/{companyId}")
-//    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV') or (hasRole('CPH') and principal.isCollegeHead)")
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH')")
     public ResponseEntity<Map<String, Boolean>> unsubscribe(
-            @PathVariable String collegeId, 
+            @PathVariable String collegeId,
             @PathVariable String companyId) {
         companyService.unsubscribe(collegeId, companyId);
         return ResponseEntity.ok(Map.of("success", true));

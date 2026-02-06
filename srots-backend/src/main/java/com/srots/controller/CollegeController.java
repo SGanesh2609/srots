@@ -17,10 +17,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.srots.dto.BranchDTO;
-import com.srots.dto.CollegeRequest;
-import com.srots.dto.CollegeResponse;
-import com.srots.dto.UploadResponse;
+import com.srots.dto.collegedto.AboutSectionDTO;
+import com.srots.dto.collegedto.BranchDTO;
+import com.srots.dto.collegedto.CollegeRequest;
+import com.srots.dto.collegedto.CollegeResponse;
+import com.srots.dto.collegedto.SocialMediaDTO;
 import com.srots.service.CollegeService;
 
 @RestController
@@ -101,5 +102,55 @@ public class CollegeController {
             "success", true, 
             "message", "College and associated media files deleted successfully"
         ));
+    }
+    
+    // NEW THINGS
+    
+ // Update Logo
+    @PostMapping("/{id}/logo")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id and principal.isCollegeHead)")
+    public ResponseEntity<String> updateLogo(
+            @PathVariable String id,
+            @RequestParam("file") MultipartFile file) {
+        String newUrl = collegeService.updateCollegeLogo(id, file);
+        return ResponseEntity.ok(newUrl);
+    }
+
+    // Update Social Media
+    @PutMapping("/{id}/social")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id and principal.isCollegeHead)")
+    public ResponseEntity<SocialMediaDTO> updateSocial(
+            @PathVariable String id,
+            @RequestBody SocialMediaDTO dto) {
+        return ResponseEntity.ok(collegeService.updateSocialMedia(id, dto));
+    }
+
+    // Add About Section
+    @PostMapping("/{id}/about")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id and principal.isCollegeHead)")
+    public ResponseEntity<AboutSectionDTO> addAboutSection(
+            @PathVariable String id,
+            @RequestBody AboutSectionDTO dto) {
+        return ResponseEntity.ok(collegeService.addAboutSection(id, dto));
+    }
+
+    // Update One About Section
+    @PutMapping("/{id}/about/{sectionId}")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id and principal.isCollegeHead)")
+    public ResponseEntity<AboutSectionDTO> updateAboutSection(
+            @PathVariable String id,
+            @PathVariable String sectionId,
+            @RequestBody AboutSectionDTO dto) {
+        return ResponseEntity.ok(collegeService.updateAboutSection(id, sectionId, dto));
+    }
+
+    // Delete One About Section
+    @DeleteMapping("/{id}/about/{sectionId}")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id and principal.isCollegeHead)")
+    public ResponseEntity<?> deleteAboutSection(
+            @PathVariable String id,
+            @PathVariable String sectionId) {
+        collegeService.deleteAboutSection(id, sectionId);
+        return ResponseEntity.ok(Map.of("message", "Section deleted"));
     }
 }

@@ -1,25 +1,33 @@
 package com.srots.service;
 
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.srots.dto.BranchDTO;
-import com.srots.dto.CollegeRequest;
-import com.srots.dto.CollegeResponse;
+import com.srots.dto.collegedto.AboutSectionDTO;
+import com.srots.dto.collegedto.BranchDTO;
+import com.srots.dto.collegedto.CollegeRequest;
+import com.srots.dto.collegedto.CollegeResponse;
+import com.srots.dto.collegedto.SocialMediaDTO;
 import com.srots.model.College;
 import com.srots.model.Job;
 import com.srots.model.User;
 import com.srots.repository.CollegeRepository;
 import com.srots.repository.JobRepository;
 import com.srots.repository.UserRepository;
-import com.srots.service.CollegeService;
-import com.srots.service.FileService;
 
 @Service
 public class CollegeServiceImpl implements CollegeService {
@@ -143,7 +151,12 @@ public class CollegeServiceImpl implements CollegeService {
                 res.setAddress(addr.get("city") + ", " + addr.get("state"));
             }
             res.setSocialMedia(entity.getSocialMedia() != null ? mapper.readValue(entity.getSocialMedia(), Map.class) : null);
-            res.setAboutSections(entity.getAboutSections() != null ? mapper.readValue(entity.getAboutSections(), List.class) : null);
+//            res.setAboutSections(entity.getAboutSections() != null ? mapper.readValue(entity.getAboutSections(), List.class) : null);
+            if (entity.getAboutSections() != null) {
+                List<Object> sections = mapper.readValue(entity.getAboutSections(), new TypeReference<>() {});
+//                List<AboutSectionDTO> sections = mapper.readValue(entity.getAboutSections(), new TypeReference<>() {});
+                res.setAboutSections(sections); // Now List<AboutSectionDTO>
+            }
             res.setBranches(entity.getBranches() != null ? mapper.readValue(entity.getBranches(), List.class) : null);
         } catch (Exception e) { }
         
@@ -174,5 +187,106 @@ public class CollegeServiceImpl implements CollegeService {
             college.setBranches(mapper.writeValueAsString(list));
         } catch (Exception e) { throw new RuntimeException("Error processing branch data"); }
         return convertToResponse(collegeRepo.save(college));
+    }
+    
+    
+    // NEW THINGS
+    
+    @Override
+    @Transactional
+    public String updateCollegeLogo(String id, MultipartFile file) {
+        College college = collegeRepo.findById(id).orElseThrow();
+        String oldLogo = college.getLogoUrl();
+        String newUrl = fileService.uploadFile(file, college.getCode(), "logo");
+        college.setLogoUrl(newUrl);
+        college.setUpdatedAt(LocalDateTime.now());
+        collegeRepo.save(college);
+        if (oldLogo != null) fileService.deleteFile(oldLogo);
+        return newUrl;
+    }
+
+    @Override
+    @Transactional
+    public SocialMediaDTO updateSocialMedia(String id, SocialMediaDTO dto) {
+        College college = collegeRepo.findById(id).orElseThrow();
+        try {
+            college.setSocialMedia(mapper.writeValueAsString(dto));
+            college.setUpdatedAt(LocalDateTime.now());
+            collegeRepo.save(college);
+            return dto; // Or reload parsed
+        } catch (Exception e) {
+            throw new RuntimeException("Social update failed");
+        }
+    }
+
+    @Override
+    @Transactional
+    public AboutSectionDTO addAboutSection(String id, AboutSectionDTO dto) {
+        College college = collegeRepo.findById(id).orElseThrow();
+        List<AboutSectionDTO> sections = parseAboutSections(college.getAboutSections());
+        dto.setId(UUID.randomUUID().toString());
+        dto.setLastModifiedBy(SecurityContextHolder.getContext().getAuthentication().getName());
+        dto.setLastModifiedAt(LocalDateTime.now());
+        sections.add(dto);
+        try {
+			college.setAboutSections(mapper.writeValueAsString(sections));
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        college.setUpdatedAt(LocalDateTime.now());
+        collegeRepo.save(college);
+        return dto;
+    }
+
+    @Override
+    @Transactional
+    public AboutSectionDTO updateAboutSection(String id, String sectionId, AboutSectionDTO dto) {
+        College college = collegeRepo.findById(id).orElseThrow();
+        List<AboutSectionDTO> sections = parseAboutSections(college.getAboutSections());
+        AboutSectionDTO existing = sections.stream().filter(s -> s.getId().equals(sectionId)).findFirst().orElseThrow();
+        String oldImage = existing.getImage();
+        dto.setId(sectionId);
+        dto.setLastModifiedBy(SecurityContextHolder.getContext().getAuthentication().getName());
+        dto.setLastModifiedAt(LocalDateTime.now());
+        // Replace in list
+        int idx = sections.indexOf(existing);
+        sections.set(idx, dto);
+        try {
+			college.setAboutSections(mapper.writeValueAsString(sections));
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        college.setUpdatedAt(LocalDateTime.now());
+        collegeRepo.save(college);
+        if (oldImage != null && !oldImage.equals(dto.getImage())) fileService.deleteFile(oldImage);
+        return dto;
+    }
+
+    @Override
+    @Transactional
+    public void deleteAboutSection(String id, String sectionId) {
+        College college = collegeRepo.findById(id).orElseThrow();
+        List<AboutSectionDTO> sections = parseAboutSections(college.getAboutSections());
+        AboutSectionDTO toDelete = sections.stream().filter(s -> s.getId().equals(sectionId)).findFirst().orElseThrow();
+        if (toDelete.getImage() != null) fileService.deleteFile(toDelete.getImage());
+        sections.removeIf(s -> s.getId().equals(sectionId));
+        try {
+			college.setAboutSections(mapper.writeValueAsString(sections));
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        college.setUpdatedAt(LocalDateTime.now());
+        collegeRepo.save(college);
+    }
+
+    private List<AboutSectionDTO> parseAboutSections(String json) {
+        try {
+            return json != null ? mapper.readValue(json, new TypeReference<>() {}) : new ArrayList<>();
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
     }
 }

@@ -1,5 +1,7 @@
 package com.srots.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.Data;
 
 @Data
@@ -12,12 +14,16 @@ public class CompanyResponse {
     private String headquarters;
     private String fullAddress;
     private Object address_json;
+    
+    @JsonProperty("isSubscribed")
+    private boolean isSubscribed;
 	public CompanyResponse() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
+	
 	public CompanyResponse(String id, String name, String website, String description, String logo, String headquarters,
-			String fullAddress, Object address_json) {
+			String fullAddress, Object address_json, boolean isSubscribed) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -27,7 +33,9 @@ public class CompanyResponse {
 		this.headquarters = headquarters;
 		this.fullAddress = fullAddress;
 		this.address_json = address_json;
+		this.isSubscribed = isSubscribed;
 	}
+
 	public String getId() {
 		return id;
 	}
@@ -75,6 +83,14 @@ public class CompanyResponse {
 	}
 	public void setAddress_json(Object address_json) {
 		this.address_json = address_json;
+	}
+
+	public boolean isSubscribed() {
+		return isSubscribed;
+	}
+
+	public void setSubscribed(boolean isSubscribed) {
+		this.isSubscribed = isSubscribed;
 	}
     
     

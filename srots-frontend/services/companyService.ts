@@ -334,10 +334,25 @@ searchCollegeCompanies: async (collegeId: string, query: string): Promise<Global
 
   
 
-  uploadFile: async (file: File): Promise<string> => {
+  // uploadFile: async (file: File): Promise<string> => {
+  //   const formData = new FormData();
+  //   formData.append('file', file);
+  //   const response = await api.post('/upload', formData);
+  //   return response.data.url;
+  // },
+
+  // === FILE UPLOAD (Synced with backend /colleges/upload) ===
+  uploadFile: async (file: File, collegeCode: string, category: string): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await api.post('/upload', formData);
-    return response.data.url;
+    formData.append('collegeCode', collegeCode);
+    formData.append('category', category);
+
+    const response = await api.post('/colleges/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    // Backend returns { url: "..." } → extract url
+    return response.data.url || response.data;
   },
 };

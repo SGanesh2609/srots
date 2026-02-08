@@ -48,8 +48,14 @@ public class CollegeController {
     
 
     
+//    @GetMapping("/{id}")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'STAFF', 'STUDENT', 'CPH') or (hasRole('CPH') and principal.collegeId == #id)")
+//    public ResponseEntity<CollegeResponse> getById(@PathVariable String id) {
+//        return ResponseEntity.ok(collegeService.getCollegeById(id));
+//    }
+    
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV') or (hasRole('CPH') and principal.collegeId == #id)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV') or (hasAnyRole('CPH', 'STAFF', 'STUDENT') and principal.collegeId == #id)")
     public ResponseEntity<CollegeResponse> getById(@PathVariable String id) {
         return ResponseEntity.ok(collegeService.getCollegeById(id));
     }

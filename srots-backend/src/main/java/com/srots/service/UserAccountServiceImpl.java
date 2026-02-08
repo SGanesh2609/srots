@@ -583,32 +583,17 @@ public class UserAccountServiceImpl implements UserAccountService {
 	public User getById(String id) {
 		return userRepository.findById(id).orElse(null);
 	}
-
-//	// 1. GET ALL USERS (Global)
-//	public List<User> getAllUsers() {
-//		return userRepository.findAll();
-//	}
-//
-//	// 2. GET USERS BY ROLE (Global - for SROTS Admin/Staff)
-//	public List<User> getUsersByRole(User.Role role) {
-//		return userRepository.findByRole(role);
-//	}
-//
-//	// 3. GET SPECIFIC COLLEGE USERS (Filtered by College and Role)
-//	public List<User> getCollegeUsersByRole(String collegeId, User.Role role) {
-//		return userRepository.findByCollegeIdAndRole(collegeId, role);
-//	}
-//
-//	// 4. GET ALL DATA FOR ONE COLLEGE (CP Admin view)
-//	public List<User> getEntireCollegeData(String collegeId) {
-//		return userRepository.findByCollegeId(collegeId);
-//	}
 	
 	
 
 	// 5. GET FULL PROFILE (The "Deep Fetch" method)
 	public UserFullProfileResponse getFullUserProfile(String userId) {
 		User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+		
+		// Explicitly initialize the proxy if you aren't using @JsonIgnore
+	    if (user.getCollege() != null) {
+	        user.getCollege().getId(); 
+	    }
 
 		UserFullProfileResponse response = new UserFullProfileResponse();
 		response.setUser(user);
@@ -631,6 +616,11 @@ public class UserAccountServiceImpl implements UserAccountService {
 		if (user.getRole() != User.Role.STUDENT) {
 			throw new RuntimeException("Access Denied: Not a student account");
 		}
+		
+		// Explicitly initialize the proxy if you aren't using @JsonIgnore
+	    if (user.getCollege() != null) {
+	        user.getCollege().getId(); 
+	    }
 
 		Student360Response dto = new Student360Response();
 

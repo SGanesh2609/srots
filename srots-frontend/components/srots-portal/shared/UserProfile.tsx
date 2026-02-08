@@ -1,7 +1,9 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Role, AddressFormData } from '../../../types';
-import { Camera, Mail, Phone, MapPin, Edit2, Shield, Loader2, Search } from 'lucide-react';
+import {
+  Building, Briefcase, GraduationCap, Camera, Mail, Phone, MapPin,
+  Edit2, Shield, CheckCircle, Lock, Loader2,Search , User as UserIcon
+} from 'lucide-react';
 import { AddressForm } from '../../common/AddressForm';
 import { AuthService } from '../../../services/authService';
 import { CompanyService } from '../../../services/companyService';
@@ -19,6 +21,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateUser }) 
   const [profileForm, setProfileForm] = useState({
       alternativeEmail: user.alternativeEmail || '',
       alternativePhone: user.alternativePhone || '',
+      bio: user.bio || '',
+      department: user.department || '',
+      experience: user.experience || '',
+      education: user.education || '',
+      aadhaarNumber: user.aadhaarNumber || '',
   });
   
   const [addressForm, setAddressForm] = useState<AddressFormData>({
@@ -28,26 +35,45 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateUser }) 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-      setProfileUser(user);
-      setProfileForm({
-        alternativeEmail: user.alternativeEmail || '',
-        alternativePhone: user.alternativePhone || '',
-      });
-      setAddressForm({
-          addressLine1: user.fullAddress || '', 
-          addressLine2: '', village: '', mandal: '', city: '', state: '', zip: '', country: 'India'
-      });
-  }, [user]);
+      const fetchFullProfile = async () => {
+          try {
+              const fullUser = await AuthService.getFullProfile(user.id);
+              setProfileUser(fullUser);
+              
+              setProfileForm({
+                  alternativeEmail: fullUser.alternativeEmail || '',
+                  alternativePhone: fullUser.alternativePhone || '',
+                  bio: fullUser.bio || '',
+                  department: fullUser.department || '',
+                  experience: fullUser.experience || '',
+                  education: fullUser.education || '',
+                  aadhaarNumber: fullUser.aadhaarNumber || '',
+              });
+              
+              setAddressForm(fullUser.address || {
+                  addressLine1: '', addressLine2: '', village: '', mandal: '', city: '', state: '', zip: '', country: 'India'
+              });
+          } catch (err) {
+              console.error('Failed to fetch full profile', err);
+          }
+      };
+      
+      fetchFullProfile();
+  }, [user.id]);
 
   const handleSaveProfile = async () => {
       const updated = {
           ...profileUser,
           alternativeEmail: profileForm.alternativeEmail,
           alternativePhone: profileForm.alternativePhone,
+          bio: profileForm.bio,
+          department: profileForm.department,
+          experience: profileForm.experience,
+          education: profileForm.education,
+          aadhaarNumber: profileForm.aadhaarNumber,
       };
       
       try {
-          // Persist to Backend via AuthService
           const result = await AuthService.updateUser(updated, addressForm);
           setProfileUser(result);
           if(onUpdateUser) onUpdateUser(result);
@@ -63,10 +89,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateUser }) 
           setIsUploading(true);
           try {
               const file = e.target.files[0];
-              const imageUrl = await CompanyService.uploadFile(file);
+              const imageUrl = await AuthService.uploadAvatar(profileUser.id, file, 'profiles');
               const updated = { ...profileUser, avatar: imageUrl };
               
-              // Persist to Backend
               const result = await AuthService.updateUser(updated);
               setProfileUser(result);
               if(onUpdateUser) onUpdateUser(result);
@@ -97,7 +122,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateUser }) 
                        </div>
                    ) : (
                        <img 
-                          src={profileUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileUser.fullName)}&background=0D8ABC&color=fff`} 
+                          src={profileUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileUser.fullName)}&background=random`} 
                           alt="Profile" 
                           className="w-32 h-32 rounded-full border-4 border-gray-50 shadow-md object-cover"
                        />
@@ -116,8 +141,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateUser }) 
                    </div>
                    <p className="text-gray-500 max-w-md">
                        {profileUser.role === Role.ADMIN 
-                         ? 'Root administrator for Sorts Platform. Managing global configurations, colleges, and system integrity.'
-                         : 'System developer and maintainer for Sorts Platform.'}
+                         ? 'Root administrator for Srots Platform. Managing global configurations, colleges, and system integrity.'
+                         : 'System developer and maintainer for Srots Platform.'}
                    </p>
                </div>
            </div>
@@ -199,6 +224,92 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateUser }) 
                            </div>
                        </div>
 
+                       <div className="flex items-center gap-4">
+                           <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0"><Search size={18} /></div>
+                           <div className="w-full">
+                               <p className="text-xs text-gray-500 uppercase font-semibold">Aadhaar Number</p>
+                               {isEditingProfile ? (
+                                   <input 
+                                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 bg-white text-gray-900 focus:ring-2 focus:ring-blue-100 outline-none" 
+                                       value={profileForm.aadhaarNumber} 
+                                       onChange={e => setProfileForm({...profileForm, aadhaarNumber: e.target.value})} 
+                                       placeholder="e.g. 1234 5678 9012"
+                                   />
+                               ) : (
+                                   <p className="text-gray-900 font-medium">{profileUser.aadhaarNumber || 'Not Provided'}</p>
+                               )}
+                           </div>
+                       </div>
+
+                       <div className="flex items-center gap-4">
+                           <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0"><Building size={18} /></div>
+                           <div className="w-full">
+                               <p className="text-xs text-gray-500 uppercase font-semibold">Department</p>
+                               {isEditingProfile ? (
+                                   <input 
+                                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 bg-white text-gray-900 focus:ring-2 focus:ring-blue-100 outline-none" 
+                                       value={profileForm.department} 
+                                       onChange={e => setProfileForm({...profileForm, department: e.target.value})} 
+                                       placeholder="e.g. Development"
+                                   />
+                               ) : (
+                                   <p className="text-gray-900 font-medium">{profileUser.department || 'Not Provided'}</p>
+                               )}
+                           </div>
+                       </div>
+
+                       <div className="flex items-start gap-4">
+                           <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0 mt-1"><Edit2 size={18} /></div>
+                           <div className="w-full">
+                               <p className="text-xs text-gray-500 uppercase font-semibold">Bio</p>
+                               {isEditingProfile ? (
+                                   <textarea 
+                                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 bg-white text-gray-900 focus:ring-2 focus:ring-blue-100 outline-none resize-y" 
+                                       value={profileForm.bio} 
+                                       onChange={e => setProfileForm({...profileForm, bio: e.target.value})} 
+                                       placeholder="Write a short bio..."
+                                       rows={3}
+                                   />
+                               ) : (
+                                   <p className="text-gray-900 font-medium whitespace-pre-wrap">{profileUser.bio || 'Not Provided'}</p>
+                               )}
+                           </div>
+                       </div>
+
+                       <div className="flex items-center gap-4">
+                           <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0"><Briefcase size={18} /></div>
+                           <div className="w-full">
+                               <p className="text-xs text-gray-500 uppercase font-semibold">Experience</p>
+                               {isEditingProfile ? (
+                                   <input 
+                                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 bg-white text-gray-900 focus:ring-2 focus:ring-blue-100 outline-none" 
+                                       value={profileForm.experience} 
+                                       onChange={e => setProfileForm({...profileForm, experience: e.target.value})} 
+                                       placeholder="e.g. 5 years in software development"
+                                   />
+                               ) : (
+                                   <p className="text-gray-900 font-medium">{profileUser.experience || 'Not Provided'}</p>
+                               )}
+                           </div>
+                       </div>
+
+                       <div className="flex items-center gap-4">
+                           <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0"><GraduationCap size={18} /></div>
+                           <div className="w-full">
+                               <p className="text-xs text-gray-500 uppercase font-semibold">Education</p>
+                               {isEditingProfile ? (
+                                   <input 
+                                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 bg-white text-gray-900 focus:ring-2 focus:ring-blue-100 outline-none" 
+                                       value={profileForm.education} 
+                                       onChange={e => setProfileForm({...profileForm, education: e.target.value})} 
+                                       placeholder="e.g. B.Tech in Computer Science"
+                                   />
+                               ) : (
+                                   <p className="text-gray-900 font-medium">{profileUser.education || 'Not Provided'}</p>
+                               )}
+                           </div>
+                       </div>
+
                        {isEditingProfile && (
                            <div className="flex justify-end gap-2 pt-2">
                                <button onClick={() => setIsEditingProfile(false)} className="px-4 py-2 text-xs font-bold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
@@ -215,7 +326,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateUser }) 
                    <div className="space-y-4">
                       <div className="flex justify-between items-center border-b border-gray-100 pb-3">
                           <span className="text-gray-600 font-medium">Username / User ID</span>
-                          <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">{profileUser.id}</span>
+                          <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">{profileUser.username || profileUser.id}</span>
                       </div>
                       <div className="flex justify-between items-center border-b border-gray-100 pb-3">
                           <span className="text-gray-600 font-medium">Full Name</span>

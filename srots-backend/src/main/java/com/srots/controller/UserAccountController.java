@@ -86,7 +86,7 @@ public class UserAccountController {
      * 2. Any user can update their OWN profile (principal.userId == #id).
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV') or (principal.userId == #id) or hasRole('SROTS_DEV') or (hasRole('CPH') and principal.isCollegeHead)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV','CPH') or (principal.userId == #id) or hasRole('SROTS_DEV') or (hasRole('CPH') and principal.isCollegeHead)")
     public ResponseEntity<?> updateAccount(@PathVariable String id, @RequestBody UserCreateRequest dto) {
         return ResponseEntity.ok(userService.update(id, dto));
     }
@@ -228,7 +228,7 @@ public class UserAccountController {
     // --- INDIVIDUAL FULL DETAILS ---
 
     @GetMapping("/profile/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH') or (principal.userId == #id)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF') or (principal.userId == #id)")
     public ResponseEntity<UserFullProfileResponse> getFullProfile(@PathVariable String id) {
         return ResponseEntity.ok(userService.getFullUserProfile(id));
     }

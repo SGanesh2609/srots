@@ -11,7 +11,7 @@ import org.hibernate.type.SqlTypes;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -58,6 +58,11 @@ public class User {
     private Role role;
 
     public enum Role { ADMIN, SROTS_DEV, CPH, STAFF, STUDENT }
+    
+    @JsonProperty("collegeId") // This adds a new field "collegeId" to your JSON
+    public String getCollegeIdOnly() {
+        return (college != null) ? college.getId() : null;
+    }
 
     @ManyToOne(fetch = FetchType.LAZY) 
     @JoinColumn(name = "college_id")

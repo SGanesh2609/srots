@@ -1,10 +1,9 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Role, AddressFormData } from '../../../types';
 import { AuthService } from '../../../services/authService';
 import { CollegeService } from '../../../services/collegeService';
 import { CompanyService } from '../../../services/companyService';
-import {
+import { 
   Edit2, User as UserIcon, Phone, Mail, MapPin,
   Briefcase, GraduationCap, Camera, X,
   Building, Shield, CheckCircle, Lock, Loader2
@@ -36,21 +35,30 @@ export const CP_ProfileSection: React.FC<CPProfileSectionProps> = ({ user, onUpd
     });
 
     useEffect(() => {
-        setFormData({
-            experience: user.experience || '',
-            education: user.education || '',
-            bio: user.bio || '',
-            alternativeEmail: user.alternativeEmail || '',
-            alternativePhone: user.alternativePhone || '',
-            department: user.department || ''
-        });
+        const fetchFullProfile = async () => {
+            try {
+                const fullUser = await AuthService.getFullProfile(user.id);
+                setFormData({
+                    experience: fullUser.experience || '',
+                    education: fullUser.education || '',
+                    bio: fullUser.bio || '',
+                    alternativeEmail: fullUser.alternativeEmail || '',
+                    alternativePhone: fullUser.alternativePhone || '',
+                    department: fullUser.department || ''
+                });
+                
+                setAddressForm(fullUser.address || {
+                    addressLine1: '', addressLine2: '', village: '', mandal: '', city: '', state: '', zip: '', country: 'India'
+                });
+            } catch (err) {
+                console.error('Failed to fetch full profile', err);
+            }
+        };
         
-        // Try to parse full address back into form if possible, otherwise placeholder
-        setAddressForm({
-            addressLine1: user.fullAddress || '', 
-            addressLine2: '', village: '', mandal: '', city: '', state: '', zip: '', country: 'India'
-        });
-        
+        fetchFullProfile();
+    }, [user.id]);
+
+    useEffect(() => {
         if (user.collegeId) {
             const fetchCollege = async (id: string) => {
                 const col = await CollegeService.getCollegeById(id);
@@ -58,22 +66,26 @@ export const CP_ProfileSection: React.FC<CPProfileSectionProps> = ({ user, onUpd
             };
             fetchCollege(user.collegeId);
         }
-    }, [user]);
+    }, [user.collegeId]);
 
     const handleSave = async () => {
-        if (onUpdateUser) {
-            try {
-                // AuthService.updateUser handles backend sync and returns updated user object
-                const updatedUser = await AuthService.updateUser({
-                    ...user,
-                    ...formData
-                }, addressForm);
-                onUpdateUser(updatedUser);
-                setIsEditing(false);
-                alert("Profile updated successfully!");
-            } catch (error) {
-                alert("Failed to save changes.");
-            }
+        const updated = {
+            ...user,
+            experience: formData.experience,
+            education: formData.education,
+            bio: formData.bio,
+            alternativeEmail: formData.alternativeEmail,
+            alternativePhone: formData.alternativePhone,
+            department: formData.department
+        };
+        
+        try {
+            const result = await AuthService.updateUser(updated, addressForm);
+            if(onUpdateUser) onUpdateUser(result);
+            setIsEditing(false);
+            alert("Profile updated successfully!");
+        } catch (error) {
+            alert("Failed to save changes.");
         }
     };
 
@@ -82,9 +94,12 @@ export const CP_ProfileSection: React.FC<CPProfileSectionProps> = ({ user, onUpd
             setIsUploading(true);
             try {
                 const file = e.target.files[0];
-                const imageUrl = await CompanyService.uploadFile(file);
-                const updatedUser = await AuthService.updateUser({ ...user, avatar: imageUrl });
-                onUpdateUser(updatedUser);
+                const imageUrl = await AuthService.uploadAvatar(user.id, file, 'profiles');
+                const updated = { ...user, avatar: imageUrl };
+                
+                const result = await AuthService.updateUser(updated);
+                if(onUpdateUser) onUpdateUser(result);
+                alert("Profile picture updated successfully!");
             } catch (err) {
                 alert("Upload failed");
             } finally {
@@ -123,7 +138,7 @@ export const CP_ProfileSection: React.FC<CPProfileSectionProps> = ({ user, onUpd
                          <div className={`absolute bottom-2 right-2 w-6 h-6 border-4 border-white rounded-full ${user.role === Role.CPH ? 'bg-purple-500' : 'bg-blue-500'}`}></div>
 
                         <button
-                            onClick={() => !isUploading && fileInputRef.current?.click()}
+                            onClick={() => fileInputRef.current?.click()}
                             className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all backdrop-blur-[1px]"
                         >
                             <Camera size={24} className="text-white" />
@@ -169,9 +184,10 @@ export const CP_ProfileSection: React.FC<CPProfileSectionProps> = ({ user, onUpd
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col h-full">
-                    <div className="flex items-center gap-2 mb-6 border-b border-gray-50 pb-4">
-                        <Mail className="text-blue-600" size={20} />
-                        <h3 className="text-lg font-bold text-gray-800">Contact Details</h3>
+                    <div className="flex justify-between items-center mb-6 border-b border-gray-50 pb-4">
+                        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <Mail className="text-blue-600" size={20} /> Contact Details
+                        </h3>
                     </div>
 
                     <div className="space-y-6 flex-1">

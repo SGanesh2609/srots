@@ -791,6 +791,59 @@ export interface PostComment {
     replies: PostComment[];
 }
 
+// /**
+//  * Interface: CalendarEvent
+//  * Maps to 'events' table in MySQL
+//  */
+// export interface CalendarEvent {
+//   id: string;            // DB: 'id'
+//   collegeId?: string;    // DB: 'college_id'
+//   title: string;         // DB: 'title'
+//   date: string;          // DB: 'date'
+//   type: string;          // DB: 'type'
+//   startTime?: string;    // DB: 'start_time'
+//   endTime?: string;      // DB: 'end_time'
+//   targetBranches?: string[]; // DB: 'target_branches_json'
+//   postedBy?: string;     // DB: 'posted_by'
+//   createdById?: string;  // DB: 'created_by_id'
+  
+//   endDate?: string;
+//   description?: string;
+//   schedule?: ScheduleItem[]; // Updated to use ScheduleItem interface
+//   createdAt?: string; 
+//   targetYears?: number[]; // Added missing targetYears
+
+//   createdBy?: string; // Added createdBy for audit trail
+// }
+
+// /**
+//  * Interface: ScheduleItem
+//  * Added for Timetable builder
+//  */
+// export interface ScheduleItem {
+//     id: string;
+//     timeRange: string;
+//     activity: string;
+//     type: 'Class' | 'Break' | 'Exam' | 'Activity';
+// }
+
+// /**
+//  * Interface: Notice
+//  * Maps to 'notices' table in MySQL
+//  */
+// export interface Notice {
+//   id: string;          // DB: 'id'
+//   collegeId?: string;  // DB: 'college_id'
+//   title: string;       // DB: 'title'
+//   description: string; // DB: 'description'
+//   date: string;        // DB: 'date'
+//   postedBy: string;    // DB: 'posted_by'
+//   type: string;        // DB: 'type'
+//   fileName?: string;   // DB: 'file_name'
+//   fileUrl?: string;    // DB: 'file_url'
+//   createdById?: string; // DB: 'created_by'
+// }
+
 /**
  * Interface: CalendarEvent
  * Maps to 'events' table in MySQL
@@ -812,6 +865,8 @@ export interface CalendarEvent {
   schedule?: ScheduleItem[]; // Updated to use ScheduleItem interface
   createdAt?: string; 
   targetYears?: number[]; // Added missing targetYears
+
+  createdBy?: string; // Added createdBy for audit trail
 }
 
 /**
@@ -835,10 +890,11 @@ export interface Notice {
   title: string;       // DB: 'title'
   description: string; // DB: 'description'
   date: string;        // DB: 'date'
-  postedBy: string;    // DB: 'posted_by'
+  createdBy?: string;  // Changed from postedBy for consistency with backend
   type: string;        // DB: 'type'
   fileName?: string;   // DB: 'file_name'
   fileUrl?: string;    // DB: 'file_url'
+  createdById?: string; // DB: 'created_by'
 }
 
 export interface GlobalCompany { id: string; name: string; website: string; description: string; logo?: string; headquarters?: string; isSubscribed?: boolean; }

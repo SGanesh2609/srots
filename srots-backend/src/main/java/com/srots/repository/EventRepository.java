@@ -34,5 +34,7 @@ public interface EventRepository extends JpaRepository<Event, String> {
             @Param("collegeId") String collegeId, 
             @Param("type") Event.EventType type, 
             @Param("search") String search);
+
+	boolean existsByIdAndCreatedBy_Id(String id, String userId);
     
 }

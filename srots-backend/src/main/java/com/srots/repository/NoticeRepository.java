@@ -30,6 +30,8 @@ public interface NoticeRepository extends JpaRepository<Notice, String> {
             @Param("collegeId") String collegeId, 
             @Param("type") Notice.NoticeType type, 
             @Param("search") String search);
+
+	boolean existsByIdAndCreatedBy_Id(String id, String userId);
     
 //    List<Notice> findByCollegeIdOrderByNoticeDateDesc(String collegeId);
     

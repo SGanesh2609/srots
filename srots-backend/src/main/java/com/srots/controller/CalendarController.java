@@ -1,9 +1,11 @@
 package com.srots.controller;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.method.P;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,20 +35,19 @@ public class CalendarController {
 
     // --- 1. SHARED / FILE UPLOADS ---
     @PostMapping("/upload")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('CPH')")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV') or hasAnyRole('CPH','STAFF')")
     public ResponseEntity<UploadResponse> upload(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "collegeCode", required = false) String collegeCode,
+            @RequestParam(value = "collegeId", required = false) String collegeId,
             @RequestParam("category") String category) {
-        
-        return ResponseEntity.ok(calendarService.uploadFile(file, collegeCode, category));
+
+        return ResponseEntity.ok(calendarService.uploadFile(file, collegeId, category));
     }
 
     // --- 2. EVENTS SECTION ---
 
- // --- 2. EVENTS SECTION ---
-
     @GetMapping("/events")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF', 'STUDENT')")
     public ResponseEntity<List<EventDTO>> getEvents(
             @RequestParam String collegeId, 
             @RequestParam(defaultValue = "false") boolean upcoming,
@@ -56,6 +57,7 @@ public class CalendarController {
     }
     
     @GetMapping("/events/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF', 'STUDENT')")
     public ResponseEntity<EventDTO> getEventById(
             @PathVariable String id, 
             @RequestParam String collegeId) {
@@ -63,31 +65,44 @@ public class CalendarController {
     }
 
     @PostMapping("/events")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #dto.collegeId and principal.isCollegeHead)")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV') or (hasAnyRole('CPH', 'STAFF') and principal.collegeId == #dto.collegeId)")
     public ResponseEntity<EventDTO> createEvent(@RequestBody EventDTO dto) {
         return ResponseEntity.ok(calendarService.createEvent(dto));
     }
 
+    
     @PutMapping("/events/{id}")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #dto.collegeId and principal.isCollegeHead)")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV') or " +
+        "(hasRole('CPH') and principal.collegeId == #dto.collegeId) or " +
+        "(hasRole('STAFF') and principal.collegeId == #dto.collegeId and @calendarService.isEventOwnerByUsername(#id, principal.username))")
     public ResponseEntity<EventDTO> updateEvent(@PathVariable String id, @RequestBody EventDTO dto) {
-        // Force the ID from the URL into the DTO to ensure consistency
         dto.setId(id); 
         return ResponseEntity.ok(calendarService.updateEvent(dto));
     }
 
+
+
+//    @DeleteMapping("/events/{id}")
+//    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV') or " +
+//        "(hasRole('CPH') and @calendarService.getUserCollegeId(principal.username) == @calendarService.getEventCollegeId(#id)) or " +
+//        "(hasRole('STAFF') and @calendarService.isEventOwnerByUsername(#id, principal.username))")
+//    public ResponseEntity<?> deleteEvent(@P("id") @PathVariable String id) { 
+//        calendarService.deleteEvent(id);
+//        return ResponseEntity.ok(Map.of("success", true, "message", "Event deleted"));
+//    }
+    
     @DeleteMapping("/events/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('CPH')") 
-    public ResponseEntity<?> deleteEvent(@PathVariable String id) {
-        calendarService.deleteEvent(id);
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF')")
+    public ResponseEntity<?> deleteEvent(@PathVariable String id, Principal principal) { 
+        // We do the heavy lifting inside the service now
+        calendarService.secureDeleteEvent(id, principal.getName());
         return ResponseEntity.ok(Map.of("success", true, "message", "Event deleted"));
     }
 
     // --- 3. NOTICES SECTION ---
 
- // --- 3. NOTICES SECTION ---
-
     @GetMapping("/notices")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF', 'STUDENT')")
     public ResponseEntity<List<NoticeDTO>> getNotices(
             @RequestParam String collegeId,
             @RequestParam(required = false) String type,
@@ -96,6 +111,7 @@ public class CalendarController {
     }
     
     @GetMapping("/notices/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF', 'STUDENT')")
     public ResponseEntity<NoticeDTO> getNoticeById(
             @PathVariable String id, 
             @RequestParam String collegeId) {
@@ -104,23 +120,47 @@ public class CalendarController {
     }
 
     @PostMapping("/notices")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #dto.collegeId and principal.isCollegeHead)")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV') or (hasAnyRole('CPH', 'STAFF') and principal.collegeId == #dto.collegeId)")
     public ResponseEntity<NoticeDTO> createNotice(@RequestBody NoticeDTO dto) {
         return ResponseEntity.ok(calendarService.createNotice(dto));
     }
 
+//    @PutMapping("/notices/{id}")
+//    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV') or " +
+//            "(hasRole('CPH') and @calendarService.getUserCollegeId(principal.username) == #dto.collegeId) or " +
+//            "(hasRole('STAFF') and @calendarService.getUserCollegeId(principal.username) == #dto.collegeId and @calendarService.isNoticeOwnerByUsername(#id, principal.username))")
+//    public ResponseEntity<NoticeDTO> updateNotice(@PathVariable String id, @RequestBody NoticeDTO dto) {
+//        dto.setId(id);
+//        return ResponseEntity.ok(calendarService.updateNotice(dto));
+//    }
+    
+
+
     @PutMapping("/notices/{id}")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #dto.collegeId and principal.isCollegeHead)")
-    public ResponseEntity<NoticeDTO> updateNotice(@PathVariable String id, @RequestBody NoticeDTO dto) {
-        // Standardize: URL ID always overrides body ID
-        dto.setId(id);
-        return ResponseEntity.ok(calendarService.updateNotice(dto));
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH','STAFF')")
+    public ResponseEntity<NoticeDTO> updateNotice(
+        @PathVariable String id, 
+        @RequestBody NoticeDTO dto, 
+        Principal principal
+    ) {
+        dto.setId(id); // Ensure ID consistency
+        return ResponseEntity.ok(calendarService.secureUpdateNotice(id, dto, principal.getName()));
     }
 
+//    @DeleteMapping("/notices/{id}")
+//    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV') or (hasAnyRole('CPH', 'STAFF') and @calendarService.getUserCollegeId(principal) == @calendarService.getNoticeCollegeId(#id) and (@calendarService.isNoticeOwnerByUsername(#id, principal) or hasRole('CPH')))")
+//    public ResponseEntity<?> deleteNotice(@PathVariable String id) {
+//        calendarService.deleteNotice(id);
+//        return ResponseEntity.ok(Map.of("success", true, "message", "Notice deleted"));
+//    }
+    
     @DeleteMapping("/notices/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('CPH')")
-    public ResponseEntity<?> deleteNotice(@PathVariable String id) {
-        calendarService.deleteNotice(id);
-        return ResponseEntity.ok(Map.of("success", true, "message", "Notice deleted"));
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF')")
+    public ResponseEntity<?> deleteNotice(@PathVariable String id, Principal principal) { 
+        // We do the heavy lifting inside the service now
+        calendarService.secureDeleteNotice(id, principal.getName());
+        return ResponseEntity.ok(Map.of("success", true, "message", "Event deleted"));
     }
+    
+    
 }

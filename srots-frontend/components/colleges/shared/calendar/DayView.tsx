@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { CalendarEvent, User } from '../../../../types';
 import { Calendar as CalendarIcon, Clock, User as UserIcon, Edit2, Trash2 } from 'lucide-react';

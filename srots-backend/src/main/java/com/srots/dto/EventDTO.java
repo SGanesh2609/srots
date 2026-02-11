@@ -15,10 +15,9 @@ public class EventDTO {
     private String startTime;
     private String endTime;
     private List<String> targetBranches;
-    private List<String> targetYears;
-//    private String postedBy;
-//    private String createdById;
+    private List<Integer> targetYears;
     private String createdBy;
+    private String createdById;
     private Object schedule;
     
     
@@ -27,9 +26,10 @@ public class EventDTO {
 		super();
 		// TODO Auto-generated constructor stub
 	}
+	
 	public EventDTO(String id, String collegeId, String title, String description, String date, String endDate,
-			String type, String startTime, String endTime, List<String> targetBranches, List<String> targetYears, String createdBy,
-			Object schedule) {
+			String type, String startTime, String endTime, List<String> targetBranches, List<Integer> targetYears,
+			String createdBy, String createdById, Object schedule) {
 		super();
 		this.id = id;
 		this.collegeId = collegeId;
@@ -41,10 +41,12 @@ public class EventDTO {
 		this.startTime = startTime;
 		this.endTime = endTime;
 		this.targetBranches = targetBranches;
-		this.targetYears =targetYears;
+		this.targetYears = targetYears;
 		this.createdBy = createdBy;
+		this.createdById = createdById;
 		this.schedule = schedule;
 	}
+
 	public String getId() {
 		return id;
 	}
@@ -107,11 +109,11 @@ public class EventDTO {
 	}
 	
 	
-	public List<String> getTargetYears() {
+	public List<Integer> getTargetYears() {
 		return targetYears;
 	}
-	public void setTargetYears(List<String> targetYears) {
-		this.targetYears = targetYears;
+	public void setTargetYears(List<Integer> list) {
+		this.targetYears = list;
 	}
 	public String getCreatedBy() {
 		return createdBy;
@@ -124,6 +126,14 @@ public class EventDTO {
 	}
 	public void setSchedule(Object schedule) {
 		this.schedule = schedule;
+	}
+
+	public String getCreatedById() {
+		return createdById;
+	}
+
+	public void setCreatedById(String createdById) {
+		this.createdById = createdById;
 	} 
     
     

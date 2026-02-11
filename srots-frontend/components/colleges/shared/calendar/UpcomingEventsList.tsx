@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { CalendarEvent, User } from '../../../../types';
 import { Calendar as CalendarIcon, Clock, ChevronRight, Edit2, Trash2 } from 'lucide-react';
@@ -29,9 +28,13 @@ export const UpcomingEventsList: React.FC<UpcomingEventsListProps> = ({
                     No upcoming events scheduled.
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-4">
                     {events.map(evt => (
-                        <div key={evt.id} className="border rounded-xl p-4 hover:shadow-md transition-shadow bg-gray-50 group relative">
+                        <div 
+                            key={evt.id} 
+                            onClick={() => onViewEvent(evt)}
+                            className="border rounded-xl p-4 hover:shadow-md transition-shadow bg-gray-50 group relative cursor-pointer"
+                        >
                             {CalendarService.canManageEvent(evt, user) && (
                                 <div className="absolute top-2 right-2 flex gap-1 z-50 pointer-events-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex bg-white shadow-sm border border-gray-200 rounded p-0.5">
@@ -41,7 +44,7 @@ export const UpcomingEventsList: React.FC<UpcomingEventsListProps> = ({
                                 </div>
                             )}
                             
-                            <div className="flex gap-4 items-start pt-2">
+                            <div className="flex gap-4 items-start mb-2">
                                 <div className={`w-12 h-12 rounded-lg flex flex-col items-center justify-center text-white font-bold shrink-0 ${evt.type === 'Holiday' ? 'bg-green-500' : 'bg-blue-600'}`}>
                                     <span className="text-[10px] uppercase">{new Date(evt.date).toLocaleString('default', { month: 'short' })}</span>
                                     <span className="text-lg leading-none">{new Date(evt.date).getDate()}</span>
@@ -55,8 +58,17 @@ export const UpcomingEventsList: React.FC<UpcomingEventsListProps> = ({
                                         <Clock size={12}/> 
                                         {evt.startTime ? `${evt.startTime} - ${evt.endTime || 'End'}` : 'All Day'}
                                     </p>
+                                    <p className="text-xs text-gray-400 mt-1">Created by: {evt.createdBy}</p>
                                 </div>
                             </div>
+                            <div className="text-sm text-gray-700 line-clamp-3">
+                                {evt.description}
+                            </div>
+                            {evt.description && evt.description.length > 100 && (
+                                <div className="text-blue-600 text-xs font-bold mt-2 flex items-center gap-1">
+                                    See more <ChevronRight size={12}/>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

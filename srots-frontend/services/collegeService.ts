@@ -208,11 +208,19 @@ import { College, User, AddressFormData } from '../types';
 
 export const CollegeService = {
 
-  // Get full college (for view in all portals)
-  getCollegeById: async (collegeId: string): Promise<College> => {
-    const response = await api.get(`/colleges/${collegeId}`);
-    return response.data;
-  },
+  getColleges: async (query?: string): Promise<College[]> => {
+        const response = await api.get('/colleges', { params: { query } });
+        return response.data;
+    },
+
+    searchColleges: async (query?: string): Promise<College[]> => {
+        return CollegeService.getColleges(query);
+    },
+
+    getCollegeById: async (id: string): Promise<College> => {
+        const response = await api.get(`/colleges/${id}`);
+        return response.data;
+    },
 
   // getDashboardMetrics: async (collegeId: string): Promise<DashboardMetrics> => {
   //   const response = await api.get(`/colleges/${collegeId}/metrics`); // Adjust endpoint if backend uses different path
@@ -342,11 +350,27 @@ export const CollegeService = {
     return response.data;
   },
 
-  updateCPAdmin: async (user: User, address?: AddressFormData): Promise<User> => {
-    const payload = { ...user, address };
-    const response = await api.put(`/accounts/${user.id}`, payload);
-    return response.data;
-  },
+  // updateCPAdmin: async (user: User, address?: AddressFormData): Promise<User> => {
+  //   const payload = { ...user, address };
+  //   const response = await api.put(`/accounts/${user.id}`, payload);
+  //   return response.data;
+  // },
+
+  updateCPAdmin: async (user: User, address: AddressFormData) => {
+        const payload = {
+            username: user.id, // Assuming id is used as username
+            name: user.fullName,
+            email: user.email,
+            phone: user.phone,
+            department: user.department,
+            aadhaarNumber: user.aadhaarNumber,
+            address,
+            collegeId: user.collegeId,
+            isCollegeHead: user.isCollegeHead || false,
+        };
+        const response = await api.put(`/accounts/${user.id}`, payload);
+        return response.data;
+    },
 
   deleteCPAdmin: async (id: string): Promise<void> => {
     await api.delete(`/accounts/${id}`);
@@ -380,5 +404,129 @@ export const CollegeService = {
     link.click();
     link.remove();
   },
+
+
+    // getCPStaff: async (collegeId: string): Promise<User[]> => {
+    //     const response = await api.get(`/accounts/college/${collegeId}/staff`);
+    //     return response.data;
+    // },
+
+    // updateCPStaff: async (user: User, address: AddressFormData) => {
+    //     return CollegeService.updateCPAdmin(user, address);
+    // },
+
+    // createCPStaff: async (data: any) => {
+    //     const payload = {
+    //         ...data,
+    //         name: data.fullName || data.name,
+    //         role: 'STAFF'
+    //     };
+    //     const response = await api.post('/accounts/staff', payload);
+    //     return response.data;
+    // },
+
+    // toggleCPStaffAccess: async (id: string) => {
+    //     const response = await api.put(`/accounts/${id}/access`);
+    //     return response.data;
+    // },
+
+    // deleteCPStaff: async (id: string) => {
+    //     await api.delete(`/accounts/${id}`);
+    // },
+
+    getCPStaff: async (collegeId: string): Promise<User[]> => {
+        const response = await api.get(`/accounts/college/${collegeId}/role/STAFF`);
+        return response.data;
+    },
+
+    createCPStaff: async (data: any) => {
+        const payload = {
+            username: data.id,
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            department: data.department,
+            aadhaarNumber: data.aadhaar,
+            address: data.address,
+            collegeId: data.collegeId,
+            isCollegeHead: false,
+        };
+        // Backend expects role as a query param
+        const response = await api.post('/accounts/cph?role=STAFF', payload);
+        return response.data;
+    },
+
+    updateCPStaff: async (user: User, address: AddressFormData) => {
+        const payload = {
+            username: user.username,
+            name: user.fullName,
+            email: user.email,
+            phone: user.phone,
+            department: user.department,
+            aadhaarNumber: user.aadhaarNumber,
+            address,
+            collegeId: user.collegeId,
+            isCollegeHead: user.isCollegeHead || false,
+        };
+        const response = await api.put(`/accounts/${user.id}`, payload);
+        return response.data;
+    },
+
+    toggleCPStaffAccess: async (id: string) => {
+        const response = await api.put(`/accounts/${id}/access`);
+        return response.data;
+    },
+
+    deleteCPStaff: async (id: string) => {
+        await api.delete(`/accounts/${id}`);
+    },
+
+    downloadCPTeamTemplate: async () => {
+        // Updated URL to include /api/admin/bulk as per your Controller
+        const response = await api.get('/admin/bulk/template/staff', { 
+            responseType: 'blob', 
+            params: { format: 'excel' } 
+        });
+        
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'Staff_Bulk_Template.xlsx');
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    },
+
+    bulkUploadStaff: async (file: File, collegeId: string) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('collegeId', collegeId);
+        formData.append('reportFormat', 'excel');
+
+        const response = await api.post('/admin/bulk/upload-staff', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            responseType: 'blob'
+        });
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'Staff_Upload_Report.xlsx');
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    },
+
+    addCollegeBranch: async (collegeId: string, branch: { name: string, code: string }) => {
+        const response = await api.post(`/colleges/${collegeId}/branches`, branch);
+        return response.data;
+    },
+
+    removeCollegeBranch: async (collegeId: string, branchCode: string) => {
+        await api.delete(`/colleges/${collegeId}/branches/${branchCode}`);
+    },
+
 
 };

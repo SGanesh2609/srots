@@ -18,7 +18,7 @@ import com.srots.repository.UserRepository;
 import com.srots.service.BulkUploadService;
 
 @RestController
-@RequestMapping("/api/admin/bulk")
+@RequestMapping("/api/v1/admin/bulk")
 public class BulkUploadController {
 
     @Autowired
@@ -89,7 +89,8 @@ public class BulkUploadController {
      * UPLOAD STAFF: Atomic process. 
      */
     @PostMapping("/upload-staff")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SROTS_DEV') or (hasRole('ROLE_CPH'))")
+//    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SROTS_DEV') or (hasRole('ROLE_CPH'))")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH')")
     public ResponseEntity<byte[]> uploadStaff(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "collegeId", required = false) String requestedCollegeId,
@@ -137,7 +138,7 @@ public class BulkUploadController {
     // --- TEMPLATE ENDPOINTS ---
 
     @GetMapping("/template/staff")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SROTS_DEV', 'ROLE_CPH')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH')")
     public ResponseEntity<byte[]> downloadStaffTemplate(@RequestParam(defaultValue = "excel") String format) throws IOException {
         byte[] template = bulkUploadService.generateStaffTemplate(format);
         return createFormattedResponse(template, "staff_bulk_template", format);

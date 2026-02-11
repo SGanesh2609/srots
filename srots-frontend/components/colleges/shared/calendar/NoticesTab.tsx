@@ -1,32 +1,40 @@
-
 import React, { useState } from 'react';
-import { Notice } from '../../../../types';
-import { UploadCloud, Trash2, FileText, Download, Eye, Calendar, X } from 'lucide-react';
+import { Notice, User } from '../../../../types';
+import { UploadCloud, Trash2, FileText, Download, Eye, Calendar, X, Edit2, AlertCircle } from 'lucide-react';
 import { Modal } from '../../../common/Modal';
+import { CalendarService } from '../../../../services/calendarService';
 
-/**
- * Component Name: NoticesTab
- * Directory: components/colleges/shared/calendar/NoticesTab.tsx
- * 
- * Functionality:
- * - Lists Notices and Timetables fetched from DataService.
- * - Allows authorized users to Delete notices.
- * - Provides view/preview functionality for attached PDFs.
- * - Provides download button for attached PDFs.
- */
+// /**
+//  * Component Name: NoticesTab
+//  * Directory: components/colleges/shared/calendar/NoticesTab.tsx
+//  * 
+//  * Functionality:
+//  * - Lists Notices and Timetables fetched from DataService.
+//  * - Allows authorized users to Delete notices.
+//  * - Provides view/preview functionality for attached PDFs.
+//  * - Provides download button for attached PDFs.
+//  */
 
 interface NoticesTabProps {
     notices: Notice[];
     canEdit: boolean;
     onAddNotice: () => void;
+    onEditNotice: (e: React.MouseEvent, notice: Notice) => void;
     onDeleteNotice: (e: React.MouseEvent, id: string) => void;
+    user: User;
 }
 
-export const NoticesTab: React.FC<NoticesTabProps> = ({ notices, canEdit, onAddNotice, onDeleteNotice }) => {
+export const NoticesTab: React.FC<NoticesTabProps> = ({ notices, canEdit, onAddNotice, onEditNotice, onDeleteNotice, user }) => {
     const [previewNotice, setPreviewNotice] = useState<Notice | null>(null);
+    const [previewError, setPreviewError] = useState(false);
 
     const handleViewFile = (notice: Notice) => {
         setPreviewNotice(notice);
+        setPreviewError(false);
+    };
+
+    const handleIframeError = () => {
+        setPreviewError(true);
     };
 
     return (
@@ -46,8 +54,16 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ notices, canEdit, onAddN
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {notices.map(notice => (
                     <div key={notice.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative group flex flex-col h-full">
-                        {canEdit && (
-                            <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        {CalendarService.canManageNotice(notice, user) && (
+                            <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
+                                <button 
+                                    type="button" 
+                                    onClick={(e) => onEditNotice(e, notice)} 
+                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl bg-white shadow-sm border border-blue-100"
+                                    title="Edit Notice"
+                                >
+                                    <Edit2 size={16}/>
+                                </button>
                                 <button 
                                     type="button" 
                                     onClick={(e) => onDeleteNotice(e, notice.id)} 
@@ -76,7 +92,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ notices, canEdit, onAddN
                         <div className="mt-auto pt-6 border-t border-gray-50 space-y-4">
                             <div className="flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                                 <span>Published: {notice.date}</span>
-                                <span>By: {notice.postedBy}</span>
+                                <span>By: {notice.createdBy}</span>
                             </div>
 
                             {notice.fileUrl ? (
@@ -124,17 +140,20 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ notices, canEdit, onAddN
                 >
                     <div className="flex flex-col h-[75vh]">
                         <div className="flex-1 bg-gray-100 relative overflow-hidden">
-                            {/* In a real app, this would be the PDF viewer (e.g., pdf.js or native iframe) */}
-                            <iframe 
-                                src={`${previewNotice.fileUrl}#toolbar=0`} 
-                                className="w-full h-full border-0"
-                                title="Notice Viewer"
-                            />
-                            {/* Fallback overlay for environments where external PDFs are blocked */}
-                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 pointer-events-none opacity-10">
-                                <FileText size={128} className="text-gray-300" />
-                                <p className="font-bold text-gray-400 mt-4">Document Content Loading...</p>
-                            </div>
+                            {!previewError ? (
+                                <iframe 
+                                    src={`${previewNotice.fileUrl}#toolbar=0`} 
+                                    className="w-full h-full border-0"
+                                    title="Notice Viewer"
+                                    onError={handleIframeError}
+                                />
+                            ) : (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 text-center p-8">
+                                    <AlertCircle size={48} className="text-red-500 mb-4" />
+                                    <h3 className="text-lg font-bold text-gray-900 mb-2">Document Unavailable</h3>
+                                    <p className="text-sm text-gray-500">We're sorry, but this document could not be loaded at this time. Please try downloading it directly or contact support if the issue persists.</p>
+                                </div>
+                            )}
                         </div>
                         <div className="p-4 border-t bg-gray-50 flex justify-between items-center">
                             <div className="text-xs text-gray-500 font-medium italic">

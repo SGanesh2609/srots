@@ -9,7 +9,7 @@ public class NoticeDTO {
     private String title;
     private String description;
     private String date;
-//    private String postedBy;
+    private String createdById;
     private String createdBy;
     private String type;
     private String fileName;
@@ -20,19 +20,22 @@ public class NoticeDTO {
 		super();
 		// TODO Auto-generated constructor stub
 	}
-	public NoticeDTO(String id, String collegeId, String title, String description, String date, String createdBy,
-			String type, String fileName, String fileUrl) {
+	
+	public NoticeDTO(String id, String collegeId, String title, String description, String date, String createdById,
+			String createdBy, String type, String fileName, String fileUrl) {
 		super();
 		this.id = id;
 		this.collegeId = collegeId;
 		this.title = title;
 		this.description = description;
 		this.date = date;
+		this.createdById = createdById;
 		this.createdBy = createdBy;
 		this.type = type;
 		this.fileName = fileName;
 		this.fileUrl = fileUrl;
 	}
+
 	public String getId() {
 		return id;
 	}
@@ -86,6 +89,14 @@ public class NoticeDTO {
 	}
 	public void setFileUrl(String fileUrl) {
 		this.fileUrl = fileUrl;
+	}
+
+	public String getCreatedById() {
+		return createdById;
+	}
+
+	public void setCreatedById(String createdById) {
+		this.createdById = createdById;
 	}
     
     

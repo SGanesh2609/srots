@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { CalendarEvent, User, Role, Notice } from '../../../types';
 import { CalendarService } from '../../../services/calendarService';
@@ -20,7 +19,8 @@ interface CalendarViewProps {
 }
 
 export const CalendarView: React.FC<CalendarViewProps> = ({ user }) => {
-  const canEditGlobal = user.role === Role.CPH || user.role === Role.ADMIN;
+  const canCreate = user.role === Role.CPH || user.role === Role.STAFF || user.role === Role.ADMIN;
+  
   const [activeMainTab, setActiveMainTab] = useState<'calendar' | 'notices'>('calendar');
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([]);
@@ -29,18 +29,31 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ user }) => {
   const [viewEvent, setViewEvent] = useState<CalendarEvent | null>(null);
   const [notices, setNotices] = useState<Notice[]>([]);
 
-  // Modals State
+  // Modals State for Events
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [isEditingEvent, setIsEditingEvent] = useState(false);
-  const [showAddNotice, setShowAddNotice] = useState(false);
   
+  // Modals State for Notices
+  const [showNoticeModal, setShowNoticeModal] = useState(false);
+  const [isEditingNotice, setIsEditingNotice] = useState(false);
+  
+  // Initial States for resetting
   const initialEventState: Partial<CalendarEvent> = { 
       title: '', type: 'Drive', date: new Date().toISOString().split('T')[0], 
       targetBranches: ['All'], targetYears: [], description: '',
       startTime: '', endTime: '', schedule: []
   };
+
+  const initialNoticeState: Partial<Notice> = { 
+      title: '', description: '', type: 'Notice', date: new Date().toISOString().split('T')[0]
+  };
+
   const [editingEventData, setEditingEventData] = useState<Partial<CalendarEvent>>(initialEventState);
-  const [deleteState, setDeleteState] = useState<{ isOpen: boolean, type: 'event' | 'notice', id: string | null }>({ isOpen: false, type: 'event', id: null });
+  const [editingNoticeData, setEditingNoticeData] = useState<Partial<Notice>>(initialNoticeState);
+
+  const [deleteState, setDeleteState] = useState<{ isOpen: boolean, type: 'event' | 'notice', id: string | null }>({ 
+      isOpen: false, type: 'event', id: null 
+  });
 
   useEffect(() => {
       refreshData();
@@ -48,16 +61,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ user }) => {
 
   const refreshData = async () => {
       if (!user.collegeId) return;
-      const allEvents = await CalendarService.getEvents(user.collegeId);
-      setEvents(allEvents);
-      
-      const upcoming = await CalendarService.getUpcomingEvents(user.collegeId);
-      setUpcomingEvents(upcoming);
-
-      const allNotices = await CalendarService.getNotices(user.collegeId);
-      setNotices(allNotices);
+      try {
+        const [allEvents, upcoming, allNotices] = await Promise.all([
+            CalendarService.getEvents(user.collegeId),
+            CalendarService.getUpcomingEvents(user.collegeId),
+            CalendarService.getNotices(user.collegeId)
+        ]);
+        setEvents(allEvents);
+        setUpcomingEvents(upcoming);
+        setNotices(allNotices);
+      } catch (error) {
+          console.error("Error refreshing calendar data:", error);
+      }
   };
 
+  // --- NAVIGATION LOGIC ---
   const handleNext = () => {
       const d = new Date(currentDate);
       if (calViewMode === 'Month') d.setMonth(d.getMonth() + 1);
@@ -74,43 +92,72 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ user }) => {
       setCurrentDate(d);
   };
 
+  // --- EVENT HANDLERS ---
   const handleOpenAddEvent = () => {
-      setEditingEventData({ ...initialEventState, date: new Date().toISOString().split('T')[0] });
       setIsEditingEvent(false);
+      setEditingEventData({ ...initialEventState, date: new Date().toISOString().split('T')[0] });
       setShowAddEvent(true);
   };
 
   const handleOpenEditEvent = (e: React.MouseEvent, evt: CalendarEvent) => {
       e.stopPropagation();
-      setEditingEventData(JSON.parse(JSON.stringify(evt)));
       setIsEditingEvent(true);
+      setEditingEventData({ ...evt }); // Shallow copy to trigger state update
       setShowAddEvent(true);
       setViewEvent(null);
   };
 
   const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
-      if(!eventData.title || !eventData.date) return alert("Title and Start Date required.");
-      
-      if(isEditingEvent && eventData.id) {
-          await CalendarService.updateEvent(eventData as CalendarEvent);
-      } else {
-          await CalendarService.createEvent(eventData, user);
-      }
-      
-      refreshData();
-      setShowAddEvent(false);
+    if(!eventData.title || !eventData.date) return alert("Title and Start Date required.");
+    
+    try {
+        if(isEditingEvent && eventData.id) {
+            await CalendarService.updateEvent(eventData as CalendarEvent);
+        } else {
+            await CalendarService.createEvent(eventData, user);
+        }
+        await refreshData();
+        setShowAddEvent(false);
+    } catch (err) {
+        console.error("Save Event Failed", err);
+    }
   };
 
+  // --- NOTICE HANDLERS ---
+  const handleOpenAddNotice = () => {
+      setIsEditingNotice(false);
+      setEditingNoticeData({ ...initialNoticeState }); // Ensure fresh state
+      setShowNoticeModal(true);
+  };
+
+  const handleOpenEditNotice = (e: React.MouseEvent, notice: Notice) => {
+      e.stopPropagation();
+      setIsEditingNotice(true);
+      // Ensure we pass a fresh object reference so Modal's useEffect triggers
+      setEditingNoticeData({ ...notice }); 
+      setShowNoticeModal(true);
+  };
+
+  const handleSaveNotice = async (noticeData: Partial<Notice>) => {
+      if (!noticeData.title || !noticeData.description) return alert("Title and Description are required.");
+      
+      try {
+          if (isEditingNotice && noticeData.id) {
+              await CalendarService.updateNotice(noticeData as Notice);
+          } else {
+              await CalendarService.createNotice(noticeData, user);
+          }
+          await refreshData();
+          setShowNoticeModal(false);
+      } catch (err) {
+          console.error("Save Notice Failed", err);
+      }
+  };
+
+  // --- DELETE LOGIC ---
   const requestDeleteEvent = (e: React.MouseEvent, id: string) => {
       e.stopPropagation();
       setDeleteState({ isOpen: true, type: 'event', id });
-  };
-
-  const handleSaveNotice = async (noticeData: Partial<Notice>, file?: File) => {
-      if (!noticeData.title || !noticeData.description) return alert("Title and Description are required.");
-      await CalendarService.createNotice(noticeData, user, file);
-      refreshData();
-      setShowAddNotice(false);
   };
 
   const requestDeleteNotice = (e: React.MouseEvent, id: string) => {
@@ -119,20 +166,27 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ user }) => {
   };
 
   const confirmDelete = async () => {
-      if (deleteState.id) {
+      if (!deleteState.id) return;
+
+      try {
           if (deleteState.type === 'event') {
               await CalendarService.deleteEvent(deleteState.id);
               if (viewEvent?.id === deleteState.id) setViewEvent(null);
           } else {
               await CalendarService.deleteNotice(deleteState.id);
           }
-          refreshData();
+          await refreshData();
+      } catch (err) {
+          console.error("Delete failed", err);
+          alert("Could not delete. Check your permissions.");
+      } finally {
           setDeleteState({ isOpen: false, type: 'event', id: null });
       }
   };
 
   return (
       <div className="flex flex-col h-[calc(100vh-100px)] overflow-y-auto pb-8 relative">
+          {/* Main Tab Switcher */}
           <div className="sticky top-0 z-30 bg-gray-50 pb-4 pt-1 w-full">
               <div className="flex bg-white rounded-xl border p-1 shadow-sm w-fit mx-auto">
                   <button onClick={() => setActiveMainTab('calendar')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeMainTab === 'calendar' ? 'bg-blue-600 text-white shadow' : 'text-gray-600 hover:bg-gray-50'}`}>Calendar Events</button>
@@ -151,7 +205,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ user }) => {
                               onPrev={handlePrev} 
                               onViewChange={setCalViewMode}
                               onAddEvent={handleOpenAddEvent}
-                              canEdit={canEditGlobal}
+                              canEdit={canCreate}
                           />
                           
                           {calViewMode === 'Month' && <MonthView currentDate={currentDate} events={events} onViewEvent={setViewEvent} />}
@@ -181,15 +235,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ user }) => {
               {activeMainTab === 'notices' && (
                   <NoticesTab 
                       notices={notices} 
-                      canEdit={canEditGlobal} 
-                      onAddNotice={() => setShowAddNotice(true)} 
+                      canEdit={canCreate} 
+                      onAddNotice={handleOpenAddNotice} 
+                      onEditNotice={handleOpenEditNotice}
                       onDeleteNotice={requestDeleteNotice} 
+                      user={user}
                   />
               )}
           </div>
 
+          {/* Modals */}
           <EventFormModal 
-              isOpen={showAddEvent && canEditGlobal} 
+              isOpen={showAddEvent && canCreate} 
               onClose={() => setShowAddEvent(false)} 
               onSave={handleSaveEvent}
               isEditing={isEditingEvent}
@@ -198,9 +255,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ user }) => {
           />
 
           <NoticeFormModal 
-              isOpen={showAddNotice && canEditGlobal} 
-              onClose={() => setShowAddNotice(false)} 
+              isOpen={showNoticeModal && canCreate} 
+              onClose={() => setShowNoticeModal(false)} 
               onSave={handleSaveNotice}
+              isEditing={isEditingNotice}
+              initialData={editingNoticeData}
           />
 
           <EventDetailModal 
@@ -210,15 +269,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ user }) => {
               onEdit={handleOpenEditEvent}
               onDelete={requestDeleteEvent}
               user={user}
-              canEditGlobal={canEditGlobal}
+              canEditGlobal={canCreate}
           />
 
           <DeleteConfirmationModal 
               isOpen={deleteState.isOpen && !!deleteState.id}
-              onClose={() => setDeleteState({isOpen: false, type: 'event', id: null})}
+              onClose={() => setDeleteState({ isOpen: false, type: 'event', id: null})}
               onConfirm={confirmDelete}
               title={`Delete ${deleteState.type === 'event' ? 'Event' : 'Notice'}?`}
-              message="This action cannot be undone."
+              message="This action cannot be undone and will permanently remove the data."
           />
       </div>
   );

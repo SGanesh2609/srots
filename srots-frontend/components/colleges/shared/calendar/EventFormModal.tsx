@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 // Fix: Added ScheduleItem import
 import { CalendarEvent, ScheduleItem } from '../../../../types';
@@ -77,7 +76,6 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Start Date <span className="text-red-500">*</span></label>
-                            {/* Fix: Corrected eventDate typo to eventData */}
                             <input type="date" className="w-full border border-gray-300 bg-white text-gray-900 p-2.5 rounded-lg text-sm" value={eventData.date || ''} onChange={e => { setEventData({...eventData, date: e.target.value}); setErrorMsg(null); }} />
                         </div>
                         <div>
@@ -157,6 +155,21 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
                                     className={`px-3 py-1 text-xs border rounded-full transition-colors ${eventData.targetBranches?.includes(b) ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
                                 >
                                     {b}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Target Years</label>
+                        <div className="flex flex-wrap gap-2">
+                            {[1, 2, 3, 4].map(y => (
+                                <button 
+                                    key={y} 
+                                    onClick={() => setEventData(prev => ({...prev, targetYears: prev.targetYears?.includes(y) ? prev.targetYears.filter(yr => yr !== y) : [...(prev.targetYears || []), y]}))} 
+                                    className={`px-3 py-1 text-xs border rounded-full transition-colors ${eventData.targetYears?.includes(y) ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+                                >
+                                    Year {y}
                                 </button>
                             ))}
                         </div>

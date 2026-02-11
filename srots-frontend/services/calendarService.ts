@@ -1,6 +1,4 @@
-
 import api from './api';
-// Fix: Import Role to support permission logic in canManageEvent
 import { CalendarEvent, Notice, User, Role } from '../types';
 
 export const CalendarService = {
@@ -18,8 +16,7 @@ export const CalendarService = {
         const response = await api.post('/events', { 
             ...event, 
             collegeId: user.collegeId, 
-            // Fix: Use user.fullName instead of user.name
-            postedBy: user.fullName, 
+            createdBy: user.fullName, 
             createdById: user.id 
         });
         return response.data;
@@ -39,17 +36,25 @@ export const CalendarService = {
         return response.data;
     },
 
-    createNotice: async (notice: Partial<Notice>, user: User, file?: File) => {
-        const formData = new FormData();
-        Object.keys(notice).forEach(key => formData.append(key, (notice as any)[key]));
-        formData.append('collegeId', user.collegeId || '');
-        // Fix: Use user.fullName instead of user.name
-        formData.append('postedBy', user.fullName);
-        if (file) formData.append('file', file);
-        
-        const response = await api.post('/notices', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
+    createNotice: async (notice: Partial<Notice>, user: User) => {
+        const response = await api.post('/notices', { 
+            ...notice, 
+            collegeId: user.collegeId, 
+            createdBy: user.fullName
         });
+        return response.data;
+    },
+
+    updateNotice: async (notice: Notice) => {
+        const payload = {
+            ...notice,
+            // Ensure date is a simple string YYYY-MM-DD
+            date: typeof notice.date === 'string' ? notice.date.split('T')[0] : notice.date,
+            // Make sure collegeId is present for the @PreAuthorize check
+            collegeId: notice.collegeId 
+        };
+        
+        const response = await api.put(`/notices/${notice.id}`, payload);
         return response.data;
     },
 
@@ -57,10 +62,29 @@ export const CalendarService = {
         await api.delete(`/notices/${id}`);
     },
 
-    // Fix: Added missing canManageEvent method used by DayView, UpcomingEventsList, and EventDetailModal
+    uploadFile: async (file: File, category: string = 'Calendar') => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('category', category);
+        // Assuming backend derives collegeCode from auth, no need to send
+        
+        const response = await api.post('/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response.data.url;  // Assuming returns {url, name}, but we need url
+    },
+
     canManageEvent: (event: CalendarEvent, user: User): boolean => {
-        if (user.role === Role.ADMIN) return true;
+        if (user.role === Role.ADMIN || user.role === Role.SROTS_DEV) return true;
         if (user.role === Role.CPH && user.collegeId === event.collegeId) return true;
-        return event.createdById === user.id;
+        if (user.role === Role.STAFF && event.createdById === user.id && user.collegeId === event.collegeId) return true;
+        return false;
+    },
+
+    canManageNotice: (notice: Notice, user: User): boolean => {
+        if (user.role === Role.ADMIN || user.role === Role.SROTS_DEV) return true;
+        if (user.role === Role.CPH && user.collegeId === notice.collegeId) return true;
+        if (user.role === Role.STAFF && notice.createdById === user.id && user.collegeId === notice.collegeId) return true;
+        return false;
     }
 };

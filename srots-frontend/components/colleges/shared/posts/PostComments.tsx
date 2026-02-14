@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { Post, User, Role } from '../../../../types';
-import { ThumbsUp, CornerDownRight, X, Send, ShieldCheck, Trash2 } from 'lucide-react';
+import { CornerDownRight, X, Send, ShieldCheck, Trash2 } from 'lucide-react';
 import { PostService } from '../../../../services/postService';
 
 interface PostCommentsProps {
@@ -10,13 +9,13 @@ interface PostCommentsProps {
     hasStudentCommented: boolean;
     onAddComment: (text: string) => void;
     onDeleteComment: (commentId: string) => void;
-    onReaction: (commentId: string) => void;
     onReply: (commentId: string, text: string) => void;
+    // REMOVED: onReaction prop - comment likes not supported
 }
 
 export const PostComments: React.FC<PostCommentsProps> = ({
     post, currentUser, hasStudentCommented,
-    onAddComment, onDeleteComment, onReaction, onReply
+    onAddComment, onDeleteComment, onReply
 }) => {
     const [commentText, setCommentText] = useState('');
     const [replyText, setReplyText] = useState<{ [commentId: string]: string }>({});
@@ -60,8 +59,7 @@ export const PostComments: React.FC<PostCommentsProps> = ({
 
             <div className="space-y-5 max-h-96 overflow-y-auto pr-1 custom-scrollbar">
                 {post.comments.map(comment => {
-                    const hasLikedComment = comment.likedBy?.includes(currentUser.id);
-                    const canDeleteThisComment = PostService.canModeratePost(currentUser, post) || comment.userId === currentUser.id;
+                    const canDeleteThisComment = PostService.canDeleteComment(currentUser, comment, post);
 
                     return (
                         <div key={comment.id} className="group/comment space-y-2">
@@ -79,12 +77,7 @@ export const PostComments: React.FC<PostCommentsProps> = ({
                                     </div>
                                     
                                     <div className="flex items-center gap-4 mt-1 ml-2">
-                                        <button 
-                                            onClick={() => onReaction(comment.id)} 
-                                            className={`flex items-center gap-1 text-[10px] font-bold transition-colors ${hasLikedComment ? 'text-blue-600' : 'text-slate-500 hover:text-blue-600'}`}
-                                        >
-                                            <ThumbsUp size={12}/> {comment.likes || 0}
-                                        </button>
+                                        {/* REMOVED: Like button for comments - not supported */}
                                         
                                         <button 
                                             onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)} 
@@ -122,11 +115,11 @@ export const PostComments: React.FC<PostCommentsProps> = ({
                                         <div className="mt-3 space-y-3 ml-4 border-l-2 border-slate-200 pl-4">
                                             {comment.replies.map(reply => {
                                                 const isOfficial = reply.role === Role.CPH || reply.role === Role.STAFF;
-                                                const hasLikedReply = reply.likedBy?.includes(currentUser.id);
+                                                const canDeleteThisReply = PostService.canDeleteComment(currentUser, reply, post);
 
                                                 return (
-                                                    <div key={reply.id} className="relative">
-                                                        <div className={`${isOfficial ? 'bg-blue-50 border-blue-100' : 'bg-slate-50 border-slate-200'} rounded-2xl px-4 py-2 border shadow-sm relative group/reply`}>
+                                                    <div key={reply.id} className="relative group/reply">
+                                                        <div className={`${isOfficial ? 'bg-blue-50 border-blue-100' : 'bg-slate-50 border-slate-200'} rounded-2xl px-4 py-2 border shadow-sm relative`}>
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 {isOfficial && <ShieldCheck size={12} className="text-blue-600" />}
                                                                 <span className={`text-[11px] font-black uppercase tracking-tight ${isOfficial ? 'text-blue-800' : 'text-slate-700'}`}>
@@ -137,12 +130,16 @@ export const PostComments: React.FC<PostCommentsProps> = ({
                                                             <p className="text-xs text-slate-800 leading-relaxed font-medium">{reply.text}</p>
                                                         </div>
                                                         <div className="flex items-center gap-4 mt-1 ml-2">
-                                                            <button 
-                                                                onClick={() => onReaction(reply.id)} 
-                                                                className={`flex items-center gap-1 text-[10px] font-bold transition-colors ${hasLikedReply ? 'text-blue-600' : 'text-slate-500 hover:text-blue-600'}`}
-                                                            >
-                                                                <ThumbsUp size={10}/> {reply.likes || 0}
-                                                            </button>
+                                                            {/* REMOVED: Like button for replies - not supported */}
+                                                            
+                                                            {canDeleteThisReply && (
+                                                                <button 
+                                                                    onClick={() => onDeleteComment(reply.id)} 
+                                                                    className="text-[10px] text-red-500 font-bold hover:underline flex items-center gap-1 opacity-0 group-hover/reply:opacity-100 transition-opacity"
+                                                                >
+                                                                    <Trash2 size={10}/> Delete
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 );

@@ -555,14 +555,14 @@ export interface User {
   isProfileComplete?: boolean;
 }
 
-export interface Address {
-  city: string;
-  district: string;
-  state: string;
-  pinCode: string;
-  country: string;
-  fullAddress: string;
-}
+// export interface Address {
+//   city: string;
+//   district: string;
+//   state: string;
+//   pinCode: string;
+//   country: string;
+//   fullAddress: string;
+// }
 
 // ... helper interfaces for StudentProfile ...
 // Added salaryRange for ExperienceTab
@@ -614,8 +614,8 @@ export interface StudentProfile {
   mentor: string;
   advisor: string;
   coordinator: string;
-  currentAddress: Address;
-  permanentAddress: Address;
+  currentAddress: AddressFormData;
+  permanentAddress: AddressFormData;
   gapInStudies: boolean;
   gapDuration: string;
   gapReason: string;
@@ -755,94 +755,47 @@ export interface StudentJobView {
     isNotInterested: boolean;
 }
 
+
 /**
  * Interface: Post
- * Maps to 'posts' table in MySQL
+ * Maps to PostResponse from backend
  */
 export interface Post {
-  id: string;          // DB: 'id'
-  collegeId?: string;  // DB: 'college_id'
-  authorId: string;    // DB: 'author_id'
-  authorName: string;  // DB: 'author_name'
-  authorRole?: Role;   // DB: 'author_role'
-  content: string;     // DB: 'content'
-  likes: number;       // DB: 'likes'
-  comments: PostComment[];     // Updated to use PostComment interface
-  createdAt: string;   // DB: 'created_at'
-  images?: string[];
+  id: string;
+  collegeId: string;
+  authorId: string;
+  authorName: string;
+  authorRole: Role;
+  content: string;
+  images: string[];
+  documents: {name: string, url: string}[];
+  likes: number;
+  commentsCount: number; // NEW: Added to match backend
+  isLikedByMe: boolean;
   likedBy: string[];
   commentsDisabled: boolean;
-  documents?: {name: string, url: string}[];
+  createdAt: string;
+  comments: PostComment[];
 }
 
 /**
  * Interface: PostComment
- * Added for Social domain
+ * Maps to CommentResponse from backend
  */
 export interface PostComment {
-    id: string;
-    userId: string;
-    user: string;
-    role: Role;
-    text: string;
-    date: string;
-    likes: number;
-    likedBy: string[];
-    replies: PostComment[];
+  id: string;
+  userId: string;
+  user: string;
+  role: Role;
+  text: string;
+  date: string;
+  likes?: number; // NEW: Added for comment likes
+  likedBy?: string[]; // NEW: Added for tracking who liked
+  parentId?: string | null; // NEW: Added for nested replies
+  replies?: PostComment[]; // NEW: Added for nested structure
 }
 
-// /**
-//  * Interface: CalendarEvent
-//  * Maps to 'events' table in MySQL
-//  */
-// export interface CalendarEvent {
-//   id: string;            // DB: 'id'
-//   collegeId?: string;    // DB: 'college_id'
-//   title: string;         // DB: 'title'
-//   date: string;          // DB: 'date'
-//   type: string;          // DB: 'type'
-//   startTime?: string;    // DB: 'start_time'
-//   endTime?: string;      // DB: 'end_time'
-//   targetBranches?: string[]; // DB: 'target_branches_json'
-//   postedBy?: string;     // DB: 'posted_by'
-//   createdById?: string;  // DB: 'created_by_id'
-  
-//   endDate?: string;
-//   description?: string;
-//   schedule?: ScheduleItem[]; // Updated to use ScheduleItem interface
-//   createdAt?: string; 
-//   targetYears?: number[]; // Added missing targetYears
 
-//   createdBy?: string; // Added createdBy for audit trail
-// }
-
-// /**
-//  * Interface: ScheduleItem
-//  * Added for Timetable builder
-//  */
-// export interface ScheduleItem {
-//     id: string;
-//     timeRange: string;
-//     activity: string;
-//     type: 'Class' | 'Break' | 'Exam' | 'Activity';
-// }
-
-// /**
-//  * Interface: Notice
-//  * Maps to 'notices' table in MySQL
-//  */
-// export interface Notice {
-//   id: string;          // DB: 'id'
-//   collegeId?: string;  // DB: 'college_id'
-//   title: string;       // DB: 'title'
-//   description: string; // DB: 'description'
-//   date: string;        // DB: 'date'
-//   postedBy: string;    // DB: 'posted_by'
-//   type: string;        // DB: 'type'
-//   fileName?: string;   // DB: 'file_name'
-//   fileUrl?: string;    // DB: 'file_url'
-//   createdById?: string; // DB: 'created_by'
-// }
 
 /**
  * Interface: CalendarEvent

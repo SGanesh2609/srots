@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { StudentJobView, Student } from '../../../types';
 import { JobService } from '../../../services/jobService';
@@ -26,13 +25,19 @@ export const StudentJobs: React.FC<StudentJobsProps> = ({ student }) => {
   }, [student.id, searchQuery, statusFilter, typeFilters, workModeFilters]);
 
   const refreshJobs = async () => {
-      const results = await JobService.getJobsForStudent(student.id, {
-          query: searchQuery,
-          status: statusFilter,
-          type: typeFilters.length > 0 ? typeFilters.join(',') : undefined,
-          workMode: workModeFilters.length > 0 ? workModeFilters.join(',') : undefined
-      });
-      setJobs(results);
+      try {
+          const results = await JobService.getJobsForStudent({
+              query: searchQuery,
+              status: statusFilter,
+              type: typeFilters,
+              workMode: workModeFilters
+          });
+          // DEFENSIVE: Ensure results is an array
+          setJobs(Array.isArray(results) ? results : []);
+      } catch (err) {
+          console.error("Student portal job fetch error", err);
+          setJobs([]);
+      }
   };
 
   const toggleTypeFilter = (type: string) => {
@@ -56,7 +61,7 @@ export const StudentJobs: React.FC<StudentJobsProps> = ({ student }) => {
                   student={student} 
                   onBack={() => setSelectedJob(null)}
                   onApply={async (id) => {
-                      await JobService.applyToJob(id, student.id);
+                      await JobService.applyToJob(id);
                       refreshJobs();
                       setSelectedJob(null);
                   }}

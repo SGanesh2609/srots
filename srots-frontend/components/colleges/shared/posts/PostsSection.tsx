@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { PostService } from '../../../../services/postService';
 import { Post, User, Role } from '../../../../types';
@@ -22,7 +21,8 @@ export const PostsSection: React.FC<PostsSectionProps> = ({ user }) => {
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const canCreate = PostService.canModeratePost(user, { collegeId: user.collegeId });
+  // FIXED: Use canCreatePost instead of canModeratePost
+  const canCreate = PostService.canCreatePost(user);
 
   useEffect(() => {
       refreshPosts();
@@ -32,7 +32,8 @@ export const PostsSection: React.FC<PostsSectionProps> = ({ user }) => {
       setIsLoading(true);
       try {
           const authorIdFilter = viewTab === 'my' ? user.id : undefined;
-          const results = await PostService.searchPosts(user.collegeId || '', searchQuery, authorIdFilter);
+          // FIXED: Pass currentUserId as second parameter
+          const results = await PostService.searchPosts(user.collegeId || '', user.id, searchQuery, authorIdFilter);
           setPosts([...results]);
       } finally {
           setIsLoading(false);
@@ -52,7 +53,8 @@ export const PostsSection: React.FC<PostsSectionProps> = ({ user }) => {
 
   const confirmDeletePost = async () => {
       if (deletePostId) {
-          await PostService.deletePost(deletePostId);
+          // FIXED: Pass userId and role
+          await PostService.deletePost(deletePostId, user.id, user.role);
           refreshPosts();
           setDeletePostId(null);
       }
@@ -112,6 +114,7 @@ export const PostsSection: React.FC<PostsSectionProps> = ({ user }) => {
               isOpen={showCreateModal}
               onClose={() => setShowCreateModal(false)}
               onSave={handleCreatePost}
+              user={user} // PASSING USER PROP HERE
           />
 
           <DeleteConfirmationModal

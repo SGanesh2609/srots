@@ -27,7 +27,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, currentUser, onRefresh
   const studentCommented = PostService.hasStudentCommented(currentUser, post);
 
   const handleToggleComments = async () => {
-      await PostService.toggleComments(post.id);
+      await PostService.toggleComments(post.id, currentUser.id, currentUser.role);
       onRefresh();
   };
 
@@ -43,14 +43,11 @@ export const PostCard: React.FC<PostCardProps> = ({ post, currentUser, onRefresh
   };
 
   const handleDeleteComment = async (commentId: string) => {
-      await PostService.deleteComment(post.id, commentId);
+      await PostService.deleteComment(commentId, currentUser.id, currentUser.role);
       onRefresh();
   };
 
-  const handleReaction = async (commentId: string) => {
-      await PostService.toggleCommentLike(post.id, commentId, currentUser.id);
-      onRefresh();
-  };
+  // REMOVED: handleReaction for comment likes - not supported
 
   const handleReply = async (commentId: string, text: string) => {
       await PostService.replyToComment(post.id, commentId, text, currentUser);
@@ -100,8 +97,8 @@ export const PostCard: React.FC<PostCardProps> = ({ post, currentUser, onRefresh
                     hasStudentCommented={studentCommented}
                     onAddComment={handleAddComment}
                     onDeleteComment={handleDeleteComment}
-                    onReaction={handleReaction}
                     onReply={handleReply}
+                    // REMOVED: onReaction prop - comment likes not supported
                 />
             )}
         </div>

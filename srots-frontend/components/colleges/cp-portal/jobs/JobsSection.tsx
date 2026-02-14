@@ -1,13 +1,20 @@
-
 import React, { useState, useEffect } from 'react';
-import { JobService } from '../../../../services/jobService'; // Import JobService directly
+import { JobService } from '../../../../services/jobService';
 import { Job, User } from '../../../../types';
-import { Plus } from 'lucide-react';
+import { Plus, LayoutGrid, FileDiff, FileText, Database } from 'lucide-react';
 import { JobWizard } from './JobWizard';
+import { GlobalResultComparator } from './tools/GlobalResultComparator';
+import { GlobalReportExtractor } from './tools/GlobalReportExtractor';
+import { CustomGathering } from './tools/CustomGathering';
 import { DeleteConfirmationModal } from '../../../../components/common/DeleteConfirmationModal';
 import { JobFilterBar } from './lists/JobFilterBar';
 import { JobsTable } from './lists/JobsTable';
 import { JobDetailView } from './details/JobDetailView';
+
+/**
+ * Component: JobsSection
+ * SYNCED WITH: JobController.java
+ */
 
 interface JobsSectionProps {
   user: User;
@@ -16,11 +23,12 @@ interface JobsSectionProps {
 export const JobsSection: React.FC<JobsSectionProps> = ({ user }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  
-  // Filtering State
+  const [jobsSectionTab, setJobsSectionTab] = useState<'list' | 'comparator' | 'extractor' | 'gathering'>('list');
+
   const [jobOwnerFilter, setJobOwnerFilter] = useState<'all' | 'my'>('all');
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [filterModes, setFilterModes] = useState<string[]>([]);
+  const [filterStatuses, setFilterStatuses] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   const [showCreateJob, setShowCreateJob] = useState(false);
@@ -28,34 +36,26 @@ export const JobsSection: React.FC<JobsSectionProps> = ({ user }) => {
   const [editingJob, setEditingJob] = useState<Job | null>(null); 
   const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
 
-  // Fetch Jobs via Async API
   useEffect(() => {
       refreshJobs();
-  }, [user.collegeId, searchQuery, filterTypes, filterModes, jobOwnerFilter]);
+  }, [user.collegeId, searchQuery, filterTypes, filterModes, filterStatuses, jobOwnerFilter, jobsSectionTab]);
 
   const refreshJobs = async () => {
+      if (jobsSectionTab !== 'list') return;
       const filters = {
           query: searchQuery,
           types: filterTypes,
           modes: filterModes,
+          statuses: filterStatuses,
           ownerId: jobOwnerFilter === 'my' ? user.id : undefined
       };
-      
-      // Async Call
       try {
           const result = await JobService.searchJobs(user.collegeId || '', filters);
-          setJobs(result);
-          // If a job is selected, update it with fresh data from the list
-          if (selectedJob) {
-              const fresh = result.find(j => j.id === selectedJob.id);
-              if (fresh) setSelectedJob(fresh);
-          }
+          setJobs(Array.isArray(result) ? result : []);
       } catch (err) {
-          console.error("Failed to load jobs", err);
+          console.error("Recruitment fetch failed", err);
       }
   };
-
-  const liveJob = selectedJob ? jobs.find(j => j.id === selectedJob.id) || selectedJob : null;
 
   const handleOpenCreateJob = () => {
       setIsEditingJob(false);
@@ -66,7 +66,6 @@ export const JobsSection: React.FC<JobsSectionProps> = ({ user }) => {
 
   const handleOpenEditJob = (e: React.MouseEvent | undefined, jobToEdit: Job) => {
       if(e) { e.preventDefault(); e.stopPropagation(); }
-      if (!jobToEdit) return;
       setEditingJob(jobToEdit);
       setIsEditingJob(true);
       setShowCreateJob(true);
@@ -75,100 +74,139 @@ export const JobsSection: React.FC<JobsSectionProps> = ({ user }) => {
   const requestDeleteJob = (e: React.MouseEvent, id: string) => {
       e.stopPropagation();
       e.preventDefault();
+      const job = jobs.find(j => j.id === id);
+      if (!job || !JobService.canManageJob(user, job)) { 
+          alert("You do not have permission to delete this job."); 
+          return; 
+      }
       setDeleteJobId(id);
   };
 
   const confirmDeleteJob = async () => {
       if (deleteJobId) {
-          await JobService.deleteJob(deleteJobId);
-          setDeleteJobId(null);
-          // If deleted job was selected, deselect it
-          if (selectedJob?.id === deleteJobId) {
-              setSelectedJob(null);
+          try {
+              await JobService.deleteJob(deleteJobId, user.collegeId || '');
+              refreshJobs();
+              if (selectedJob?.id === deleteJobId) setSelectedJob(null);
+          } catch (err) {
+              alert("Delete failed. Please check backend connection.");
+          } finally {
+              setDeleteJobId(null);
           }
-          refreshJobs();
       }
   };
 
-  const handleSaveJob = async (jobData: Partial<Job>) => {
+  /**
+   * FIXED TYPE SIGNATURE: Matches JobWizard exactly
+   */
+  const handleSaveJob = async (
+      jobData: Partial<Job>, 
+      jdFiles: File[], 
+      avoidList?: File
+  ) => {
       try {
+          const collegeCode = user.collegeId || '';
+          
           if (isEditingJob && editingJob) {
-              // 3-Tier Sync: Use Update endpoint for edits
-              // Ensure we pass the ID. JobWizard should populate form state with initialData including ID.
-              // If partial jobData doesn't have ID, we attach it from editingJob.
-              const payload = { ...jobData, id: editingJob.id };
-              await JobService.updateJob(payload);
-              alert("Job updated successfully!");
+              await JobService.updateJob(
+                  editingJob.id, 
+                  jobData, 
+                  jdFiles, 
+                  avoidList || null,
+                  collegeCode
+              );
           } else {
-              // Create new
-              await JobService.createJob(jobData, user);
-              alert("Job posted successfully!");
+              const payload = { 
+                  ...jobData, 
+                  collegeId: user.collegeId,
+                  postedById: user.id
+              };
+              await JobService.createJob(
+                  payload, 
+                  jdFiles, 
+                  avoidList || null,
+                  collegeCode
+              );
           }
           refreshJobs();
           setShowCreateJob(false);
-          setEditingJob(null);
-      } catch(e: any) {
-          console.error(e);
-          alert("Failed to save job: " + e.message);
+      } catch (err: any) {
+          console.error('Job save error:', err);
+          alert("Failed to save job: " + (err.response?.data?.message || err.message || "Unknown error"));
       }
-  };
-
-  // NEW: Handler for downloading lists
-  const handleDownloadJobRelatedList = async (listType: 'applicants' | 'not-interested') => {
-      if (!selectedJob) return;
-      try {
-          await JobService.downloadJobRelatedList(selectedJob.id, listType);
-      } catch (e: any) {
-          alert("Failed to download list: " + e.message);
-      }
-  };
-
-  // Triggered when Rounds Tab uploads a result file
-  const handleRoundResultsUpdated = () => {
-      refreshJobs(); // Reload data to show updated Qualified counts
   };
 
   return (
-      <div className="flex flex-col h-[calc(100vh-8rem)]">
+      <div className="flex flex-col h-full space-y-4">
           {!selectedJob && !showCreateJob && (
-              <div className="space-y-6 h-full flex flex-col">
-                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-none px-2">
-                       <h2 className="text-2xl font-bold text-gray-800">Manage Jobs</h2>
-                       <button onClick={handleOpenCreateJob} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold"><Plus size={16} /> Post Job</button>
-                   </div>
-                   
-                   <JobFilterBar 
-                       searchQuery={searchQuery}
-                       setSearchQuery={setSearchQuery}
-                       jobOwnerFilter={jobOwnerFilter}
-                       setJobOwnerFilter={setJobOwnerFilter}
-                       filterTypes={filterTypes}
-                       toggleFilterType={(t) => setFilterTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
-                       filterModes={filterModes}
-                       toggleFilterMode={(m) => setFilterModes(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m])}
-                   />
-
-                   <JobsTable 
-                       jobs={jobs} 
-                       user={user} 
-                       onSelect={setSelectedJob}
-                       onEdit={handleOpenEditJob}
-                       onDelete={requestDeleteJob}
-                   />
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-xl border shadow-sm">
+                  <div className="flex bg-gray-100 p-1 rounded-lg overflow-x-auto no-scrollbar max-w-full">
+                      {[
+                        { id: 'list', label: 'Recruitments', icon: LayoutGrid },
+                        { id: 'comparator', label: 'Comparator', icon: FileDiff },
+                        { id: 'extractor', label: 'Extractors', icon: FileText },
+                        { id: 'gathering', label: 'Gathering', icon: Database }
+                      ].map(t => (
+                        <button 
+                            key={t.id} 
+                            onClick={() => setJobsSectionTab(t.id as any)} 
+                            className={`px-4 py-2 text-xs font-bold rounded-md flex items-center gap-2 transition-all whitespace-nowrap ${jobsSectionTab === t.id ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            <t.icon size={14}/> {t.label}
+                        </button>
+                      ))}
+                  </div>
+                  {JobService.canCreateJob(user) && (
+                      <button 
+                          onClick={handleOpenCreateJob} 
+                          className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold shadow-lg shadow-blue-100 transition-all active:scale-95"
+                      >
+                          <Plus size={18} /> Post New Drive
+                      </button>
+                  )}
               </div>
           )}
 
-          {selectedJob && (
-              <JobDetailView 
-                  job={liveJob!} 
-                  user={user} 
-                  onBack={() => setSelectedJob(null)}
-                  onEdit={handleOpenEditJob}
-                  onDelete={requestDeleteJob}
-                  onDownloadJobRelatedList={handleDownloadJobRelatedList}
-                  onUploadRoundResult={handleRoundResultsUpdated}
-              />
-          )}
+          <div className="flex-1 overflow-y-auto">
+              {jobsSectionTab === 'list' && (
+                  selectedJob ? (
+                      <JobDetailView 
+                          job={selectedJob} 
+                          user={user} 
+                          onBack={() => setSelectedJob(null)}
+                          onEdit={handleOpenEditJob}
+                          onDelete={requestDeleteJob}
+                          onDownloadJobRelatedList={(type) => JobService.exportJobApplicants(selectedJob.id, type)}
+                          onUploadRoundResult={() => refreshJobs()}
+                      />
+                  ) : (
+                      <div className="space-y-4 h-full flex flex-col">
+                           <JobFilterBar 
+                               searchQuery={searchQuery} 
+                               setSearchQuery={setSearchQuery}
+                               jobOwnerFilter={jobOwnerFilter} 
+                               setJobOwnerFilter={setJobOwnerFilter}
+                               filterTypes={filterTypes} 
+                               toggleFilterType={(t) => setFilterTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+                               filterModes={filterModes} 
+                               toggleFilterMode={(m) => setFilterModes(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m])}
+                               filterStatuses={filterStatuses} 
+                               toggleFilterStatus={(s) => setFilterStatuses(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])}
+                           />
+                           <JobsTable 
+                               jobs={jobs} 
+                               user={user} 
+                               onSelect={setSelectedJob}
+                               onEdit={handleOpenEditJob}
+                               onDelete={requestDeleteJob}
+                           />
+                      </div>
+                  )
+              )}
+              {jobsSectionTab === 'comparator' && <GlobalResultComparator />}
+              {jobsSectionTab === 'extractor' && <GlobalReportExtractor />}
+              {jobsSectionTab === 'gathering' && <CustomGathering user={user} />}
+          </div>
 
           <JobWizard 
               isOpen={showCreateJob}
@@ -184,7 +222,7 @@ export const JobsSection: React.FC<JobsSectionProps> = ({ user }) => {
               onClose={() => setDeleteJobId(null)}
               onConfirm={confirmDeleteJob}
               title="Delete Job Posting?"
-              message="This action cannot be undone."
+              message="Are you sure? This will remove the job and all associated applications permanently."
           />
       </div>
   );

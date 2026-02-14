@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Search } from 'lucide-react';
 
@@ -7,11 +6,13 @@ import { Search } from 'lucide-react';
  * Directory: components/colleges/cp-portal/jobs/lists/JobFilterBar.tsx
  * 
  * Functionality:
- * - Provides the search input for filtering jobs by title or company.
- * - Toggles between "All Jobs" and "My Jobs" (for specific CP Staff/Admin).
- * - Renders filter pills for "Job Type" and "Work Mode".
+ * - Provides the search input for filtering jobs by title, company, or posted by name
+ * - Toggles between "All Jobs" and "My Jobs" (for STAFF)
+ * - Renders filter pills for "Job Type", "Work Mode", and "Status"
  * 
  * Used In: JobsSection (List View)
+ * 
+ * SYNCED WITH: JobController.filterJobsForPortal() - search now includes postedBy.fullName
  */
 
 interface JobFilterBarProps {
@@ -23,13 +24,16 @@ interface JobFilterBarProps {
     toggleFilterType: (type: string) => void;
     filterModes: string[];
     toggleFilterMode: (mode: string) => void;
+    filterStatuses: string[]; // NEW
+    toggleFilterStatus: (status: string) => void; // NEW
 }
 
 export const JobFilterBar: React.FC<JobFilterBarProps> = ({
     searchQuery, setSearchQuery,
     jobOwnerFilter, setJobOwnerFilter,
     filterTypes, toggleFilterType,
-    filterModes, toggleFilterMode
+    filterModes, toggleFilterMode,
+    filterStatuses, toggleFilterStatus // NEW
 }) => {
     return (
         <div className="bg-white p-3 rounded-lg border shadow-sm mb-2 flex flex-col gap-2">
@@ -38,7 +42,7 @@ export const JobFilterBar: React.FC<JobFilterBarProps> = ({
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                     <input 
                         className="w-full pl-9 pr-3 py-1.5 border rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-sm bg-white text-gray-900" 
-                        placeholder="Search by Job Title or Company..." 
+                        placeholder="Search by Job Title, Company, or Posted By..." 
                         value={searchQuery} 
                         onChange={(e) => setSearchQuery(e.target.value)} 
                     />
@@ -78,6 +82,18 @@ export const JobFilterBar: React.FC<JobFilterBarProps> = ({
                         className={`px-2.5 py-0.5 text-[10px] rounded-full border transition-all font-bold ${filterModes.includes(mode) ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
                     >
                         {mode}
+                    </button>
+                ))}
+                <div className="w-px h-3 bg-gray-300 mx-1 shrink-0"></div>
+                {/* NEW: Status Filter */}
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider shrink-0">Status:</span>
+                {['Active', 'Closed', 'Draft'].map(status => (
+                    <button 
+                        key={status} 
+                        onClick={() => toggleFilterStatus(status)} 
+                        className={`px-2.5 py-0.5 text-[10px] rounded-full border transition-all font-bold ${filterStatuses.includes(status) ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                    >
+                        {status}
                     </button>
                 ))}
             </div>

@@ -76,7 +76,7 @@ public class PostController {
     }
 
     @PostMapping("/upload")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF')")
     public ResponseEntity<List<String>> uploadPostFiles(
             @RequestParam("files") List<MultipartFile> files,
             @RequestParam String collegeCode,
@@ -98,7 +98,7 @@ public class PostController {
      * The Service layer will use it to link the post to the specific college.
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF')")
     public ResponseEntity<PostResponse> create(@RequestBody PostRequest request) {
         // request.getCollegeId() is used inside postService.createPost
         return ResponseEntity.ok(postService.createPost(request));
@@ -159,7 +159,7 @@ public class PostController {
 
     
     @PostMapping("/{id}/comments-toggle")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF')")
     public ResponseEntity<Void> toggleComments(
             @PathVariable String id,
             @RequestParam String userId,

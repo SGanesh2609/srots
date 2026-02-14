@@ -68,7 +68,7 @@ public class JobController {
     // --- 1. ADMIN & STAFF MANAGEMENT ---
 
     @PostMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
-    @PreAuthorize("hasAnyRole('CPH', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH', 'STAFF')")
     public ResponseEntity<JobResponseDTO> createJob(
         @RequestPart("jobData") String jsonData, 
         @RequestPart(value = "jdFiles", required = false) MultipartFile[] jdFiles,
@@ -80,7 +80,7 @@ public class JobController {
     }
 
     @PutMapping(value = "/{id}", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
-    @PreAuthorize("hasAnyRole('CPH', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH', 'STAFF')")
     public ResponseEntity<JobResponseDTO> updateJob(
             @PathVariable String id,
             @RequestPart("jobData") String jsonData,
@@ -92,7 +92,7 @@ public class JobController {
     }
     
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('CPH', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH', 'STAFF')")
     public ResponseEntity<Map<String, String>> deleteJob(
             @PathVariable String id, 
             @RequestParam String collegeId) { 
@@ -104,7 +104,7 @@ public class JobController {
     // --- 2. HIRING PROCESS ---
 
     @GetMapping("/{id}/export-list")
-    @PreAuthorize("hasAnyRole('CPH', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH', 'STAFF')")
     public ResponseEntity<byte[]> export(
             @PathVariable String id, 
             @RequestParam(defaultValue = "excel") String format,
@@ -134,7 +134,7 @@ public class JobController {
                 .body(fileData);
     }
     
-    @PreAuthorize("hasAnyRole('CPH', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH', 'STAFF')")
     @GetMapping("/{jobId}/applicants-dashboard")
     public ResponseEntity<JobApplicantsDashboardDTO> getApplicantsDashboard(@PathVariable String jobId) throws Exception {
         return ResponseEntity.ok(applicantService.getJobApplicantsDashboard(jobId));
@@ -150,7 +150,7 @@ public class JobController {
     
     
     @PostMapping("/{jobId}/rounds/{roundIndex}/results")
-    @PreAuthorize("hasAnyRole('CPH', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH', 'STAFF'))")
     public ResponseEntity<?> uploadResults(
             @PathVariable String jobId,
             @PathVariable int roundIndex,
@@ -166,7 +166,7 @@ public class JobController {
     
     
     @GetMapping("/{jobId}/hiring-stats")
-    @PreAuthorize("hasAnyRole('CPH', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH', 'STAFF')")
     public ResponseEntity<JobHiringStatsDTO> getJobStats(@PathVariable String jobId) {
         try {
             return ResponseEntity.ok(applicantService.getJobHiringStats(jobId));
@@ -219,7 +219,7 @@ public class JobController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('CPH', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH', 'STAFF')")
     public ResponseEntity<List<JobResponseDTO>> listAdminJobs(
         @RequestParam String collegeId, 
         @RequestParam(required = false) String query,

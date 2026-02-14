@@ -17,7 +17,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/tools")
-@PreAuthorize("hasAnyRole('CPH', 'STAFF')")
+//@PreAuthorize("hasAnyRole('CPH', 'STAFF')")
 public class PlacementToolsController {
 
     @Autowired 
@@ -38,23 +38,46 @@ public class PlacementToolsController {
     // --- 1. RESULT COMPARATOR FLOW ---
 
     @PostMapping("/compare/headers")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH','STAFF')")
     public ResponseEntity<List<String>> getResultHeaders(@RequestParam("file") MultipartFile file) throws Exception {
         return ResponseEntity.ok(placementToolService.getFileHeaders(file));
     }
 
+//    @PostMapping(value = "/compare", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH','STAFF')")
+//    public ResponseEntity<Map<String, Object>> compare(
+//            @RequestPart("master") MultipartFile master, 
+//            @RequestPart("result") MultipartFile result,
+//            @RequestParam(value = "compareField", required = false) String compareField) throws Exception {
+//        
+//        // Log for debugging to see if it reaches here
+//        System.out.println("Endpoint reached! Field: " + compareField);
+//        
+//        return ResponseEntity.ok(placementToolService.compareFiles(master, result, compareField));
+//    }
+    
     @PostMapping(value = "/compare", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH','STAFF')")
     public ResponseEntity<Map<String, Object>> compare(
-            @RequestPart("master") MultipartFile master, 
-            @RequestPart("result") MultipartFile result,
+            @RequestParam("master") MultipartFile master, 
+            @RequestParam("result") MultipartFile result,
             @RequestParam(value = "compareField", required = false) String compareField) throws Exception {
         
-        // Log for debugging to see if it reaches here
-        System.out.println("Endpoint reached! Field: " + compareField);
+        // Debug Logging
+        System.out.println("Comparison Started");
+        System.out.println("Master File: " + master.getOriginalFilename() + " Size: " + master.getSize());
+        System.out.println("Result File: " + result.getOriginalFilename() + " Size: " + result.getSize());
+        System.out.println("Field: " + compareField);
+
+        if (master.isEmpty() || result.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "One or both files are missing content."));
+        }
         
         return ResponseEntity.ok(placementToolService.compareFiles(master, result, compareField));
     }
 
     @PostMapping("/compare/download")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH','STAFF')")
     public ResponseEntity<byte[]> downloadCompare(@RequestBody List<List<String>> exportData,
                                                  @RequestParam(defaultValue = "excel") String format) throws Exception {
         return generateDownloadResponse(exportData, "Comparison_Result", format);
@@ -63,11 +86,13 @@ public class PlacementToolsController {
     // --- 2. CUSTOM REPORT (Extract/Clean) ---
 
     @PostMapping("/extract/headers")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH','STAFF')")
     public ResponseEntity<List<String>> getFileHeaders(@RequestParam("file") MultipartFile file) throws Exception {
         return ResponseEntity.ok(placementToolService.getFileHeaders(file));
     }
 
     @PostMapping("/extract")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH','STAFF')")
     public ResponseEntity<Map<String, Object>> extract(@RequestParam("file") MultipartFile file,
                                                      @RequestParam(required = false, defaultValue = "") String excludeCols, 
                                                      @RequestParam(required = false, defaultValue = "") String excludeIds) throws Exception {
@@ -77,16 +102,19 @@ public class PlacementToolsController {
     // --- 3. CUSTOM GATHERING ---
 
     @GetMapping("/gather/fields")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH','STAFF')")
     public ResponseEntity<Map<String, List<String>>> getGatheringFields() {
         return ResponseEntity.ok(placementToolService.getAvailableFields());
     }
 
     @PostMapping("/gather")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH','STAFF')")
     public ResponseEntity<Map<String, Object>> gather(@RequestBody Map<String, Object> request) {
         return ResponseEntity.ok(placementToolService.gatherData(request, getAuthenticatedCollegeId()));
     }
     
     @PostMapping("/gather/download")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH','STAFF')")
     public ResponseEntity<byte[]> downloadGathered(@RequestBody List<List<String>> gatheredData, 
                                                   @RequestParam(defaultValue = "excel") String format) throws Exception {
         return generateDownloadResponse(gatheredData, "Gathered_Data", format);

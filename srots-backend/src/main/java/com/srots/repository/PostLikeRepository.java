@@ -8,24 +8,24 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.srots.model.PostLike;
-import com.srots.model.PostLikeId; // Crucial Import
+import com.srots.model.PostLikeId;
 
 @Repository
 public interface PostLikeRepository extends JpaRepository<PostLike, PostLikeId> {
     
+    /**
+     * Count total likes for a post
+     */
+    long countByPostId(String postId);
     
-    // Count total likes for a post
-    long countByIdPostId(String postId);
-
-    // Delete a specific like (Unlike)
-    void deleteByIdPostIdAndIdUserId(String postId, String userId);
-
-    
+    /**
+     * Check if a specific user has liked a specific post
+     */
     boolean existsByIdPostIdAndIdUserId(String postId, String userId);
     
-    @Query("SELECT l.id.userId FROM PostLike l WHERE l.id.postId = :postId")
+    /**
+     * Get list of user IDs who liked a post
+     */
+    @Query("SELECT pl.id.userId FROM PostLike pl WHERE pl.id.postId = :postId")
     List<String> findUserIdsByPostId(@Param("postId") String postId);
-
-	long countByPostId(String postId);
-	
 }

@@ -758,22 +758,361 @@
 //     }
 // };
 
+// import api from './api';
+// import { Job, User, StudentJobView, Student, Role } from '../types';
+// import { downloadExcelFile } from '../utils/fileHelper';
+
+// /**
+//  * ═══════════════════════════════════════════════════════════════
+//  * COMPLETE FIXED jobService.ts
+//  * 
+//  * KEY FIXES:
+//  * 1. Removed hardcoded statusFilters - let backend handle it
+//  * 2. Fixed parameter names to match backend exactly
+//  * 3. Proper enum conversion for all filters
+//  * ═══════════════════════════════════════════════════════════════
+//  */
+// export const JobService = {
+//     // ============ PLACEMENT TOOLS ============
+
+//     getComparisonHeaders: async (file: File): Promise<string[]> => {
+//         const formData = new FormData();
+//         formData.append('file', file);
+//         const response = await api.post('/tools/compare/headers', formData, {
+//             headers: { 'Content-Type': 'multipart/form-data' }
+//         });
+//         return response.data;
+//     },
+
+//     compareResultFiles: async (masterFile: File, resultFile: File, compareField?: string): Promise<any> => {
+//         const formData = new FormData();
+//         formData.append('master', masterFile);
+//         formData.append('result', resultFile);
+//         if (compareField) formData.append('compareField', compareField);
+        
+//         const response = await api.post('/tools/compare', formData, {
+//             headers: { 'Content-Type': 'multipart/form-data' }
+//         });
+//         return response.data;
+//     },
+
+//     downloadComparisonReport: async (exportData: any[][], format: 'excel' | 'csv' = 'excel'): Promise<void> => {
+//         const response = await api.post('/tools/compare/download', exportData, {
+//             params: { format },
+//             responseType: 'blob',
+//             headers: { 'Content-Type': 'application/json' }
+//         });
+//         const filename = `Comparison_Result.${format === 'csv' ? 'csv' : 'xlsx'}`;
+//         downloadExcelFile(response.data, filename);
+//     },
+
+//     getExtractionHeaders: async (file: File): Promise<string[]> => {
+//         const formData = new FormData();
+//         formData.append('file', file);
+//         const response = await api.post('/tools/extract/headers', formData, {
+//             headers: { 'Content-Type': 'multipart/form-data' }
+//         });
+//         return response.data;
+//     },
+
+//     processCustomReport: async (file: File, excludeCols: string, excludeIds: string): Promise<any> => {
+//         const formData = new FormData();
+//         formData.append('file', file);
+//         const response = await api.post('/tools/extract', formData, {
+//             params: { excludeCols, excludeIds },
+//             headers: { 'Content-Type': 'multipart/form-data' }
+//         });
+//         return response.data;
+//     },
+
+//     downloadCustomReport: async (data: any[][], format: 'excel' | 'csv' = 'excel'): Promise<void> => {
+//         const response = await api.post('/tools/compare/download', data, {
+//             params: { format },
+//             responseType: 'blob',
+//             headers: { 'Content-Type': 'application/json' }
+//         });
+//         const filename = `Extracted_Report.${format === 'csv' ? 'csv' : 'xlsx'}`;
+//         downloadExcelFile(response.data, filename);
+//     },
+
+//     getGatheringFields: async (): Promise<Record<string, string[]>> => {
+//         const response = await api.get('/tools/gather/fields');
+//         return response.data;
+//     },
+
+//     generateCustomGatheringReport: async (collegeId: string, rollNumbers: string, fields: string[]): Promise<any> => {
+//         const response = await api.post('/tools/gather', { rollNumbers, fields });
+//         return response.data;
+//     },
+
+//     downloadGatheredDataReport: async (data: any[][], format: 'excel' | 'csv' = 'excel'): Promise<void> => {
+//         const response = await api.post('/tools/gather/download', data, {
+//             params: { format },
+//             responseType: 'blob',
+//             headers: { 'Content-Type': 'application/json' }
+//         });
+//         const filename = `Gathered_Data.${format === 'csv' ? 'csv' : 'xlsx'}`;
+//         downloadExcelFile(response.data, filename);
+//     },
+
+//     createJob: async (jobData: any, jdFiles: File[], avoidList: File | null, collegeCode: string): Promise<Job> => {
+//         const formData = new FormData();
+//         formData.append('jobData', JSON.stringify(jobData));
+//         if (jdFiles && jdFiles.length > 0) {
+//             jdFiles.forEach(file => formData.append('jdFiles', file));
+//         }
+//         if (avoidList) formData.append('avoidList', avoidList);
+        
+//         const response = await api.post(`/jobs?collegeCode=${collegeCode}`, formData, {
+//             headers: { 'Content-Type': 'multipart/form-data' }
+//         });
+//         return response.data;
+//     },
+
+//     updateJob: async (id: string, jobData: any, jdFiles: File[], avoidList: File | null, collegeCode: string): Promise<Job> => {
+//         const formData = new FormData();
+//         formData.append('jobData', JSON.stringify(jobData));
+//         if (jdFiles && jdFiles.length > 0) {
+//             jdFiles.forEach(file => formData.append('jdFiles', file));
+//         }
+//         if (avoidList) formData.append('avoidList', avoidList);
+        
+//         const response = await api.put(`/jobs/${id}?collegeCode=${collegeCode}`, formData, {
+//             headers: { 'Content-Type': 'multipart/form-data' }
+//         });
+//         return response.data;
+//     },
+
+//     deleteJob: async (id: string, collegeId: string): Promise<void> => {
+//         await api.delete(`/jobs/${id}`, { params: { collegeId } });
+//     },
+
+//     searchJobs: async (collegeId: string, filters: any): Promise<Job[]> => {
+//         const params: any = { collegeId, query: filters.query || null };
+
+//         if (filters.types && filters.types.length > 0) {
+//             params.jobType = filters.types.map((t: string) => 
+//                 t.replace(/-/g, '_').replace(/ /g, '_')
+//             ).join(',');
+//         }
+
+//         if (filters.modes && filters.modes.length > 0) {
+//             params.workMode = filters.modes.map((m: string) => 
+//                 m.replace(/-/g, '_').replace(/ /g, '_')
+//             ).join(',');
+//         }
+
+//         if (filters.statuses && filters.statuses.length > 0) {
+//             params.status = filters.statuses.join(',');
+//         }
+
+//         if (filters.ownerId) {
+//             params.postedById = filters.ownerId;
+//         }
+
+//         const response = await api.get('/jobs', { params });
+//         return response.data;
+//     },
+
+//     /**
+//      * ═══════════════════════════════════════════════════════════════
+//      * CRITICAL FIX: getJobsForStudent() 
+//      * 
+//      * BACKEND PARAMETERS:
+//      * @RequestParam(defaultValue = "all") String filterType
+//      * @RequestParam(required = false) String searchQuery
+//      * @RequestParam(name = "jobTypeFilters", required = false) List<String> jobTypeFilters
+//      * @RequestParam(name = "workModeFilters", required = false) List<String> workModeFilters
+//      * @RequestParam(name = "statusFilters", required = false) List<String> statusFilters
+//      * ═══════════════════════════════════════════════════════════════
+//      */
+//     getJobsForStudent: async (filters: any): Promise<StudentJobView[]> => {
+//         console.log('🔍 [JobService] Input filters:', filters);
+        
+//         // Build query parameters matching backend EXACTLY
+//         const params: any = {
+//             // PARAM 1: filterType (main tab)
+//             filterType: filters.status || 'all',
+            
+//             // PARAM 2: searchQuery
+//             searchQuery: filters.query || null
+//         };
+
+//         // PARAM 3: jobTypeFilters
+//         // Frontend: ["Full-Time", "Internship"]
+//         // Backend needs: "Full_Time,Internship" as COMMA-SEPARATED STRING
+//         if (filters.type && filters.type.length > 0) {
+//             const converted = filters.type.map((t: string) => 
+//                 t.replace(/-/g, '_').replace(/ /g, '_')
+//             );
+//             // CRITICAL: Send as comma-separated string, NOT array
+//             params.jobTypeFilters = converted.join(',');
+            
+//             console.log('🔧 Job Type:', {
+//                 original: filters.type,
+//                 converted: converted,
+//                 sent: params.jobTypeFilters
+//             });
+//         }
+
+//         // PARAM 4: workModeFilters
+//         // Frontend: ["On-site", "Remote"]
+//         // Backend needs: "On_Site,Remote" as COMMA-SEPARATED STRING
+//         if (filters.workMode && filters.workMode.length > 0) {
+//             const converted = filters.workMode.map((m: string) => 
+//                 m.replace(/-/g, '_').replace(/ /g, '_')
+//             );
+//             // CRITICAL: Send as comma-separated string, NOT array
+//             params.workModeFilters = converted.join(',');
+            
+//             console.log('🔧 Work Mode:', {
+//                 original: filters.workMode,
+//                 converted: converted,
+//                 sent: params.workModeFilters
+//             });
+//         }
+
+//         // PARAM 5: statusFilters
+//         // DON'T hardcode - let backend decide based on filterType
+//         // Backend will show Active/Closed jobs based on main filter
+//         if (filters.jobStatus && filters.jobStatus.length > 0) {
+//             params.statusFilters = filters.jobStatus.join(',');
+//         }
+
+//         console.log('📤 [JobService] Sending params:', params);
+
+//         const response = await api.get('/jobs/student/portal', { params });
+        
+//         console.log('✅ [JobService] Response:', response.data.length, 'jobs');
+        
+//         // Map backend DTO to frontend interface
+//         const mapped: StudentJobView[] = response.data.map((dto: any) => ({
+//             job: {
+//                 ...dto.job,
+//                 company: dto.job.companyName || dto.job.company,
+//                 type: dto.job.jobType || dto.job.type,
+//                 workArrangement: dto.job.workMode || dto.job.workArrangement
+//             },
+//             isApplied: dto.applied || false,
+//             isEligible: dto.eligible || false,
+//             isExpired: dto.expired || false,
+//             isNotInterested: dto.notInterested || false,
+//             eligibilityReason: dto.reason || dto.notEligibilityReason || ''
+//         }));
+        
+//         return mapped;
+//     },
+
+//     getJobDetailsForStudent: async (jobId: string, studentId: string): Promise<StudentJobView> => {
+//         const jobResponse = await api.get(`/jobs/${jobId}`);
+//         const job = jobResponse.data;
+        
+//         const isExpired = new Date(job.applicationDeadline) < new Date();
+//         const isApplied = job.applicants?.includes(studentId) || false;
+        
+//         return {
+//             job: {
+//                 ...job,
+//                 company: job.companyName || job.company,
+//                 type: job.jobType || job.type,
+//                 workArrangement: job.workMode || job.workArrangement
+//             },
+//             isApplied,
+//             isEligible: true,
+//             isExpired,
+//             isNotInterested: job.notInterested?.includes(studentId) || false,
+//             eligibilityReason: ''
+//         };
+//     },
+
+//     getJobDetail: async (jobId: string): Promise<Job> => {
+//         const response = await api.get(`/jobs/${jobId}`);
+//         const job = response.data;
+        
+//         return {
+//             ...job,
+//             company: job.companyName || job.company,
+//             type: job.jobType || job.type,
+//             workArrangement: job.workMode || job.workArrangement
+//         };
+//     },
+
+//     applyToJob: async (jobId: string): Promise<void> => {
+//         await api.post(`/jobs/${jobId}/apply`);
+//     },
+
+//     getJobApplicantsDashboard: async (jobId: string): Promise<any> => {
+//         const response = await api.get(`/jobs/${jobId}/applicants-dashboard`);
+//         return response.data;
+//     },
+
+//     getJobApplicants: async (jobId: string): Promise<Student[]> => {
+//         const dashboard = await api.get(`/jobs/${jobId}/applicants-dashboard`);
+//         return dashboard.data.students || [];
+//     },
+
+//     searchEligibleStudents: async (jobId: string, filters: any): Promise<Student[]> => {
+//         return [];
+//     },
+
+//     processRoundResultUpload: async (jobId: string, roundIndex: number, file: File): Promise<any> => {
+//         const formData = new FormData();
+//         formData.append('file', file);
+//         const response = await api.post(`/jobs/${jobId}/rounds/${roundIndex}/results`, formData, {
+//             headers: { 'Content-Type': 'multipart/form-data' }
+//         });
+//         return response.data;
+//     },
+
+//     getJobHiringStats: async (jobId: string): Promise<any> => {
+//         const response = await api.get(`/jobs/${jobId}/hiring-stats`);
+//         return response.data;
+//     },
+
+//     exportJobApplicants: async (jobId: string, type: string, format: string = 'excel') => {
+//         const response = await api.get(`/jobs/${jobId}/export-list`, { 
+//             params: { type, format },
+//             responseType: 'blob'
+//         });
+//         downloadExcelFile(response.data, `Job_${type}_${jobId}.${format === 'csv' ? 'csv' : 'xlsx'}`);
+//     },
+    
+//     exportJobEligibleStudents: async (jobId: string, format: string = 'excel') => {
+//         const response = await api.get(`/jobs/${jobId}/export-list`, { 
+//             params: { type: 'eligible', format },
+//             responseType: 'blob'
+//         });
+//         downloadExcelFile(response.data, `Eligible_Students_${jobId}.${format === 'csv' ? 'csv' : 'xlsx'}`);
+//     },
+
+//     getStudentApplications: async (): Promise<any[]> => {
+//         const response = await api.get('/jobs/students/applications/my');
+//         return response.data;
+//     },
+
+//     getStudentApplicationTimeline: async (jobId: string): Promise<any[]> => {
+//         const response = await api.get(`/jobs/students/${jobId}/timeline`);
+//         return response.data;
+//     },
+
+//     canManageJob: (user: User, job: Job): boolean => {
+//         if (user.role === Role.ADMIN || user.role === Role.SROTS_DEV) return true;
+//         if (user.role === Role.CPH && user.collegeId === job.collegeId) return true;
+//         return user.role === Role.STAFF && job.postedById === user.id;
+//     },
+
+//     canCreateJob: (user: User): boolean => {
+//         return [Role.ADMIN, Role.SROTS_DEV, Role.CPH, Role.STAFF].includes(user.role);
+//     }
+// };
+
 import api from './api';
 import { Job, User, StudentJobView, Student, Role } from '../types';
 import { downloadExcelFile } from '../utils/fileHelper';
 
-/**
- * ═══════════════════════════════════════════════════════════════
- * COMPLETE FIXED jobService.ts
- * 
- * KEY FIXES:
- * 1. Removed hardcoded statusFilters - let backend handle it
- * 2. Fixed parameter names to match backend exactly
- * 3. Proper enum conversion for all filters
- * ═══════════════════════════════════════════════════════════════
- */
 export const JobService = {
-    // ============ PLACEMENT TOOLS ============
+
+    // ── Placement Tools ───────────────────────────────────────────────────────
 
     getComparisonHeaders: async (file: File): Promise<string[]> => {
         const formData = new FormData();
@@ -789,7 +1128,6 @@ export const JobService = {
         formData.append('master', masterFile);
         formData.append('result', resultFile);
         if (compareField) formData.append('compareField', compareField);
-        
         const response = await api.post('/tools/compare', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
@@ -798,12 +1136,10 @@ export const JobService = {
 
     downloadComparisonReport: async (exportData: any[][], format: 'excel' | 'csv' = 'excel'): Promise<void> => {
         const response = await api.post('/tools/compare/download', exportData, {
-            params: { format },
-            responseType: 'blob',
+            params: { format }, responseType: 'blob',
             headers: { 'Content-Type': 'application/json' }
         });
-        const filename = `Comparison_Result.${format === 'csv' ? 'csv' : 'xlsx'}`;
-        downloadExcelFile(response.data, filename);
+        downloadExcelFile(response.data, `Comparison_Result.${format === 'csv' ? 'csv' : 'xlsx'}`);
     },
 
     getExtractionHeaders: async (file: File): Promise<string[]> => {
@@ -827,12 +1163,10 @@ export const JobService = {
 
     downloadCustomReport: async (data: any[][], format: 'excel' | 'csv' = 'excel'): Promise<void> => {
         const response = await api.post('/tools/compare/download', data, {
-            params: { format },
-            responseType: 'blob',
+            params: { format }, responseType: 'blob',
             headers: { 'Content-Type': 'application/json' }
         });
-        const filename = `Extracted_Report.${format === 'csv' ? 'csv' : 'xlsx'}`;
-        downloadExcelFile(response.data, filename);
+        downloadExcelFile(response.data, `Extracted_Report.${format === 'csv' ? 'csv' : 'xlsx'}`);
     },
 
     getGatheringFields: async (): Promise<Record<string, string[]>> => {
@@ -847,22 +1181,19 @@ export const JobService = {
 
     downloadGatheredDataReport: async (data: any[][], format: 'excel' | 'csv' = 'excel'): Promise<void> => {
         const response = await api.post('/tools/gather/download', data, {
-            params: { format },
-            responseType: 'blob',
+            params: { format }, responseType: 'blob',
             headers: { 'Content-Type': 'application/json' }
         });
-        const filename = `Gathered_Data.${format === 'csv' ? 'csv' : 'xlsx'}`;
-        downloadExcelFile(response.data, filename);
+        downloadExcelFile(response.data, `Gathered_Data.${format === 'csv' ? 'csv' : 'xlsx'}`);
     },
+
+    // ── Job CRUD ──────────────────────────────────────────────────────────────
 
     createJob: async (jobData: any, jdFiles: File[], avoidList: File | null, collegeCode: string): Promise<Job> => {
         const formData = new FormData();
         formData.append('jobData', JSON.stringify(jobData));
-        if (jdFiles && jdFiles.length > 0) {
-            jdFiles.forEach(file => formData.append('jdFiles', file));
-        }
+        if (jdFiles?.length) jdFiles.forEach(f => formData.append('jdFiles', f));
         if (avoidList) formData.append('avoidList', avoidList);
-        
         const response = await api.post(`/jobs?collegeCode=${collegeCode}`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
@@ -872,11 +1203,8 @@ export const JobService = {
     updateJob: async (id: string, jobData: any, jdFiles: File[], avoidList: File | null, collegeCode: string): Promise<Job> => {
         const formData = new FormData();
         formData.append('jobData', JSON.stringify(jobData));
-        if (jdFiles && jdFiles.length > 0) {
-            jdFiles.forEach(file => formData.append('jdFiles', file));
-        }
+        if (jdFiles?.length) jdFiles.forEach(f => formData.append('jdFiles', f));
         if (avoidList) formData.append('avoidList', avoidList);
-        
         const response = await api.put(`/jobs/${id}?collegeCode=${collegeCode}`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
@@ -887,180 +1215,161 @@ export const JobService = {
         await api.delete(`/jobs/${id}`, { params: { collegeId } });
     },
 
+    /**
+     * searchJobs – used by CPH/STAFF portal.
+     *
+     * FIXED: passes postedById when jobOwnerFilter = 'my' so backend can filter.
+     * STAFF sees ALL college jobs by default (canEdit controlled by canManageJob).
+     *
+     * Backend @RequestParam names:
+     *   collegeId, query, jobType, workMode, status, postedById (NEW)
+     */
     searchJobs: async (collegeId: string, filters: any): Promise<Job[]> => {
-        const params: any = { collegeId, query: filters.query || null };
+        const params: any = {
+            collegeId,
+            query: filters.query || null,
+        };
 
-        if (filters.types && filters.types.length > 0) {
-            params.jobType = filters.types.map((t: string) => 
-                t.replace(/-/g, '_').replace(/ /g, '_')
-            ).join(',');
+        // Job type – convert display to enum name e.g. "Full-Time" → "Full_Time"
+        if (filters.types?.length) {
+            params.jobType = filters.types
+                .map((t: string) => t.replace(/-/g, '_').replace(/ /g, '_'))
+                .join(',');
         }
 
-        if (filters.modes && filters.modes.length > 0) {
-            params.workMode = filters.modes.map((m: string) => 
-                m.replace(/-/g, '_').replace(/ /g, '_')
-            ).join(',');
+        // Work mode – e.g. "On-site" → "On_Site"
+        if (filters.modes?.length) {
+            params.workMode = filters.modes
+                .map((m: string) => m.replace(/-/g, '_').replace(/ /g, '_'))
+                .join(',');
         }
 
-        if (filters.statuses && filters.statuses.length > 0) {
+        // Job status – "Active" | "Closed" | "Draft"
+        if (filters.statuses?.length) {
             params.status = filters.statuses.join(',');
         }
 
+        // "My Jobs" – pass userId so backend filters by postedById
         if (filters.ownerId) {
             params.postedById = filters.ownerId;
         }
 
         const response = await api.get('/jobs', { params });
-        return response.data;
+
+        // Map backend JobResponseDTO → types.ts Job (field names now match, just spread)
+        return (response.data as any[]).map(mapDtoToJob);
     },
+
+    // ── Student Portal ────────────────────────────────────────────────────────
 
     /**
-     * ═══════════════════════════════════════════════════════════════
-     * CRITICAL FIX: getJobsForStudent() 
-     * 
-     * BACKEND PARAMETERS:
-     * @RequestParam(defaultValue = "all") String filterType
-     * @RequestParam(required = false) String searchQuery
-     * @RequestParam(name = "jobTypeFilters", required = false) List<String> jobTypeFilters
-     * @RequestParam(name = "workModeFilters", required = false) List<String> workModeFilters
-     * @RequestParam(name = "statusFilters", required = false) List<String> statusFilters
-     * ═══════════════════════════════════════════════════════════════
+     * getJobsForStudent – sends all 5 backend params.
+     *
+     * Backend params:
+     *   filterType, searchQuery, jobTypeFilters, workModeFilters, statusFilters
      */
     getJobsForStudent: async (filters: any): Promise<StudentJobView[]> => {
-        console.log('🔍 [JobService] Input filters:', filters);
-        
-        // Build query parameters matching backend EXACTLY
         const params: any = {
-            // PARAM 1: filterType (main tab)
-            filterType: filters.status || 'all',
-            
-            // PARAM 2: searchQuery
-            searchQuery: filters.query || null
+            filterType:  filters.status || 'all',
+            searchQuery: filters.query  || null,
         };
 
-        // PARAM 3: jobTypeFilters
-        // Frontend: ["Full-Time", "Internship"]
-        // Backend needs: "Full_Time,Internship" as COMMA-SEPARATED STRING
-        if (filters.type && filters.type.length > 0) {
-            const converted = filters.type.map((t: string) => 
-                t.replace(/-/g, '_').replace(/ /g, '_')
-            );
-            // CRITICAL: Send as comma-separated string, NOT array
-            params.jobTypeFilters = converted.join(',');
-            
-            console.log('🔧 Job Type:', {
-                original: filters.type,
-                converted: converted,
-                sent: params.jobTypeFilters
-            });
+        if (filters.type?.length) {
+            params.jobTypeFilters = filters.type
+                .map((t: string) => t.replace(/-/g, '_').replace(/ /g, '_'))
+                .join(',');
         }
 
-        // PARAM 4: workModeFilters
-        // Frontend: ["On-site", "Remote"]
-        // Backend needs: "On_Site,Remote" as COMMA-SEPARATED STRING
-        if (filters.workMode && filters.workMode.length > 0) {
-            const converted = filters.workMode.map((m: string) => 
-                m.replace(/-/g, '_').replace(/ /g, '_')
-            );
-            // CRITICAL: Send as comma-separated string, NOT array
-            params.workModeFilters = converted.join(',');
-            
-            console.log('🔧 Work Mode:', {
-                original: filters.workMode,
-                converted: converted,
-                sent: params.workModeFilters
-            });
+        if (filters.workMode?.length) {
+            params.workModeFilters = filters.workMode
+                .map((m: string) => m.replace(/-/g, '_').replace(/ /g, '_'))
+                .join(',');
         }
 
-        // PARAM 5: statusFilters
-        // DON'T hardcode - let backend decide based on filterType
-        // Backend will show Active/Closed jobs based on main filter
-        if (filters.jobStatus && filters.jobStatus.length > 0) {
-            params.statusFilters = filters.jobStatus.join(',');
-        }
-
-        console.log('📤 [JobService] Sending params:', params);
+        // statusFilters intentionally omitted – backend handles via filterType logic
 
         const response = await api.get('/jobs/student/portal', { params });
-        
-        console.log('✅ [JobService] Response:', response.data.length, 'jobs');
-        
-        // Map backend DTO to frontend interface
-        const mapped: StudentJobView[] = response.data.map((dto: any) => ({
-            job: {
-                ...dto.job,
-                company: dto.job.companyName || dto.job.company,
-                type: dto.job.jobType || dto.job.type,
-                workArrangement: dto.job.workMode || dto.job.workArrangement
-            },
-            isApplied: dto.applied || false,
-            isEligible: dto.eligible || false,
-            isExpired: dto.expired || false,
-            isNotInterested: dto.notInterested || false,
-            eligibilityReason: dto.reason || dto.notEligibilityReason || ''
-        }));
-        
-        return mapped;
-    },
 
-    getJobDetailsForStudent: async (jobId: string, studentId: string): Promise<StudentJobView> => {
-        const jobResponse = await api.get(`/jobs/${jobId}`);
-        const job = jobResponse.data;
-        
-        const isExpired = new Date(job.applicationDeadline) < new Date();
-        const isApplied = job.applicants?.includes(studentId) || false;
-        
-        return {
-            job: {
-                ...job,
-                company: job.companyName || job.company,
-                type: job.jobType || job.type,
-                workArrangement: job.workMode || job.workArrangement
-            },
-            isApplied,
-            isEligible: true,
-            isExpired,
-            isNotInterested: job.notInterested?.includes(studentId) || false,
-            eligibilityReason: ''
-        };
+        return (response.data as any[]).map((dto: any): StudentJobView => ({
+            job: mapDtoToJob(dto.job),
+            isApplied:       dto.applied       || false,
+            isEligible:      dto.eligible      || false,
+            isExpired:       dto.expired       || false,
+            isNotInterested: dto.notInterested || false,
+            eligibilityReason: dto.notEligibilityReason || dto.reason || '',
+        }));
     },
 
     getJobDetail: async (jobId: string): Promise<Job> => {
         const response = await api.get(`/jobs/${jobId}`);
-        const job = response.data;
-        
-        return {
-            ...job,
-            company: job.companyName || job.company,
-            type: job.jobType || job.type,
-            workArrangement: job.workMode || job.workArrangement
-        };
+        return mapDtoToJob(response.data);
     },
 
     applyToJob: async (jobId: string): Promise<void> => {
         await api.post(`/jobs/${jobId}/apply`);
     },
 
+    // ── Applicants dashboard (Applicants tab) ─────────────────────────────────
+
+    /**
+     * Returns the full dashboard object from backend.
+     * Shape: { title, totalApplicants, globalStats, roundSummary, headers, students }
+     */
     getJobApplicantsDashboard: async (jobId: string): Promise<any> => {
         const response = await api.get(`/jobs/${jobId}/applicants-dashboard`);
         return response.data;
     },
 
-    getJobApplicants: async (jobId: string): Promise<Student[]> => {
-        const dashboard = await api.get(`/jobs/${jobId}/applicants-dashboard`);
-        return dashboard.data.students || [];
+    /**
+     * Convenience: returns just the students[] array from the dashboard.
+     */
+    getJobApplicants: async (jobId: string): Promise<any[]> => {
+        const response = await api.get(`/jobs/${jobId}/applicants-dashboard`);
+        return response.data?.students || [];
     },
 
-    searchEligibleStudents: async (jobId: string, filters: any): Promise<Student[]> => {
-        return [];
+    // ── Export / Download ─────────────────────────────────────────────────────
+
+    /**
+     * Download applicant list  (type = 'applicants')
+     * Download eligible list   (type = 'eligible')
+     * Both hit:  GET /jobs/{id}/export-list?type=...&format=...
+     */
+    exportJobList: async (jobId: string, type: 'applicants' | 'eligible', format: 'excel' | 'csv' = 'excel'): Promise<void> => {
+        const response = await api.get(`/jobs/${jobId}/export-list`, {
+            params: { type, format },
+            responseType: 'blob',
+        });
+        const ext      = format === 'csv' ? 'csv' : 'xlsx';
+        const filename = `Job_${type}_${jobId}.${ext}`;
+        downloadExcelFile(response.data, filename);
     },
+
+    // Keep old names as aliases so other files don't break
+    exportJobApplicants: async (jobId: string, type: string, format = 'excel') => {
+        const response = await api.get(`/jobs/${jobId}/export-list`, {
+            params: { type, format }, responseType: 'blob'
+        });
+        downloadExcelFile(response.data, `Job_${type}_${jobId}.${format === 'csv' ? 'csv' : 'xlsx'}`);
+    },
+
+    exportJobEligibleStudents: async (jobId: string, format = 'excel') => {
+        const response = await api.get(`/jobs/${jobId}/export-list`, {
+            params: { type: 'eligible', format }, responseType: 'blob'
+        });
+        downloadExcelFile(response.data, `Eligible_Students_${jobId}.${format === 'csv' ? 'csv' : 'xlsx'}`);
+    },
+
+    // ── Round result upload ───────────────────────────────────────────────────
 
     processRoundResultUpload: async (jobId: string, roundIndex: number, file: File): Promise<any> => {
         const formData = new FormData();
         formData.append('file', file);
-        const response = await api.post(`/jobs/${jobId}/rounds/${roundIndex}/results`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        const response = await api.post(
+            `/jobs/${jobId}/rounds/${roundIndex}/results`,
+            formData,
+            { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
         return response.data;
     },
 
@@ -1069,21 +1378,7 @@ export const JobService = {
         return response.data;
     },
 
-    exportJobApplicants: async (jobId: string, type: string, format: string = 'excel') => {
-        const response = await api.get(`/jobs/${jobId}/export-list`, { 
-            params: { type, format },
-            responseType: 'blob'
-        });
-        downloadExcelFile(response.data, `Job_${type}_${jobId}.${format === 'csv' ? 'csv' : 'xlsx'}`);
-    },
-    
-    exportJobEligibleStudents: async (jobId: string, format: string = 'excel') => {
-        const response = await api.get(`/jobs/${jobId}/export-list`, { 
-            params: { type: 'eligible', format },
-            responseType: 'blob'
-        });
-        downloadExcelFile(response.data, `Eligible_Students_${jobId}.${format === 'csv' ? 'csv' : 'xlsx'}`);
-    },
+    // ── Student application tracking ──────────────────────────────────────────
 
     getStudentApplications: async (): Promise<any[]> => {
         const response = await api.get('/jobs/students/applications/my');
@@ -1095,13 +1390,56 @@ export const JobService = {
         return response.data;
     },
 
+    // ── Permission helpers ────────────────────────────────────────────────────
+
     canManageJob: (user: User, job: Job): boolean => {
         if (user.role === Role.ADMIN || user.role === Role.SROTS_DEV) return true;
-        if (user.role === Role.CPH && user.collegeId === job.collegeId) return true;
+        if (user.role === Role.CPH   && user.collegeId === job.collegeId) return true;
+        // STAFF can only edit/delete their own jobs
         return user.role === Role.STAFF && job.postedById === user.id;
     },
 
-    canCreateJob: (user: User): boolean => {
-        return [Role.ADMIN, Role.SROTS_DEV, Role.CPH, Role.STAFF].includes(user.role);
-    }
+    canCreateJob: (user: User): boolean =>
+        [Role.ADMIN, Role.SROTS_DEV, Role.CPH, Role.STAFF].includes(user.role),
 };
+
+/**
+ * mapDtoToJob – maps the backend JobResponseDTO (and student portal DTOs)
+ * to the frontend types.ts Job interface.
+ *
+ * The DTO field names now match types.ts after the JobResponseDTO refactor,
+ * so most fields are a straight spread.  We only need to handle the few
+ * compatibility aliases (company, type, workArrangement) still used by older
+ * components like JobWizard.
+ */
+function mapDtoToJob(dto: any): Job {
+    if (!dto) return dto;
+    return {
+        ...dto,
+        // Compatibility aliases (types.ts keeps these for backwards compat)
+        company:         dto.companyName         || dto.company,
+        type:            dto.jobType             || dto.type,
+        workArrangement: dto.workMode            || dto.workArrangement,
+
+        // Array fields – backend now sends parsed arrays, not JSON strings
+        responsibilitiesJson:        dto.responsibilitiesJson        || [],
+        qualificationsJson:          dto.qualificationsJson          || [],
+        preferredQualificationsJson: dto.preferredQualificationsJson || [],
+        benefitsJson:                dto.benefitsJson                || [],
+
+        // Convenience: keep old names components might still reference
+        responsibilities: dto.responsibilitiesJson        || [],
+        qualifications:   dto.qualificationsJson          || [],
+        preferredQualifications: dto.preferredQualificationsJson || [],
+        benefits:         dto.benefitsJson                || [],
+
+        // rounds is already parsed list from backend
+        rounds: dto.rounds || [],
+
+        // documents (was "attachments" in old DTO)
+        documents: dto.documents || dto.attachments || [],
+
+        // requiredStudentFields (was "requiredFields" in old DTO)
+        requiredStudentFields: dto.requiredStudentFields || dto.requiredFields || [],
+    };
+}

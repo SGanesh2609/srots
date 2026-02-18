@@ -18,6 +18,10 @@ public interface JobService {
     // Admin/Staff Operations
 	public List<JobResponseDTO> getAdminJobs(String collegeId, String query, Job.JobType jobType, Job.WorkMode workMode, Job.JobStatus status);
 	
+//	List<JobResponseDTO> getAdminJobs(String collegeId, String query,
+//	        Job.JobType jobType, Job.WorkMode workMode, Job.JobStatus status,
+//	        String postedById);
+	
 	public Job getJobEntity(String id);
    
     public JobDetailDTO getJobDetail(String jobId);

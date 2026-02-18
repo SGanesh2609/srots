@@ -41,8 +41,8 @@ import com.srots.service.JobService;
 @RequestMapping("/api/v1/jobs")
 public class JobController {
 
-    @Autowired 
-    private JobService jobService;
+//    @Autowired 
+//    private JobService jobService;
     
     @Autowired
     private JobManagementService jobManagementService;
@@ -218,16 +218,30 @@ public class JobController {
         }
     }
 
+//    @GetMapping
+//    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH', 'STAFF')")
+//    public ResponseEntity<List<JobResponseDTO>> listAdminJobs(
+//        @RequestParam String collegeId, 
+//        @RequestParam(required = false) String query,
+//        @RequestParam(required = false) Job.JobType jobType, 
+//        @RequestParam(required = false) Job.WorkMode workMode,
+//        @RequestParam(required = false) Job.JobStatus status
+//    ) {
+//        return ResponseEntity.ok(jobSearchService.getAdminJobs(collegeId, query, jobType, workMode, status));
+//    }
+    
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH', 'STAFF')")
     public ResponseEntity<List<JobResponseDTO>> listAdminJobs(
-        @RequestParam String collegeId, 
-        @RequestParam(required = false) String query,
-        @RequestParam(required = false) Job.JobType jobType, 
-        @RequestParam(required = false) Job.WorkMode workMode,
-        @RequestParam(required = false) Job.JobStatus status
+            @RequestParam String collegeId,
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) Job.JobType jobType,
+            @RequestParam(required = false) Job.WorkMode workMode,
+            @RequestParam(required = false) Job.JobStatus status,
+            @RequestParam(required = false) String postedById  // NEW – for "My Jobs" filter
     ) {
-        return ResponseEntity.ok(jobSearchService.getAdminJobs(collegeId, query, jobType, workMode, status));
+        return ResponseEntity.ok(
+                jobSearchService.getAdminJobs(collegeId, query, jobType, workMode, status, postedById));
     }
 
     

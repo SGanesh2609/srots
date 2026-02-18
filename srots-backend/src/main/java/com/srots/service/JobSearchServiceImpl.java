@@ -87,34 +87,57 @@ public class JobSearchServiceImpl implements JobSearchService {
 //		
 //	}
 	
+//	@Override
+//	public List<JobResponseDTO> getAdminJobs(
+//	    String collegeId, 
+//	    String query, 
+//	    Job.JobType jobType,
+//	    Job.WorkMode workMode, 
+//	    Job.JobStatus status
+//	) {
+//	    Map<String, String> context = getCurrentUserContext();
+//	    String currentUserId = context.get("userId");
+//	    String currentUserRole = context.get("role");
+//
+//	    // CRITICAL FIX: STAFF should see ALL college jobs, not just their own
+//	    // Only pass userId filter if explicitly needed
+//	    String filterByUserId = null;  // Changed from: "STAFF".equals(currentUserRole) ? currentUserId : null;
+//
+//	    List<Job> jobs = jobRepo.filterJobsForPortal(
+//	        collegeId, 
+//	        filterByUserId,  // Always null - show all jobs
+//	        query, 
+//	        jobType, 
+//	        workMode, 
+//	        status
+//	    );
+//
+//	    return jobs.stream()
+//	        .map(job -> jobMapper.toResponseDTO(job, currentUserId, currentUserRole))
+//	        .collect(Collectors.toList());
+//	}
+	
 	@Override
 	public List<JobResponseDTO> getAdminJobs(
-	    String collegeId, 
-	    String query, 
-	    Job.JobType jobType,
-	    Job.WorkMode workMode, 
-	    Job.JobStatus status
-	) {
+	        String collegeId,
+	        String query,
+	        Job.JobType jobType,
+	        Job.WorkMode workMode,
+	        Job.JobStatus status,
+	        String postedById) {
+
 	    Map<String, String> context = getCurrentUserContext();
-	    String currentUserId = context.get("userId");
+	    String currentUserId   = context.get("userId");
 	    String currentUserRole = context.get("role");
 
-	    // CRITICAL FIX: STAFF should see ALL college jobs, not just their own
-	    // Only pass userId filter if explicitly needed
-	    String filterByUserId = null;  // Changed from: "STAFF".equals(currentUserRole) ? currentUserId : null;
-
+	    // postedById comes from frontend when user clicks "My Jobs"
+	    // When null → show ALL college jobs (CPH sees all, STAFF also sees all)
 	    List<Job> jobs = jobRepo.filterJobsForPortal(
-	        collegeId, 
-	        filterByUserId,  // Always null - show all jobs
-	        query, 
-	        jobType, 
-	        workMode, 
-	        status
-	    );
+	            collegeId, postedById, query, jobType, workMode, status);
 
 	    return jobs.stream()
-	        .map(job -> jobMapper.toResponseDTO(job, currentUserId, currentUserRole))
-	        .collect(Collectors.toList());
+	            .map(job -> jobMapper.toResponseDTO(job, currentUserId, currentUserRole))
+	            .collect(Collectors.toList());
 	}
 
 	@Override

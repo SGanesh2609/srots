@@ -13,7 +13,10 @@ import com.srots.model.Job;
 public interface JobSearchService {
 	
 	// Admin/Staff view of jobs with broad filters
-    List<JobResponseDTO> getAdminJobs(String collegeId, String query, Job.JobType jobType, Job.WorkMode workMode, Job.JobStatus status);
+//    List<JobResponseDTO> getAdminJobs(String collegeId, String query, Job.JobType jobType, Job.WorkMode workMode, Job.JobStatus status);
+	List<JobResponseDTO> getAdminJobs(String collegeId, String query,
+	        Job.JobType jobType, Job.WorkMode workMode, Job.JobStatus status,
+	        String postedById);
     
     // Student portal view (Only shows active/relevant jobs)
 //    List<StudentJobViewDTO> getStudentPortalJobs(String filterType, List<String> jobTypeFilters);

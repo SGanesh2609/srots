@@ -150,7 +150,7 @@ public class JobController {
     
     
     @PostMapping("/{jobId}/rounds/{roundIndex}/results")
-    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH', 'STAFF'))")
+    @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH', 'STAFF')")
     public ResponseEntity<?> uploadResults(
             @PathVariable String jobId,
             @PathVariable int roundIndex,

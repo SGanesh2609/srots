@@ -72,19 +72,19 @@ public class CollegeController {
         return ResponseEntity.ok(collegeService.updateCollege(id, request));
     }
 
-    @PostMapping("/{id}/branches")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id and principal.isCollegeHead)")
-    public ResponseEntity<CollegeResponse> addBranch(@PathVariable String id, @RequestBody BranchDTO branch) {
-        return ResponseEntity.ok(collegeService.addBranch(id, branch));
-    }
+//    @PostMapping("/{id}/branches")
+//    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id and principal.isCollegeHead)")
+//    public ResponseEntity<CollegeResponse> addBranch(@PathVariable String id, @RequestBody BranchDTO branch) {
+//        return ResponseEntity.ok(collegeService.addBranch(id, branch));
+//    }
     
     
- // 1. Get Branches Only (Useful for registration dropdowns)
-    @GetMapping("/{id}/branches")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id and principal.isCollegeHead)")
-    public ResponseEntity<List<Object>> getBranches(@PathVariable String id) {
-        return ResponseEntity.ok(collegeService.getBranchesByCollegeId(id));
-    }
+// // 1. Get Branches Only (Useful for registration dropdowns)
+//    @GetMapping("/{id}/branches")
+//    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id and principal.isCollegeHead)")
+//    public ResponseEntity<List<Object>> getBranches(@PathVariable String id) {
+//        return ResponseEntity.ok(collegeService.getBranchesByCollegeId(id));
+//    }
 
     // 2. Get Social Media Only
     @GetMapping("/{id}/social-media")
@@ -158,5 +158,36 @@ public class CollegeController {
             @PathVariable String sectionId) {
         collegeService.deleteAboutSection(id, sectionId);
         return ResponseEntity.ok(Map.of("message", "Section deleted"));
+    }
+    
+ // 1. Get Branches
+    @GetMapping("/{id}/branches")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF')")
+    public ResponseEntity<List<Object>> getBranches(@PathVariable String id) {
+        return ResponseEntity.ok(collegeService.getBranchesByCollegeId(id));
+    }
+
+    // 2. Add Branch
+    @PostMapping("/{id}/branches")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id)")
+    public ResponseEntity<CollegeResponse> addBranch(@PathVariable String id, @RequestBody BranchDTO branch) {
+        return ResponseEntity.ok(collegeService.addBranch(id, branch));
+    }
+
+    // 3. Update Branch (Based on Code)
+    @PutMapping("/{id}/branches/{branchCode}")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id)")
+    public ResponseEntity<CollegeResponse> updateBranch(
+            @PathVariable String id, 
+            @PathVariable String branchCode, 
+            @RequestBody BranchDTO branch) {
+        return ResponseEntity.ok(collegeService.updateBranch(id, branchCode, branch));
+    }
+
+    // 4. Delete Branch
+    @DeleteMapping("/{id}/branches/{branchCode}")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id)")
+    public ResponseEntity<CollegeResponse> deleteBranch(@PathVariable String id, @PathVariable String branchCode) {
+        return ResponseEntity.ok(collegeService.deleteBranch(id, branchCode));
     }
 }

@@ -1,19 +1,32 @@
-
 import React, { useState, useEffect } from 'react';
 import { Job, Student } from '../../../types';
 import { JobService } from '../../../services/jobService';
-import { StudentService } from '../../../services/studentService';
 import { 
   Calendar as CalendarIcon, CheckCircle, Clock, Lock, 
   XCircle, ChevronRight, Briefcase, Building, ChevronLeft, Loader2
 } from 'lucide-react';
+
+/**
+ * FIXED: AppTracking with correct JobService method calls
+ * 
+ * KEY FIXES:
+ * 1. Changed getStudentApplications(student.id) to getStudentApplications() (no params)
+ * 2. Changed getStudentApplicationTimeline(jobId, student.id) to getStudentApplicationTimeline(jobId)
+ * 3. Backend uses JWT token to get student ID automatically
+ */
 
 interface AppTrackingProps {
   student: Student;
 }
 
 interface ApplicationData {
-    job: Job;
+    job: {
+        id: string;
+        title: string;
+        company: string;
+        type: string;
+        location: string;
+    };
     status: string;
     appliedDate: string;
 }
@@ -25,37 +38,41 @@ export const AppTracking: React.FC<AppTrackingProps> = ({ student }) => {
   const [timeline, setTimeline] = useState<any[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
 
-  // Backend Call: Fetch enriched application data
+  // FIXED: Backend call without student ID - uses JWT token
   useEffect(() => {
       const fetchApps = async () => {
           try {
-              const results = await StudentService.getStudentApplications(student.id);
-              // Ensure results is an array before filtering
+              console.log('🔍 [AppTracking] Fetching student applications (no ID needed - from token)');
+              const results = await JobService.getStudentApplications(); // FIXED: No parameters
+              console.log('✅ [AppTracking] Applications received:', results.length);
+              
               if (Array.isArray(results)) {
                 setApplications(results.filter((a: any) => !!a.job));
               } else {
                 setApplications([]);
               }
           } catch (error) {
-              console.error("Failed to load applications", error);
+              console.error("❌ [AppTracking] Failed to load applications:", error);
               setApplications([]);
           } finally {
               setLoading(false);
           }
       };
       fetchApps();
-  }, [student.id]);
+  }, [student.id]); // Keep dependency for re-fetch on student change
 
-  // Fetch timeline when a job is selected
+  // FIXED: Fetch timeline without student ID - backend uses JWT
   useEffect(() => {
       if (trackerJobId) {
           setTimelineLoading(true);
           const fetchTimeline = async () => {
               try {
-                  const data = await StudentService.getStudentApplicationTimeline(trackerJobId, student.id);
+                  console.log('🔍 [AppTracking] Fetching timeline for job:', trackerJobId);
+                  const data = await JobService.getStudentApplicationTimeline(trackerJobId); // FIXED: Only jobId
+                  console.log('✅ [AppTracking] Timeline received:', data);
                   setTimeline(Array.isArray(data) ? data : []);
               } catch (error) {
-                  console.error("Failed to load timeline", error);
+                  console.error("❌ [AppTracking] Failed to load timeline:", error);
                   setTimeline([]);
               } finally {
                   setTimelineLoading(false);
@@ -91,7 +108,7 @@ export const AppTracking: React.FC<AppTrackingProps> = ({ student }) => {
                           </p>
                       </div>
                       <div className="text-right">
-                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${status.includes('Passed') ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${status.includes('Passed') || status.includes('🎉') ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
                               {status}
                           </span>
                           <p className="text-xs text-gray-500 mt-2 font-medium">
@@ -109,10 +126,12 @@ export const AppTracking: React.FC<AppTrackingProps> = ({ student }) => {
                               <div className="space-y-8 relative">
                                   {timeline.map((step, idx) => {
                                       // Mapping Status to UI Styles
-                                      let statusInfo = { status: '-', color: 'text-gray-400', bg: 'bg-gray-50', icon: <Lock size={16}/> };
-                                      if (step.status === 'Qualified') statusInfo = { status: 'Qualified', color: 'text-green-600', bg: 'bg-green-50', icon: <CheckCircle size={16}/> };
-                                      else if (step.status === 'Not Selected') statusInfo = { status: 'Not Selected', color: 'text-red-600', bg: 'bg-red-50', icon: <XCircle size={16}/> };
-                                      else if (step.status === 'Wait for Update') statusInfo = { status: 'Wait for Update', color: 'text-orange-600', bg: 'bg-orange-50', icon: <Clock size={16}/> };
+                                      let statusInfo = { status: 'Pending', color: 'text-gray-400', bg: 'bg-gray-50', icon: <Lock size={16}/> };
+                                      if (step.status === 'Completed') statusInfo = { status: 'Completed', color: 'text-green-600', bg: 'bg-green-50', icon: <CheckCircle size={16}/> };
+                                      else if (step.status === 'Rejected') statusInfo = { status: 'Rejected', color: 'text-red-600', bg: 'bg-red-50', icon: <XCircle size={16}/> };
+                                      else if (step.status === 'In Progress') statusInfo = { status: 'In Progress', color: 'text-orange-600', bg: 'bg-orange-50', icon: <Clock size={16}/> };
+                                      else if (step.status === 'Process Terminated') statusInfo = { status: 'Terminated', color: 'text-gray-400', bg: 'bg-gray-50', icon: <XCircle size={16}/> };
+                                      else if (step.status === 'Locked') statusInfo = { status: 'Locked', color: 'text-gray-400', bg: 'bg-gray-50', icon: <Lock size={16}/> };
 
                                       return (
                                           <div key={idx} className="relative flex items-center gap-6">
@@ -140,7 +159,7 @@ export const AppTracking: React.FC<AppTrackingProps> = ({ student }) => {
                           </div>
                       ) : (
                           <div className="text-center py-12 text-gray-400 text-sm bg-gray-50 rounded-xl border border-dashed">
-                              No specific rounds configured for this job or timeline data unavailable.
+                              No timeline data available for this application.
                           </div>
                       )}
                   </div>
@@ -177,7 +196,7 @@ export const AppTracking: React.FC<AppTrackingProps> = ({ student }) => {
                                 </div>
                             </div>
                             <div className="text-right">
-                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold mb-1 ${status.includes('Passed') ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold mb-1 ${status.includes('Passed') || status.includes('🎉') ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
                                     {status}
                                 </span>
                                 <p className="text-xs text-gray-400 flex items-center justify-end gap-1">

@@ -204,7 +204,7 @@
 
 
 import api from './api';
-import { College, User, AddressFormData } from '../types';
+import { College, User, AddressFormData, BranchDTO } from '../types';
 
 export const CollegeService = {
 
@@ -519,14 +519,37 @@ export const CollegeService = {
         window.URL.revokeObjectURL(url);
     },
 
-    addCollegeBranch: async (collegeId: string, branch: { name: string, code: string }) => {
-        const response = await api.post(`/colleges/${collegeId}/branches`, branch);
+    // addCollegeBranch: async (collegeId: string, branch: { name: string, code: string }) => {
+    //     const response = await api.post(`/colleges/${collegeId}/branches`, branch);
+    //     return response.data;
+    // },
+
+    // removeCollegeBranch: async (collegeId: string, branchCode: string) => {
+    //     await api.delete(`/colleges/${collegeId}/branches/${branchCode}`);
+    // },
+
+    // getCollegeById: async (id: string): Promise<College> => {
+    //     const response = await api.get(`/colleges/${id}`);
+    //     return response.data;
+    // },
+
+    // 1. Add Branch
+    addCollegeBranch: async (collegeId: string, branch: BranchDTO): Promise<College> => {
+        const response = await api.post(`/api/v1/colleges/${collegeId}/branches`, branch);
         return response.data;
     },
 
-    removeCollegeBranch: async (collegeId: string, branchCode: string) => {
-        await api.delete(`/colleges/${collegeId}/branches/${branchCode}`);
+    // 2. Update Branch (Targeted by code)
+    updateCollegeBranch: async (collegeId: string, branchCode: string, branch: BranchDTO): Promise<College> => {
+        const response = await api.put(`/api/v1/colleges/${collegeId}/branches/${branchCode}`, branch);
+        return response.data;
     },
+
+    // 3. Delete Branch
+    removeCollegeBranch: async (collegeId: string, branchCode: string): Promise<College> => {
+        const response = await api.delete(`/api/v1/colleges/${collegeId}/branches/${branchCode}`);
+        return response.data;
+    }
 
 
 };

@@ -55,3 +55,5 @@ export const CourseSpecification: React.FC<CourseSpecificationProps> = ({ colleg
       </div>
   );
 };
+
+

@@ -1,22 +1,30 @@
 package com.srots.service;
 
-import com.srots.dto.jobdto.JobResponseDTO;
-import com.srots.model.Job;
-import com.srots.repository.*;
-import jakarta.transaction.Transactional;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.srots.dto.jobdto.JobResponseDTO;
+import com.srots.model.Job;
+import com.srots.model.User;
+import com.srots.repository.CollegeRepository;
+import com.srots.repository.JobRepository;
+import com.srots.repository.UserRepository;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.*;
+import jakarta.transaction.Transactional;
 
 @Service
 public class JobManagementServiceImpl implements JobManagementService {
@@ -78,6 +86,38 @@ public class JobManagementServiceImpl implements JobManagementService {
         Map<String, String> context = getCurrentUserContext();
         return jobMapper.toResponseDTO(savedJob, context.get("userId"), context.get("role"));
     }
+    
+//    @Override
+//    @Transactional
+//    public JobResponseDTO saveJobWithFiles(Map<String, Object> data, MultipartFile[] jdFiles, MultipartFile avoidList, String collegeCode) throws Exception {
+//        Map<String, String> context = getCurrentUserContext();
+//        String currentUserId = context.get("userId");  // this is the UUID
+//        String role = context.get("role");
+//
+//        // Load the actual current user entity to get their college
+//        User currentUser = userRepo.findById(currentUserId)
+//                .orElseThrow(() -> new AccessDeniedException("User not found"));
+//
+//        if (currentUser.getCollege() == null) {
+//            throw new AccessDeniedException("User has no associated collage");
+//        }
+//
+//        Job job = new Job();
+//        job.setId(UUID.randomUUID().toString());
+//        job.setPostedAt(LocalDateTime.now());
+//
+//        // Force college to user's college (secure)
+//        job.setCollege(currentUser.getCollege());
+//
+//        // Optionally force postedBy to current user (prevents spoofing)
+//        job.setPostedBy(currentUser);
+//
+//        mapJsonToJob(job, data);  // your new nested version
+//        processJobFiles(job, jdFiles, avoidList, collegeCode);  // collegeCode still used for file paths
+//
+//        Job savedJob = jobRepo.saveAndFlush(job);
+//        return jobMapper.toResponseDTO(savedJob, currentUserId, role);
+//    }
 
     @Override
     @Transactional
@@ -159,6 +199,7 @@ public class JobManagementServiceImpl implements JobManagementService {
         job.setQualificationsJson(mapper.writeValueAsString(data.getOrDefault("qualifications", new ArrayList<>())));
         job.setBenefitsJson(mapper.writeValueAsString(data.getOrDefault("benefits", new ArrayList<>())));
     }
+    
 
     private void processJobFiles(Job job, MultipartFile[] jdFiles, MultipartFile avoidList, String collegeCode) throws Exception {
         if (jdFiles != null && jdFiles.length > 0) processAttachments(job, jdFiles, collegeCode);

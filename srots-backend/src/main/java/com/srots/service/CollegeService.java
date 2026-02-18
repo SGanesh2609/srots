@@ -29,4 +29,8 @@ public interface CollegeService {
     AboutSectionDTO addAboutSection(String id, AboutSectionDTO dto);
     AboutSectionDTO updateAboutSection(String id, String sectionId, AboutSectionDTO dto);
     void deleteAboutSection(String id, String sectionId);
+    
+    
+    public CollegeResponse updateBranch(String id, String branchCode, BranchDTO branch);
+    public CollegeResponse deleteBranch(String id, String branchCode);
 }

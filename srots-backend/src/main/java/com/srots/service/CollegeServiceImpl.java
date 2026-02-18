@@ -177,17 +177,17 @@ public class CollegeServiceImpl implements CollegeService {
         catch (Exception e) { return new ArrayList<>(); }
     }
 
-    @Override
-    @Transactional
-    public CollegeResponse addBranch(String id, BranchDTO branch) {
-        College college = collegeRepo.findById(id).orElseThrow(() -> new RuntimeException("College not found"));
-        try {
-            List<BranchDTO> list = college.getBranches() == null ? new ArrayList<>() : mapper.readValue(college.getBranches(), new TypeReference<List<BranchDTO>>(){});
-            list.add(branch);
-            college.setBranches(mapper.writeValueAsString(list));
-        } catch (Exception e) { throw new RuntimeException("Error processing branch data"); }
-        return convertToResponse(collegeRepo.save(college));
-    }
+//    @Override
+//    @Transactional
+//    public CollegeResponse addBranch(String id, BranchDTO branch) {
+//        College college = collegeRepo.findById(id).orElseThrow(() -> new RuntimeException("College not found"));
+//        try {
+//            List<BranchDTO> list = college.getBranches() == null ? new ArrayList<>() : mapper.readValue(college.getBranches(), new TypeReference<List<BranchDTO>>(){});
+//            list.add(branch);
+//            college.setBranches(mapper.writeValueAsString(list));
+//        } catch (Exception e) { throw new RuntimeException("Error processing branch data"); }
+//        return convertToResponse(collegeRepo.save(college));
+//    }
     
     
     // NEW THINGS
@@ -288,5 +288,55 @@ public class CollegeServiceImpl implements CollegeService {
         } catch (Exception e) {
             return new ArrayList<>();
         }
+    }
+    
+    
+    @Override
+    @Transactional
+    public CollegeResponse addBranch(String id, BranchDTO branch) {
+        College college = collegeRepo.findById(id).orElseThrow();
+        try {
+            List<BranchDTO> list = parseBranches(college.getBranches());
+            // Prevent duplicates
+            list.removeIf(b -> b.code.equalsIgnoreCase(branch.code));
+            list.add(branch);
+            college.setBranches(mapper.writeValueAsString(list));
+            return convertToResponse(collegeRepo.save(college));
+        } catch (Exception e) { throw new RuntimeException("Add branch failed"); }
+    }
+
+    @Override
+    @Transactional
+    public CollegeResponse updateBranch(String id, String branchCode, BranchDTO branch) {
+        College college = collegeRepo.findById(id).orElseThrow();
+        try {
+            List<BranchDTO> list = parseBranches(college.getBranches());
+            for (int i = 0; i < list.size(); i++) {
+                if (list.get(i).code.equalsIgnoreCase(branchCode)) {
+                    list.set(i, branch);
+                    break;
+                }
+            }
+            college.setBranches(mapper.writeValueAsString(list));
+            return convertToResponse(collegeRepo.save(college));
+        } catch (Exception e) { throw new RuntimeException("Update branch failed"); }
+    }
+
+    @Override
+    @Transactional
+    public CollegeResponse deleteBranch(String id, String branchCode) {
+        College college = collegeRepo.findById(id).orElseThrow();
+        try {
+            List<BranchDTO> list = parseBranches(college.getBranches());
+            list.removeIf(b -> b.code.equalsIgnoreCase(branchCode));
+            college.setBranches(mapper.writeValueAsString(list));
+            return convertToResponse(collegeRepo.save(college));
+        } catch (Exception e) { throw new RuntimeException("Delete branch failed"); }
+    }
+
+    private List<BranchDTO> parseBranches(String json) {
+        try {
+            return json != null ? mapper.readValue(json, new TypeReference<List<BranchDTO>>(){}) : new ArrayList<>();
+        } catch (Exception e) { return new ArrayList<>(); }
     }
 }

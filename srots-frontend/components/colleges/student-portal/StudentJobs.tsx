@@ -6,6 +6,10 @@ import { JobFilters } from './jobs/JobFilters';
 import { JobListDesktop } from './jobs/JobListDesktop';
 import { JobListMobile } from './jobs/JobListMobile';
 
+/**
+ * StudentJobs.tsx - Unchanged, already correct
+ */
+
 interface StudentJobsProps {
   student: Student;
 }
@@ -14,9 +18,8 @@ export const StudentJobs: React.FC<StudentJobsProps> = ({ student }) => {
   const [jobs, setJobs] = useState<StudentJobView[]>([]);
   const [selectedJob, setSelectedJob] = useState<StudentJobView | null>(null);
   
-  // Filter States
+  const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('not-applied');
   const [typeFilters, setTypeFilters] = useState<string[]>([]);
   const [workModeFilters, setWorkModeFilters] = useState<string[]>([]);
 
@@ -27,15 +30,15 @@ export const StudentJobs: React.FC<StudentJobsProps> = ({ student }) => {
   const refreshJobs = async () => {
       try {
           const results = await JobService.getJobsForStudent({
-              query: searchQuery,
               status: statusFilter,
+              query: searchQuery,
               type: typeFilters,
               workMode: workModeFilters
           });
-          // DEFENSIVE: Ensure results is an array
+          
           setJobs(Array.isArray(results) ? results : []);
-      } catch (err) {
-          console.error("Student portal job fetch error", err);
+      } catch (err: any) {
+          console.error("❌ [StudentJobs] Error:", err);
           setJobs([]);
       }
   };
@@ -58,7 +61,8 @@ export const StudentJobs: React.FC<StudentJobsProps> = ({ student }) => {
           {selectedJob ? (
               <JobDetailView 
                   job={selectedJob.job} 
-                  student={student} 
+                  student={student}
+                  viewData={selectedJob}
                   onBack={() => setSelectedJob(null)}
                   onApply={async (id) => {
                       await JobService.applyToJob(id);

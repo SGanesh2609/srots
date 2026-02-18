@@ -439,15 +439,15 @@ export const StudentService = {
     return response.data;
   },
 
-  getStudentApplications: async (studentId: string) => {
-    const response = await api.get(`/students/${studentId}/applications`);
-    return response.data;
-  },
+  // getStudentApplications: async (studentId: string) => {
+  //   const response = await api.get(`/students/${studentId}/applications`);
+  //   return response.data;
+  // },
 
-  getStudentApplicationTimeline: async (jobId: string, studentId: string) => {
-    const response = await api.get(`/jobs/${jobId}/timeline/${studentId}`);
-    return response.data;
-  },
+  // getStudentApplicationTimeline: async (jobId: string, studentId: string) => {
+  //   const response = await api.get(`/jobs/${jobId}/timeline/${studentId}`);
+  //   return response.data;
+  // },
 
   processCustomReport: async (file: File, excludeCols: string[], excludeIds: string) => {
     const formData = new FormData();
@@ -476,5 +476,25 @@ export const StudentService = {
   exportStudentRegistry: async (collegeId: string, filters: any) => {
     const response = await api.get(`/accounts/college/${collegeId}/export`, { params: filters });
     downloadExcelFile(response.data, `Student_Registry_${collegeId}.xlsx`);
-  }
+  },
+
+  /**
+     * Get student's applications
+     * Backend uses auth token to identify student
+     */
+    getStudentApplications: async (studentId: string): Promise<any[]> => {
+        // Backend endpoint doesn't need studentId - uses auth token
+        const response = await api.get('/jobs/students/applications/my');
+        return response.data;
+    },
+
+    /**
+     * Get application timeline for a specific job
+     * Backend uses auth token to identify student
+     */
+    getStudentApplicationTimeline: async (jobId: string, studentId: string): Promise<any[]> => {
+        // Backend endpoint doesn't need studentId in path - uses auth token
+        const response = await api.get(`/jobs/students/${jobId}/timeline`);
+        return response.data;
+    }
 };

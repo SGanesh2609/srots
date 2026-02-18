@@ -1,5 +1,7 @@
 package com.srots.dto.jobdto;
 
+import java.time.LocalDate;
+
 import com.srots.model.Job;
 
 import lombok.AllArgsConstructor;
@@ -15,17 +17,25 @@ public class StudentJobViewDTO {
     private boolean eligible;
     private String NotEligibilityReason;
     private boolean applied;
+    private boolean expired;
 	public StudentJobViewDTO() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
-	public StudentJobViewDTO(Job job, boolean eligible, String NotEligibilityReason, boolean applied) {
+	
+	
+
+	public StudentJobViewDTO(Job job, boolean eligible, String notEligibilityReason, boolean applied, boolean expired) {
 		super();
 		this.job = job;
 		this.eligible = eligible;
-		this.NotEligibilityReason = NotEligibilityReason;
+		NotEligibilityReason = notEligibilityReason;
 		this.applied = applied;
+		this.expired = expired;
 	}
+
+
+
 	public Job getJob() {
 		return job;
 	}
@@ -50,8 +60,13 @@ public class StudentJobViewDTO {
 	public void setApplied(boolean applied) {
 		this.applied = applied;
 	}
-    
-    
-    
-    
+
+	public boolean isExpired() {
+		return expired;
+	}
+
+	public void setExpired(boolean expired) {
+		this.expired = expired;
+	}
+
 }

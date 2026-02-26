@@ -1,5 +1,6 @@
 package com.srots.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Data;
@@ -11,6 +12,11 @@ public class UserCreateRequest {
     private String email;
     private String phone;
     private String department;
+    
+//    @JsonProperty("aadhaarNumber")
+//    private String aadhaar;
+    
+    @JsonAlias({"aadhaar"})
     @JsonProperty("aadhaarNumber")
     private String aadhaar;
     

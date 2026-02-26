@@ -65,6 +65,9 @@ public class StudentProfile {
     private String instituteEmail; 
     private String parentEmail;
     private String whatsappNumber;
+    
+    @Column(name = "communication_email")
+    private String communicationEmail;
 
     @Enumerated(EnumType.STRING)
     private ContactMethod preferredContactMethod;
@@ -417,6 +420,14 @@ public class StudentProfile {
 
 	public void setUpdatedAt(LocalDateTime updatedAt) {
 		this.updatedAt = updatedAt;
+	}
+
+	public String getCommunicationEmail() {
+		return communicationEmail;
+	}
+
+	public void setCommunicationEmail(String communicationEmail) {
+		this.communicationEmail = communicationEmail;
 	}
     
     

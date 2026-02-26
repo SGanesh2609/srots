@@ -1,555 +1,375 @@
 
-// import api from './api';
-// import { College, User, AddressFormData, DashboardMetrics, Role, CollegeAboutSection } from '../types';
-// import { downloadExcelFile } from '../utils/fileHelper';
-
-// export const CollegeService = {
-//     getColleges: async (query?: string): Promise<College[]> => {
-//         const response = await api.get('/colleges', { params: { query } });
-//         return response.data;
-//     },
-
-//     searchColleges: async (query?: string): Promise<College[]> => {
-//         return CollegeService.getColleges(query);
-//     },
-
-//     getCollegeById: async (id: string): Promise<College> => {
-//         const response = await api.get(`/colleges/${id}`);
-//         return response.data;
-//     },
-
-    // getDashboardMetrics: async (collegeId: string): Promise<DashboardMetrics> => {
-    //     const response = await api.get(`/colleges/${collegeId}/analytics`);
-    //     return response.data;
-    // },
-
-//     // Synced with Java: @GetMapping("/college/{collegeId}/role/CPH")
-//     searchCPUsers: async (collegeId: string, query: string): Promise<User[]> => {
-//         const response = await api.get(`/accounts/college/${collegeId}/role/CPH`, { 
-//             params: { search: query } 
-//         });
-//         return response.data;
-//     },
-
-//     // Synced with Java: @PostMapping("/cph")
-//     createCPAdmin: async (data: any) => {
-//         // Map fullName to name for Java RequestBody
-//         const payload = {
-//             ...data,
-//             name: data.fullName || data.name
-//         };
-//         const response = await api.post('/accounts/cph', payload);
-//         return response.data;
-//     },
-
-//     updateCPAdmin: async (user: User, address?: AddressFormData) => {
-//         const payload = {
-//             ...user,
-//             name: user.fullName,
-//             address: address
-//         };
-//         const response = await api.put(`/accounts/${user.id}`, payload);
-//         return response.data;
-//     },
-
-//     deleteCPAdmin: async (id: string) => {
-//         await api.delete(`/accounts/${id}`);
-//     },
-
-//     bulkUploadStaff: async (file: File, collegeId: string, adminId: string) => {
-//         const formData = new FormData();
-//         formData.append('file', file);
-//         formData.append('collegeId', collegeId);
-//         formData.append('adminId', adminId);
-//         const response = await api.post('/admin/bulk/upload-staff', formData, {
-//             responseType: 'arraybuffer',
-//             headers: { 'Content-Type': 'multipart/form-data' }
-//         });
-//         return response.data;
-//     },
-
-//     downloadCPTeamTemplate: async () => {
-//         const response = await api.get('/admin/bulk/template/staff', { responseType: 'blob' });
-//         const url = window.URL.createObjectURL(new Blob([response.data]));
-//         const link = document.createElement('a');
-//         link.href = url;
-//         link.setAttribute('download', 'staff_template.xlsx');
-//         document.body.appendChild(link);
-//         link.click();
-//         window.URL.revokeObjectURL(url);
-//     },
-
-//     exportCPUsers: async (collegeId: string) => {
-//         const response = await api.get(`/accounts/export/college/${collegeId}/cp`, { 
-//             params: { format: 'excel' },
-//             responseType: 'blob'
-//         });
-//         const url = window.URL.createObjectURL(new Blob([response.data]));
-//         const link = document.createElement('a');
-//         link.href = url;
-//         link.setAttribute('download', `CP_Users_${collegeId}.xlsx`);
-//         document.body.appendChild(link);
-//         link.click();
-//         window.URL.revokeObjectURL(url);
-//     },
-
-//     getCollegeStats: async (collegeId: string) => {
-//         const response = await api.get(`/colleges/${collegeId}/analytics`);
-//         const d = response.data.stats;
-//         return {
-//             studentCount: d.totalStudents,
-//             cpCount: d.cpCount || 0,
-//             totalJobs: d.activeJobs,
-//             activeJobs: d.activeJobs
-//         };
-//     },
-
-//     updateCollege: async (college: College, logoFile?: File, rawAddress?: AddressFormData, modifiedBy?: string) => {
-//         const formData = new FormData();
-//         formData.append('id', college.id);
-//         formData.append('name', college.name);
-//         formData.append('code', college.code);
-//         formData.append('email', college.email);
-//         formData.append('phone', college.phone);
-//         if (college.type) formData.append('type', college.type);
-//         if (college.socialMedia) formData.append('socialMedia', JSON.stringify(college.socialMedia));
-//         if (college.aboutSections) formData.append('aboutSections', JSON.stringify(college.aboutSections));
-//         if (logoFile) formData.append('file', logoFile);
-//         if (rawAddress) formData.append('address', JSON.stringify(rawAddress));
-//         if (modifiedBy) formData.append('lastModifiedBy', modifiedBy);
-
-//         const response = await api.put(`/colleges/${college.id}`, formData, {
-//             headers: { 'Content-Type': 'multipart/form-data' }
-//         });
-//         return response.data;
-//     },
-
-//     createCollege: async (data: Partial<College>, logoFile?: File, rawAddress?: AddressFormData) => {
-//         const formData = new FormData();
-//         if (data.name) formData.append('name', data.name);
-//         if (data.code) formData.append('code', data.code);
-//         if (data.email) formData.append('email', data.email);
-//         if (data.phone) formData.append('phone', data.phone);
-//         if (data.type) formData.append('type', data.type);
-//         if (logoFile) formData.append('file', logoFile);
-//         if (rawAddress) formData.append('address', JSON.stringify(rawAddress));
-
-//         const response = await api.post('/colleges', formData, {
-//             headers: { 'Content-Type': 'multipart/form-data' }
-//         });
-//         return response.data;
-//     },
-
-//     deleteCollege: async (id: string) => {
-//         await api.delete(`/colleges/${id}`);
-//     },
-
-//     updateCollegeAbout: async (id: string, sections: CollegeAboutSection[], modifiedBy: string) => {
-//         const response = await api.put(`/colleges/${id}`, { 
-//             aboutSections: sections,
-//             lastModifiedBy: modifiedBy,
-//             lastModifiedAt: new Date().toLocaleString()
-//         });
-//         return response.data;
-//     },
-
-//     getCPStaff: async (collegeId: string): Promise<User[]> => {
-//         const response = await api.get(`/accounts/college/${collegeId}/staff`);
-//         return response.data;
-//     },
-
-//     updateCPStaff: async (user: User, address: AddressFormData) => {
-//         return CollegeService.updateCPAdmin(user, address);
-//     },
-
-//     createCPStaff: async (data: any) => {
-//         const payload = {
-//             ...data,
-//             name: data.fullName || data.name,
-//             role: 'STAFF'
-//         };
-//         const response = await api.post('/accounts/staff', payload);
-//         return response.data;
-//     },
-
-//     toggleCPStaffAccess: async (id: string) => {
-//         const response = await api.put(`/accounts/${id}/access`);
-//         return response.data;
-//     },
-
-//     deleteCPStaff: async (id: string) => {
-//         await api.delete(`/accounts/${id}`);
-//     },
-
-//     addCollegeBranch: async (collegeId: string, branch: { name: string, code: string }) => {
-//         const response = await api.post(`/colleges/${collegeId}/branches`, branch);
-//         return response.data;
-//     },
-
-//     removeCollegeBranch: async (collegeId: string, branchCode: string) => {
-//         await api.delete(`/colleges/${collegeId}/branches/${branchCode}`);
-//     },
-
-//     exportMasterList: async (type: 'students' | 'cp_admin') => {
-//         const response = await api.get(`/accounts/export/master`, { params: { type }, responseType: 'blob' });
-//         const url = window.URL.createObjectURL(new Blob([response.data]));
-//         const link = document.createElement('a');
-//         link.href = url;
-//         link.setAttribute('download', `Master_${type}.xlsx`);
-//         document.body.appendChild(link);
-//         link.click();
-//         window.URL.revokeObjectURL(url);
-//     }
-// };
-
-
 import api from './api';
 import { College, User, AddressFormData, BranchDTO } from '../types';
 
 export const CollegeService = {
 
-  getColleges: async (query?: string): Promise<College[]> => {
-        const response = await api.get('/colleges', { params: { query } });
-        return response.data;
+    // ─── Colleges ─────────────────────────────────────────────────────────────
+
+    getColleges: async (
+        query?: string,
+        page: number = 0,
+        size: number = 10,
+        includeInactive: boolean = false
+    ): Promise<{ colleges: College[]; total: number }> => {
+        const response = await api.get('/colleges', {
+            params: { query, page, size, includeInactive },
+        });
+        const colleges = response.data.content.map((c: any) => ({
+            ...c,
+            addressDetails: c.address_json,
+        }));
+        return { colleges, total: response.data.totalElements };
     },
 
     searchColleges: async (query?: string): Promise<College[]> => {
-        return CollegeService.getColleges(query);
+        const { colleges } = await CollegeService.getColleges(query);
+        return colleges;
     },
 
     getCollegeById: async (id: string): Promise<College> => {
         const response = await api.get(`/colleges/${id}`);
+        const c = response.data;
+        return { ...c, addressDetails: c.address_json };
+    },
+
+    getCollegeStats: async (collegeId: string): Promise<{
+        studentCount: number; cpCount: number; totalJobs: number; activeJobs: number;
+    }> => {
+        try {
+            const response = await api.get(`/colleges/${collegeId}/stats`);
+            return response.data;
+        } catch {
+            const [students, cpUsers, jobs] = await Promise.all([
+                api.get(`/accounts/college/${collegeId}/role/STUDENT`).catch(() => ({ data: [] })),
+                api.get(`/accounts/college/${collegeId}/role/CPH`).catch(() => ({ data: [] })),
+                api.get(`/jobs?collegeId=${collegeId}`).catch(() => ({ data: [] })),
+            ]);
+            return {
+                studentCount: students.data?.length ?? 0,
+                cpCount:      cpUsers.data?.length  ?? 0,
+                totalJobs:    jobs.data?.length      ?? 0,
+                activeJobs:   jobs.data?.filter((j: any) => j.status === 'Active')?.length ?? 0,
+            };
+        }
+    },
+
+    createCollege: async (data: Partial<College>, logoFile?: File, address?: AddressFormData): Promise<College> => {
+        try {
+            let logoUrl = data.logoUrl;
+            if (logoFile) {
+                if (!data.code) throw new Error('College code required for logo upload');
+                logoUrl = await CollegeService.uploadFile(logoFile, data.code, 'logo');
+            }
+            const response = await api.post('/colleges', { ...data, logoUrl, address });
+            return response.data;
+        } catch (err: any) {
+            throw new Error(err.response?.data?.message || 'Failed to create college');
+        }
+    },
+
+    updateCollege: async (college: College, logoFile?: File, address?: AddressFormData): Promise<College> => {
+        try {
+            let logoUrl = college.logoUrl;
+            if (logoFile) logoUrl = await CollegeService.updateCollegeLogo(college.id, logoFile);
+            const response = await api.put(`/colleges/${college.id}`, { ...college, logoUrl, address });
+            return response.data;
+        } catch (err: any) {
+            throw new Error(err.response?.data?.message || 'Failed to update college');
+        }
+    },
+
+    deleteCollege:    async (id: string, permanent: boolean = false): Promise<void> => {
+        await api.delete(`/colleges/${id}`, { params: { permanent } });
+    },
+    activateCollege:  async (id: string): Promise<void> => { await api.put(`/colleges/${id}/activate`); },
+    deactivateCollege:async (id: string): Promise<void> => { await api.put(`/colleges/${id}/deactivate`); },
+
+    // ─── File uploads ──────────────────────────────────────────────────────────
+
+    uploadFile: async (file: File, collegeCode: string, category: string): Promise<string> => {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('collegeCode', collegeCode);
+        fd.append('category', category);
+        const response = await api.post('/colleges/upload', fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return response.data.url || response.data;
+    },
+
+    updateCollegeLogo: async (collegeId: string, file: File): Promise<string> => {
+        const fd = new FormData();
+        fd.append('file', file);
+        const response = await api.post(`/colleges/${collegeId}/logo`, fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
         return response.data;
     },
 
-  // getDashboardMetrics: async (collegeId: string): Promise<DashboardMetrics> => {
-  //   const response = await api.get(`/colleges/${collegeId}/metrics`); // Adjust endpoint if backend uses different path
-  //   return response.data;
-  // },
+    // ─── College content ───────────────────────────────────────────────────────
 
-  // === PARTIAL UPDATES (Enterprise: granular, efficient, auditable) ===
+    updateSocialMedia: async (collegeId: string, links: Record<string, string>): Promise<any> =>
+        (await api.put(`/colleges/${collegeId}/social`, links)).data,
 
-  // Update Logo (multipart, backend handles old file delete)
-  updateCollegeLogo: async (collegeId: string, file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    const response = await api.post(`/colleges/${collegeId}/logo`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return response.data; // returns new URL
-  },
+    addAboutSection: async (collegeId: string, data: { title: string; content: string; image?: string }): Promise<any> =>
+        (await api.post(`/colleges/${collegeId}/about`, data)).data,
 
-  // Update Social Media (partial body)
-  updateSocialMedia: async (collegeId: string, links: Record<string, string>): Promise<any> => {
-    const response = await api.put(`/colleges/${collegeId}/social`, links);
-    return response.data;
-  },
+    updateAboutSection: async (collegeId: string, sectionId: string, data: { title: string; content: string; image?: string }): Promise<any> =>
+        (await api.put(`/colleges/${collegeId}/about/${sectionId}`, data)).data,
 
-  // Add About Section
-  addAboutSection: async (collegeId: string, data: { title: string; content: string; image?: string }): Promise<any> => {
-    const response = await api.post(`/colleges/${collegeId}/about`, data);
-    return response.data; // returns new section with ID/audit
-  },
+    deleteAboutSection: async (collegeId: string, sectionId: string): Promise<void> => {
+        await api.delete(`/colleges/${collegeId}/about/${sectionId}`);
+    },
 
-  // Update One About Section
-  updateAboutSection: async (
-    collegeId: string,
-    sectionId: string,
-    data: { title: string; content: string; image?: string }
-  ): Promise<any> => {
-    const response = await api.put(`/colleges/${collegeId}/about/${sectionId}`, data);
-    return response.data;
-  },
+    // ─── Branches ─────────────────────────────────────────────────────────────
 
-  // Delete One About Section (backend cleans old image)
-  deleteAboutSection: async (collegeId: string, sectionId: string): Promise<void> => {
-    await api.delete(`/colleges/${collegeId}/about/${sectionId}`);
-  },
+    getCollegeBranches:  async (collegeId: string): Promise<BranchDTO[]> =>
+        (await api.get(`/colleges/${collegeId}/branches`)).data,
+    addCollegeBranch:    async (collegeId: string, branch: BranchDTO): Promise<College> =>
+        (await api.post(`/colleges/${collegeId}/branches`, branch)).data,
+    updateCollegeBranch: async (collegeId: string, branchCode: string, branch: BranchDTO): Promise<College> =>
+        (await api.put(`/colleges/${collegeId}/branches/${branchCode}`, branch)).data,
+    removeCollegeBranch: async (collegeId: string, branchCode: string): Promise<College> =>
+        (await api.delete(`/colleges/${collegeId}/branches/${branchCode}`)).data,
 
-  // === FILE UPLOAD (Synced with backend /colleges/upload) ===
-  uploadFile: async (file: File, collegeCode: string, category: string): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('collegeCode', collegeCode);
-    formData.append('category', category);
+    // ─── CP Users ─────────────────────────────────────────────────────────────
 
-    const response = await api.post('/colleges/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    /**
+     * Fetch CPH + STAFF users, filtered by status.
+     * status 'active'       → ?status=active       (isDeleted=false)
+     * status 'soft_deleted' → ?status=soft_deleted  (isDeleted=true)
+     */
+    searchCPUsers: async (
+        collegeId: string,
+        query?: string,
+        status: 'active' | 'soft_deleted' = 'active'
+    ): Promise<User[]> => {
+        const params: Record<string, string> = { status };
+        if (query) params.search = query;
 
-    // Backend returns { url: "..." } → extract url
-    return response.data.url || response.data;
-  },
+        const [cphRes, staffRes] = await Promise.all([
+            api.get(`/accounts/college/${collegeId}/role/CPH`,   { params }).catch(() => ({ data: [] })),
+            api.get(`/accounts/college/${collegeId}/role/STAFF`, { params }).catch(() => ({ data: [] })),
+        ]);
+        const extract = (d: any): User[] => Array.isArray(d) ? d : (d?.content ?? []);
+        return [...extract(cphRes.data), ...extract(staffRes.data)];
+    },
 
-  // NEW: Get real-time stats (students, CP users, jobs)
-  getCollegeStats: async (collegeId: string): Promise<{
-    studentCount: number;
-    cpCount: number;
-    totalJobs: number;
-    activeJobs: number;
-  }> => {
-    try {
-      const response = await api.get(`/colleges/${collegeId}/stats`);
-      return response.data;
-    } catch (err) {
-      console.error("Stats fetch failed, using fallback", err);
-      // Fallback if backend doesn't have /stats yet
-      const [students, cpUsers, jobs] = await Promise.all([
-        api.get(`/accounts/college/${collegeId}/role/STUDENT`).catch(() => ({ data: [] })),
-        api.get(`/accounts/college/${collegeId}/role/CPH`).catch(() => ({ data: [] })),
-        api.get(`/jobs?collegeId=${collegeId}`).catch(() => ({ data: [] })),
-      ]);
+    /**
+     * Check if a username is available.
+     * Backend endpoint: GET /api/v1/accounts/check-username?username=xxx
+     * See UserAccountController.java for the new endpoint to add.
+     */
+    checkUsernameAvailable: async (username: string): Promise<{ available: boolean }> => {
+        const response = await api.get('/accounts/check-username', { params: { username } });
+        return response.data;
+    },
 
-      return {
-        studentCount: students.data?.length || 0,
-        cpCount: cpUsers.data?.length || 0,
-        totalJobs: jobs.data?.length || 0,
-        activeJobs: jobs.data?.filter((j: any) => j.status === 'Active')?.length || 0,
-      };
-    }
-  },
+    /**
+     * Create a CPH or STAFF account.
+     *
+     * ── PAYLOAD DESIGN ────────────────────────────────────────────────────────
+     * role       → URL query param ?role=CPH    (@RequestParam)
+     * everything → JSON body                    (@RequestBody UserCreateRequest)
+     *
+     * We send aadhaar as BOTH "aadhaar" AND "aadhaarNumber" keys because:
+     *   - UserCreateRequest.java might have field named "aadhaar" → getAadhaar()
+     *   - OR it might have field named "aadhaarNumber" → getAadhaarNumber()
+     * Sending both keys means Jackson will bind whichever field exists.
+     *
+     * address is sent as a flat object matching AddressFormData exactly.
+     * If UserCreateRequest.address is a typed class, Jackson can map the flat
+     * object to it as long as field names match and @JsonIgnoreProperties(ignoreUnknown=true)
+     * is present on UserCreateRequest (see UserCreateRequest.java fix).
+     * ─────────────────────────────────────────────────────────────────────────
+     */
+    createCPAdmin: async (data: {
+        username?:     string;
+        name:          string;
+        email:         string;
+        phone:         string;
+        department:    string;
+        aadhaar:       string;   // must be exactly 12 digits, stripped of non-digits
+        address:       AddressFormData;
+        collegeId:     string;
+        role:          string;
+        isCollegeHead: boolean;
+    }): Promise<User> => {
+        const { role, ...body } = data;
 
-  createCollege: async (data: Partial<College>, logoFile?: File, address?: AddressFormData): Promise<College> => {
-    const formData = new FormData();
-    if (logoFile) formData.append('logo', logoFile);
-    formData.append('college', new Blob([JSON.stringify({ ...data, address })], { type: 'application/json' }));
-
-    const response = await api.post('/colleges', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return response.data;
-  },
-
-  updateCollege: async (college: College, logoFile?: File, address?: AddressFormData): Promise<College> => {
-    const formData = new FormData();
-    if (logoFile) formData.append('logo', logoFile);
-    formData.append('college', new Blob([JSON.stringify({ ...college, address })], { type: 'application/json' }));
-
-    const response = await api.put(`/colleges/${college.id}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return response.data;
-  },
-
-  deleteCollege: async (id: string): Promise<void> => {
-    await api.delete(`/colleges/${id}`);
-  },
-
-  // CP Users
-  searchCPUsers: async (collegeId: string, query?: string): Promise<User[]> => {
-    const params = query ? { search: query } : {};
-    const [cphRes, staffRes] = await Promise.all([
-      api.get(`/accounts/college/${collegeId}/role/CPH`, { params }).catch(() => ({ data: [] })),
-      api.get(`/accounts/college/${collegeId}/role/STAFF`, { params }).catch(() => ({ data: [] })),
-    ]);
-    return [...(cphRes.data || []), ...(staffRes.data || [])];
-  },
-
-  createCPAdmin: async (data: any): Promise<User> => {
-    const response = await api.post('/accounts/cph', data);
-    return response.data;
-  },
-
-  // updateCPAdmin: async (user: User, address?: AddressFormData): Promise<User> => {
-  //   const payload = { ...user, address };
-  //   const response = await api.put(`/accounts/${user.id}`, payload);
-  //   return response.data;
-  // },
-
-  updateCPAdmin: async (user: User, address: AddressFormData) => {
         const payload = {
-            username: user.id, // Assuming id is used as username
-            name: user.fullName,
-            email: user.email,
-            phone: user.phone,
-            department: user.department,
-            aadhaarNumber: user.aadhaarNumber,
-            address,
-            collegeId: user.collegeId,
-            isCollegeHead: user.isCollegeHead || false,
+            // Username suffix — backend uses dto.getUsername() to build full username
+            username:      body.username || undefined,
+
+            // User fields — match UserCreateRequest getters
+            name:          body.name,
+            email:         body.email,
+            phone:         body.phone,
+            department:    body.department,
+            collegeId:     body.collegeId,
+            isCollegeHead: body.isCollegeHead,
+
+            // Send aadhaar under BOTH possible field names to handle either DTO definition
+            aadhaar:       body.aadhaar,       // if DTO field is: private String aadhaar
+            aadhaarNumber: body.aadhaar,       // if DTO field is: private String aadhaarNumber
+
+            // Send address as flat object — Jackson can map this to any POJO
+            // as long as field names match (addressLine1, city, state, zip, etc.)
+            address: {
+                addressLine1: body.address.addressLine1 || '',
+                addressLine2: body.address.addressLine2 || '',
+                village:      body.address.village      || '',
+                mandal:       body.address.mandal       || '',
+                city:         body.address.city         || '',
+                state:        body.address.state        || '',
+                zip:          body.address.zip          || '',
+                country:      body.address.country      || 'India',
+            },
+        };
+
+        const response = await api.post('/accounts/cph', payload, {
+            params: { role },  // → ?role=CPH or ?role=STAFF
+        });
+        return response.data;
+    },
+
+    /**
+     * Update a CPH / STAFF account.
+     * PUT /api/v1/accounts/{id}
+     * Sends both aadhaar field names for same reason as createCPAdmin.
+     */
+    updateCPAdmin: async (user: User, address: AddressFormData): Promise<User> => {
+        const cleanAadhaar = (user.aadhaarNumber || '').replace(/\D/g, '');
+        const payload = {
+            name:          user.fullName,
+            email:         user.email,
+            phone:         user.phone        ?? '',
+            department:    user.department   ?? '',
+            aadhaar:       cleanAadhaar,
+            aadhaarNumber: cleanAadhaar,
+            collegeId:     user.collegeId    ?? (user as any).college?.id ?? '',
+            isCollegeHead: user.isCollegeHead ?? false,
+            address: {
+                addressLine1: address.addressLine1 || '',
+                addressLine2: address.addressLine2 || '',
+                village:      address.village      || '',
+                mandal:       address.mandal       || '',
+                city:         address.city         || '',
+                state:        address.state        || '',
+                zip:          address.zip          || '',
+                country:      address.country      || 'India',
+            },
         };
         const response = await api.put(`/accounts/${user.id}`, payload);
         return response.data;
     },
 
-  deleteCPAdmin: async (id: string): Promise<void> => {
-    await api.delete(`/accounts/${id}`);
-  },
+    /**
+     * Delete a CP user.
+     * permanent=false → soft delete (isDeleted=true, data kept 90 days)
+     * permanent=true  → hard delete (permanent, ADMIN/SROTS_DEV only)
+     */
+    deleteCPAdmin: async (id: string, permanent: boolean = false): Promise<void> => {
+        await api.delete(`/accounts/${id}`, { params: { permanent } });
+    },
 
-  exportCPUsers: async (collegeId: string): Promise<void> => {
-    const response = await api.get(`/accounts/export/college/${collegeId}/cp`, {
-      params: { format: 'excel' },
-      responseType: 'blob',
-    });
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `CP_Users_${collegeId}.xlsx`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  },
+    /**
+     * Restore a soft-deleted CP user.
+     * POST /api/v1/accounts/{id}/restore
+     */
+    restoreCPAdmin: async (id: string): Promise<void> => {
+        await api.post(`/accounts/${id}/restore`);
+    },
 
-  exportMasterList: async (type: 'students' | 'cp_admin'): Promise<void> => {
-    const endpoint = type === 'students' ? '/accounts/export/all/students' : '/accounts/export/all/cp';
-    const response = await api.get(endpoint, {
-      params: { format: 'excel' },
-      responseType: 'blob',
-    });
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `${type === 'students' ? 'Students' : 'CP_Admins'}_Master_List.xlsx`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  },
-
-
-    // getCPStaff: async (collegeId: string): Promise<User[]> => {
-    //     const response = await api.get(`/accounts/college/${collegeId}/staff`);
-    //     return response.data;
-    // },
-
-    // updateCPStaff: async (user: User, address: AddressFormData) => {
-    //     return CollegeService.updateCPAdmin(user, address);
-    // },
-
-    // createCPStaff: async (data: any) => {
-    //     const payload = {
-    //         ...data,
-    //         name: data.fullName || data.name,
-    //         role: 'STAFF'
-    //     };
-    //     const response = await api.post('/accounts/staff', payload);
-    //     return response.data;
-    // },
-
-    // toggleCPStaffAccess: async (id: string) => {
-    //     const response = await api.put(`/accounts/${id}/access`);
-    //     return response.data;
-    // },
-
-    // deleteCPStaff: async (id: string) => {
-    //     await api.delete(`/accounts/${id}`);
-    // },
+    // ─── CP Staff backward-compat aliases ─────────────────────────────────────
 
     getCPStaff: async (collegeId: string): Promise<User[]> => {
         const response = await api.get(`/accounts/college/${collegeId}/role/STAFF`);
-        return response.data;
+        return Array.isArray(response.data) ? response.data : (response.data?.content ?? []);
     },
 
-    createCPStaff: async (data: any) => {
-        const payload = {
-            username: data.id,
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
-            department: data.department,
-            aadhaarNumber: data.aadhaar,
-            address: data.address,
-            collegeId: data.collegeId,
+    createCPStaff: async (data: any): Promise<User> => {
+        return CollegeService.createCPAdmin({
+            username:      data.username || data.usernameSuffix,
+            name:          data.name     || data.fullName,
+            email:         data.email,
+            phone:         data.phone,
+            department:    data.department,
+            aadhaar:       (data.aadhaar || data.aadhaarNumber || '').replace(/\D/g, ''),
+            address:       data.address  || { addressLine1:'',addressLine2:'',village:'',mandal:'',city:'',state:'',zip:'',country:'India' },
+            collegeId:     data.collegeId,
+            role:          'STAFF',
             isCollegeHead: false,
-        };
-        // Backend expects role as a query param
-        const response = await api.post('/accounts/cph?role=STAFF', payload);
-        return response.data;
-    },
-
-    updateCPStaff: async (user: User, address: AddressFormData) => {
-        const payload = {
-            username: user.username,
-            name: user.fullName,
-            email: user.email,
-            phone: user.phone,
-            department: user.department,
-            aadhaarNumber: user.aadhaarNumber,
-            address,
-            collegeId: user.collegeId,
-            isCollegeHead: user.isCollegeHead || false,
-        };
-        const response = await api.put(`/accounts/${user.id}`, payload);
-        return response.data;
-    },
-
-    toggleCPStaffAccess: async (id: string) => {
-        const response = await api.put(`/accounts/${id}/access`);
-        return response.data;
-    },
-
-    deleteCPStaff: async (id: string) => {
-        await api.delete(`/accounts/${id}`);
-    },
-
-    downloadCPTeamTemplate: async () => {
-        // Updated URL to include /api/admin/bulk as per your Controller
-        const response = await api.get('/admin/bulk/template/staff', { 
-            responseType: 'blob', 
-            params: { format: 'excel' } 
         });
-        
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'Staff_Bulk_Template.xlsx');
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
     },
 
-    bulkUploadStaff: async (file: File, collegeId: string) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('collegeId', collegeId);
-        formData.append('reportFormat', 'excel');
+    updateCPStaff: async (user: User, address: AddressFormData): Promise<User> =>
+        CollegeService.updateCPAdmin(user, address),
 
-        const response = await api.post('/admin/bulk/upload-staff', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-            responseType: 'blob'
+    deleteCPStaff: async (id: string, permanent: boolean = false): Promise<void> =>
+        CollegeService.deleteCPAdmin(id, permanent),
+
+    // ─── Restriction ──────────────────────────────────────────────────────────
+
+    toggleRestriction: async (userId: string, status: boolean): Promise<void> => {
+        await api.patch(`/accounts/${userId}/restrict`, {}, { params: { status } });
+    },
+
+    // ─── Exports ──────────────────────────────────────────────────────────────
+
+    exportCPUsers: async (collegeId: string): Promise<void> => {
+        const response = await api.get(`/accounts/export/college/${collegeId}/cp`, {
+            params: { format: 'excel' }, responseType: 'blob',
         });
-
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'Staff_Upload_Report.xlsx');
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
+        triggerDownload(new Blob([response.data]), `CP_Users_${collegeId}.xlsx`);
     },
 
-    // addCollegeBranch: async (collegeId: string, branch: { name: string, code: string }) => {
-    //     const response = await api.post(`/colleges/${collegeId}/branches`, branch);
-    //     return response.data;
-    // },
-
-    // removeCollegeBranch: async (collegeId: string, branchCode: string) => {
-    //     await api.delete(`/colleges/${collegeId}/branches/${branchCode}`);
-    // },
-
-    // getCollegeById: async (id: string): Promise<College> => {
-    //     const response = await api.get(`/colleges/${id}`);
-    //     return response.data;
-    // },
-
-    // 1. Add Branch
-    addCollegeBranch: async (collegeId: string, branch: BranchDTO): Promise<College> => {
-        const response = await api.post(`/api/v1/colleges/${collegeId}/branches`, branch);
-        return response.data;
+    exportMasterList: async (type: 'students' | 'cp_admin'): Promise<void> => {
+        const ep = type === 'students' ? '/accounts/export/all/students' : '/accounts/export/all/cp';
+        const response = await api.get(ep, { params: { format: 'excel' }, responseType: 'blob' });
+        triggerDownload(new Blob([response.data]),
+            `${type === 'students' ? 'Students' : 'CP_Admins'}_Master_List.xlsx`);
     },
 
-    // 2. Update Branch (Targeted by code)
-    updateCollegeBranch: async (collegeId: string, branchCode: string, branch: BranchDTO): Promise<College> => {
-        const response = await api.put(`/api/v1/colleges/${collegeId}/branches/${branchCode}`, branch);
-        return response.data;
+    downloadCPTeamTemplate: async (): Promise<void> => {
+        const response = await api.get('/admin/bulk/template/staff', {
+            responseType: 'blob', params: { format: 'excel' },
+        });
+        triggerDownload(new Blob([response.data]), 'Staff_Bulk_Template.xlsx');
     },
 
-    // 3. Delete Branch
-    removeCollegeBranch: async (collegeId: string, branchCode: string): Promise<College> => {
-        const response = await api.delete(`/api/v1/colleges/${collegeId}/branches/${branchCode}`);
-        return response.data;
-    }
+    bulkUploadStaff: async (file: File, collegeId: string): Promise<void> => {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('collegeId', collegeId);
+        fd.append('reportFormat', 'excel');
+        const response = await api.post('/admin/bulk/upload-staff', fd, {
+            headers: { 'Content-Type': 'multipart/form-data' }, responseType: 'blob',
+        });
+        triggerDownload(new Blob([response.data]), 'Staff_Upload_Report.xlsx');
+    },
 
+    // ─── Validation ───────────────────────────────────────────────────────────
 
+    validateCollegeData: (data: Partial<College>): string[] => {
+        const errors: string[] = [];
+        if (!data.name?.trim())                                  errors.push('College Name');
+        if (!data.code?.match(/^[A-Z0-9]+$/))                   errors.push('College Code (alphanumeric uppercase)');
+        if (!data.email?.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/))  errors.push('Official Email');
+        if (!data.phone?.match(/^\d{10}$/))                     errors.push('Mobile Number (10 digits)');
+        if (data.landline && !data.landline.match(/^\d{10}$/))  errors.push('Landline (10 digits)');
+        return errors;
+    },
 };
+
+function triggerDownload(blob: Blob, filename: string): void {
+    const url  = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href  = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+}

@@ -3,8 +3,11 @@ package com.srots.service;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +32,10 @@ import com.srots.dto.EducationHistoryDTO;
 import com.srots.dto.StudentProfileRequest;
 import com.srots.dto.UserCreateRequest;
 import com.srots.model.College;
+import com.srots.model.StudentProfile;
 import com.srots.model.User;
 import com.srots.repository.CollegeRepository;
+import com.srots.repository.StudentProfileRepository;
 import com.srots.repository.UserRepository;
 
 @Service
@@ -42,6 +47,8 @@ public class BulkUploadService {
 	private UserRepository userRepository;
 	@Autowired
 	private CollegeRepository collegeRepository;
+	@Autowired
+	private StudentProfileRepository studentProfileRepository;
 
 	// --- REPORT DTO ---
 	public static class RowStatus {
@@ -604,4 +611,299 @@ public class BulkUploadService {
 			errorReports.add(new RowStatus("Log Entry", "FAILED", err));
 		return generateFinalReport(errorReports, "txt");
 	}
+	
+	
+	
+	public Map<String, Object> previewBulkDeletion(MultipartFile file, String collegeId) throws Exception {
+        College college = collegeRepository.findById(collegeId)
+                .orElseThrow(() -> new RuntimeException("College not found: " + collegeId));
+        String collegeCode = college.getCode();
+
+        List<String> rollNumbers = parseRollNumberColumn(file);
+
+        List<Map<String, Object>> found = new ArrayList<>();
+        List<String> notFound = new ArrayList<>();
+
+        for (String rollNumber : rollNumbers) {
+            if (rollNumber == null || rollNumber.isBlank()) continue;
+
+            String username = collegeCode + "_" + rollNumber.trim();
+            User user = userRepository.findByUsername(username).orElse(null);
+
+            if (user == null) {
+                // Also try direct lookup by roll number via student profile
+                StudentProfile profile = studentProfileRepository.findByRollNumberAndCollegeId(rollNumber.trim(), collegeId).orElse(null);
+                if (profile != null) {
+                    user = profile.getUser();
+                    if (user == null) {
+                        user = userRepository.findById(profile.getUserId()).orElse(null);
+                    }
+                }
+            }
+
+            if (user != null) {
+                // Flat map — keys must match BulkDeleteModal: s.id, s.fullName, s.email
+                Map<String, Object> entry = new HashMap<>();
+                entry.put("id", rollNumber.trim());         // Roll number as display ID
+                entry.put("fullName", user.getFullName());  // s.fullName in modal table
+                entry.put("email", user.getEmail());        // s.email in modal table
+                found.add(entry);
+            } else {
+                notFound.add(rollNumber.trim());
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("found", found);
+        result.put("notFound", notFound);
+        return result;
+    }
+	
+	public Map<String, Object> previewBulkRenewal(MultipartFile file, String collegeId) throws Exception {
+        College college = collegeRepository.findById(collegeId)
+                .orElseThrow(() -> new RuntimeException("College not found: " + collegeId));
+        String collegeCode = college.getCode();
+
+        List<String[]> rows = parseRollNumberAndMonthsColumns(file);
+
+        List<Map<String, Object>> found = new ArrayList<>();
+        List<String> notFound = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+
+        for (String[] row : rows) {
+            if (row.length < 2) continue;
+            String rollNumber = row[0] == null ? "" : row[0].trim();
+            String monthsStr  = row[1] == null ? "" : row[1].trim();
+
+            if (rollNumber.isBlank()) continue;
+
+            // Parse months — default to 6 if blank or invalid
+            int months;
+            try {
+                months = Integer.parseInt(monthsStr);
+                if (months <= 0) months = 6;
+            } catch (NumberFormatException e) {
+                months = 6;
+            }
+
+            // Look up user by username pattern
+            String username = collegeCode + "_" + rollNumber;
+            User user = userRepository.findByUsername(username).orElse(null);
+            StudentProfile profile = null;
+
+            if (user == null) {
+                profile = studentProfileRepository.findByRollNumberAndCollegeId(rollNumber, collegeId).orElse(null);
+                if (profile != null) {
+                    user = profile.getUser();
+                    if (user == null) {
+                        user = userRepository.findById(profile.getUserId()).orElse(null);
+                    }
+                }
+            } else {
+                profile = studentProfileRepository.findById(user.getId()).orElse(null);
+            }
+
+            if (user == null || profile == null) {
+                notFound.add(rollNumber);
+                continue;
+            }
+
+            // Calculate renewal dates
+            LocalDate currentExpiry = profile.getPremiumEndDate();
+            String currentExpiryStr = (currentExpiry != null) ? currentExpiry.toString() : "Not Set";
+
+            // Status: is the account currently active or already expired?
+            String status = (currentExpiry != null && currentExpiry.isAfter(today)) ? "Active" : "Expired";
+
+            // Base for extension: if expired or null, start from today
+            LocalDate renewalBase = (currentExpiry != null && currentExpiry.isAfter(today))
+                    ? currentExpiry
+                    : today;
+            LocalDate newExpiry = renewalBase.plusMonths(months);
+
+            // Build nested student object — matches BulkRenewalModal: item.student.id etc.
+            Map<String, Object> studentMap = new HashMap<>();
+            studentMap.put("id", rollNumber);                // item.student.id
+            studentMap.put("fullName", user.getFullName());  // item.student.fullName
+            studentMap.put("email", user.getEmail());        // item.student.email
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("student", studentMap);
+            item.put("months", months);
+            item.put("oldEnd", currentExpiryStr);
+            item.put("newEnd", newExpiry.toString());
+            item.put("status", status);
+
+            found.add(item);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("found", found);
+        result.put("notFound", notFound);
+        return result;
+    }
+	
+	public byte[] generateRenewalTemplate(String format) throws IOException {
+        if ("csv".equalsIgnoreCase(format)) {
+            String csv = "Roll Number,Months\n";
+            return csv.getBytes();
+        }
+
+        // Excel template
+        try (Workbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            Sheet sheet = workbook.createSheet("Renewal");
+
+            // Bold header style
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+
+            Row header = sheet.createRow(0);
+            Cell c0 = header.createCell(0);
+            c0.setCellValue("Roll Number");
+            c0.setCellStyle(headerStyle);
+
+            Cell c1 = header.createCell(1);
+            c1.setCellValue("Months");
+            c1.setCellStyle(headerStyle);
+
+            // Auto-size columns
+            sheet.setColumnWidth(0, 5000);
+            sheet.setColumnWidth(1, 3000);
+
+            workbook.write(out);
+            return out.toByteArray();
+        }
+    }
+
+    // ─── Private file parsing helpers ─────────────────────────────────────────
+
+    /**
+     * Parses a single-column file (Excel or CSV) and returns a list of roll number strings.
+     * Skips the header row if the first cell value is a non-numeric string.
+     */
+    private List<String> parseRollNumberColumn(MultipartFile file) throws Exception {
+        String fileName = file.getOriginalFilename() != null ? file.getOriginalFilename().toLowerCase() : "";
+        List<String> rollNumbers = new ArrayList<>();
+
+        if (fileName.endsWith(".csv")) {
+            // CSV parsing
+            String content = new String(file.getBytes());
+            String[] lines = content.split("\n");
+            for (int i = 0; i < lines.length; i++) {
+                String line = lines[i].trim().replace("\r", "");
+                if (line.isBlank()) continue;
+                // Skip header row (first non-blank line if it's not a valid roll number pattern)
+                if (i == 0 && line.toLowerCase().contains("roll")) continue;
+                // Take only first column if CSV has multiple
+                String value = line.split(",")[0].trim();
+                if (!value.isBlank()) rollNumbers.add(value);
+            }
+        } else {
+            // Excel parsing (.xlsx / .xls)
+            try (InputStream is = file.getInputStream();
+                 Workbook workbook = new XSSFWorkbook(is)) {
+                Sheet sheet = workbook.getSheetAt(0);
+                boolean firstRow = true;
+                for (Row row : sheet) {
+                    if (row == null) continue;
+                    Cell cell = row.getCell(0);
+                    if (cell == null) continue;
+                    String value = getCellStringValue(cell);
+                    if (value.isBlank()) continue;
+                    // Skip header
+                    if (firstRow && value.toLowerCase().contains("roll")) {
+                        firstRow = false;
+                        continue;
+                    }
+                    firstRow = false;
+                    rollNumbers.add(value.trim());
+                }
+            }
+        }
+
+        return rollNumbers;
+    }
+
+    /**
+     * Parses a two-column file (Excel or CSV) with Roll Number and Months columns.
+     * Returns a list of String[2] arrays where [0] = rollNumber, [1] = months.
+     * Automatically skips the header row.
+     */
+    private List<String[]> parseRollNumberAndMonthsColumns(MultipartFile file) throws Exception {
+        String fileName = file.getOriginalFilename() != null ? file.getOriginalFilename().toLowerCase() : "";
+        List<String[]> rows = new ArrayList<>();
+
+        if (fileName.endsWith(".csv")) {
+            String content = new String(file.getBytes());
+            String[] lines = content.split("\n");
+            for (int i = 0; i < lines.length; i++) {
+                String line = lines[i].trim().replace("\r", "");
+                if (line.isBlank()) continue;
+                // Skip header
+                if (i == 0 && (line.toLowerCase().contains("roll") || line.toLowerCase().contains("month"))) continue;
+                String[] parts = line.split(",", -1);
+                String rollNumber = parts.length > 0 ? parts[0].trim() : "";
+                String months = parts.length > 1 ? parts[1].trim() : "6";
+                rows.add(new String[]{rollNumber, months});
+            }
+        } else {
+            try (InputStream is = file.getInputStream();
+                 Workbook workbook = new XSSFWorkbook(is)) {
+                Sheet sheet = workbook.getSheetAt(0);
+                boolean firstRow = true;
+                for (Row row : sheet) {
+                    if (row == null) continue;
+                    Cell rollCell = row.getCell(0);
+                    Cell monthsCell = row.getCell(1);
+                    String rollValue = rollCell != null ? getCellStringValue(rollCell).trim() : "";
+                    if (rollValue.isBlank()) continue;
+                    // Skip header
+                    if (firstRow && rollValue.toLowerCase().contains("roll")) {
+                        firstRow = false;
+                        continue;
+                    }
+                    firstRow = false;
+                    String monthsValue = monthsCell != null ? getCellStringValue(monthsCell).trim() : "6";
+                    rows.add(new String[]{rollValue, monthsValue});
+                }
+            }
+        }
+
+        return rows;
+    }
+
+    /**
+     * Safely reads any cell type as a string, handling numeric cells
+     * that POI reads as double (e.g. roll numbers like "21701A0501" stored as text,
+     * or months like 6 stored as numeric).
+     */
+    private String getCellStringValue(Cell cell) {
+        if (cell == null) return "";
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue().trim();
+            case NUMERIC:
+                // Avoid "6.0" for integer months — strip decimal if whole number
+                double d = cell.getNumericCellValue();
+                if (d == Math.floor(d)) {
+                    return String.valueOf((long) d);
+                }
+                return String.valueOf(d);
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                try {
+                    return cell.getStringCellValue().trim();
+                } catch (Exception e) {
+                    return String.valueOf(cell.getNumericCellValue());
+                }
+            default:
+                return "";
+        }
+    }
+
 }

@@ -138,6 +138,7 @@ import { CollegeService } from '../../../../../services/collegeService';
 import { JobOverviewTab } from './JobOverviewTab';
 import { JobRoundsTab } from './JobRoundsTab';
 import { JobApplicantsTab } from './JobApplicantsTab';
+// import { JobEligibleTab } from './JobEligibleTab';
 import { JobEligibleTab } from './JobEligibleTab';
 
 /**

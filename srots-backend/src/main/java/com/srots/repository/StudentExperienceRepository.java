@@ -28,4 +28,6 @@ public interface StudentExperienceRepository extends JpaRepository<StudentExperi
     @Transactional
     @Query("DELETE FROM StudentExperience e WHERE e.id = :id AND e.student.id = :studentId")
     int deleteByExperienceIdAndStudentId(@Param("id") String id, @Param("studentId") String studentId);
+
+	long countByStudent_Id(String studentId);
 }

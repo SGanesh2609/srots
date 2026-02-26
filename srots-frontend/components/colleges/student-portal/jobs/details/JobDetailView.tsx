@@ -211,29 +211,417 @@
 //     );
 // };
 
-import React, { useState, useEffect } from 'react';
+// import React, { useState, useEffect } from 'react';
+// import { Job, Student, StudentJobView } from '../../../../../types';
+// import { 
+//     ArrowLeft, Building, 
+//     CheckCircle, MapPin, Briefcase, Ban, Lock, AlertTriangle, ExternalLink, Calendar as CalendarIcon, FileText, List, Loader2 
+// } from 'lucide-react';
+// import { JobService } from '../../../../../services/jobService';
+// import { JobOverviewTab } from '../../../cp-portal/jobs/details/JobOverviewTab';
+
+// /**
+//  * COMPLETE FIXED: JobDetailView with proper status syncing
+//  * 
+//  * KEY FIXES:
+//  * 1. Receives viewData prop with student eligibility/application status
+//  * 2. Shows correct status badge based on viewData flags
+//  * 3. Shows/hides action buttons based on actual state
+//  * 4. Properly maps job field values (responsibilities, qualifications, etc.)
+//  */
+
+// interface JobDetailViewProps {
+//     job: Job;
+//     student: Student;
+//     viewData: StudentJobView;  // CRITICAL: Added this prop
+//     onBack: () => void;
+//     onApply: (id: string) => void;
+//     onNotInterested: (id: string) => void;
+// }
+
+// export const JobDetailView: React.FC<JobDetailViewProps> = ({ 
+//     job, student, viewData, onBack, onApply, onNotInterested
+// }) => {
+//     const [loading, setLoading] = useState(false);
+
+//     // CRITICAL: Use viewData that was passed from parent
+//     const { isApplied, isEligible, eligibilityReason, isExpired, isNotInterested } = viewData;
+    
+//     if (!job) {
+//         return (
+//             <div className="p-12 text-center text-gray-500 animate-in fade-in">
+//                 <Briefcase size={48} className="mx-auto mb-4 opacity-20" />
+//                 <p>Job information is currently unavailable.</p>
+//                 <button onClick={onBack} className="mt-4 text-blue-600 font-bold hover:underline">Back to Jobs</button>
+//             </div>
+//         );
+//     }
+
+//     // CRITICAL FIX: Use job fields directly (already mapped in JobService)
+//     const companyName = job.companyName || job.company || 'Unknown Company';
+//     const jobType = job.jobType || job.type || 'Full-Time';
+//     const workMode = job.workMode || job.workArrangement || 'On-site';
+    
+//     // Parse JSON fields for display
+//     const responsibilities = (() => {
+//         try {
+//             if (Array.isArray(job.responsibilitiesJson)) return job.responsibilitiesJson;
+//             if (typeof job.responsibilitiesJson === 'string') {
+//                 return JSON.parse(job.responsibilitiesJson);
+//             }
+//             return [];
+//         } catch (e) {
+//             return [];
+//         }
+//     })();
+    
+//     const qualifications = (() => {
+//         try {
+//             if (Array.isArray(job.qualificationsJson)) return job.qualificationsJson;
+//             if (typeof job.qualificationsJson === 'string') {
+//                 return JSON.parse(job.qualificationsJson);
+//             }
+//             return [];
+//         } catch (e) {
+//             return [];
+//         }
+//     })();
+    
+//     const preferredQualifications = (() => {
+//         try {
+//             if (Array.isArray(job.preferredQualificationsJson)) return job.preferredQualificationsJson;
+//             if (typeof job.preferredQualificationsJson === 'string') {
+//                 return JSON.parse(job.preferredQualificationsJson);
+//             }
+//             return [];
+//         } catch (e) {
+//             return [];
+//         }
+//     })();
+    
+//     const benefits = (() => {
+//         try {
+//             if (Array.isArray(job.benefitsJson)) return job.benefitsJson;
+//             if (typeof job.benefitsJson === 'string') {
+//                 return JSON.parse(job.benefitsJson);
+//             }
+//             return [];
+//         } catch (e) {
+//             return [];
+//         }
+//     })();
+    
+//     const rounds = (() => {
+//         try {
+//             if (Array.isArray(job.rounds)) return job.rounds;
+//             if (typeof job.roundsJson === 'string') {
+//                 return JSON.parse(job.roundsJson);
+//             }
+//             return [];
+//         } catch (e) {
+//             return [];
+//         }
+//     })();
+    
+//     const documents = (() => {
+//         try {
+//             if (Array.isArray(job.documents)) return job.documents;
+//             if (typeof job.attachmentsJson === 'string') {
+//                 return JSON.parse(job.attachmentsJson);
+//             }
+//             return [];
+//         } catch (e) {
+//             return [];
+//         }
+//     })();
+
+//     return (
+//         <div className="bg-white rounded-xl border shadow-sm h-full md:h-[calc(100vh-8rem)] flex flex-col animate-in fade-in slide-in-from-right-4 overflow-hidden absolute inset-0 z-20 md:static">
+//             <div className="p-4 border-b flex items-center gap-3 bg-white z-10 rounded-t-xl shadow-sm">
+//                 <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors">
+//                     <ArrowLeft size={20} />
+//                 </button>
+//                 <span className="font-bold text-gray-700">Back to Job List</span>
+//             </div>
+
+//             <div className="flex-1 overflow-y-auto w-full bg-gray-50/30">
+//                 <div className="p-4 md:p-8 max-w-5xl mx-auto min-h-full flex flex-col">
+//                     <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8">
+//                         <div className="flex items-start gap-4">
+//                             <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-2xl font-bold text-gray-500 border shrink-0">
+//                                 {companyName[0] || '?'}
+//                             </div>
+//                             <div>
+//                                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{job.title || 'Job Title'}</h1>
+//                                 <div className="flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm text-gray-600">
+//                                     <span className="font-bold flex items-center gap-1"><Building size={14} className="md:w-4 md:h-4"/> {companyName}</span>
+//                                     <span className="hidden md:inline text-gray-300">|</span>
+//                                     <span className="flex items-center gap-1"><MapPin size={14} className="md:w-4 md:h-4"/> {job.location || 'Location TBA'}</span>
+//                                     <span className="hidden md:inline text-gray-300">|</span>
+//                                     <span className="flex items-center gap-1"><Briefcase size={14} className="md:w-4 md:h-4"/> {jobType}</span>
+//                                     <span className="hidden md:inline text-gray-300">|</span>
+//                                     <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-full">{workMode}</span>
+//                                 </div>
+//                             </div>
+//                         </div>
+                        
+//                         {/* CRITICAL FIX: Status badge properly synced with viewData */}
+//                         <div className="flex flex-row md:flex-col items-center md:items-end gap-2 w-full md:w-auto justify-between md:justify-start mt-2 md:mt-0">
+//                             <div className={`px-4 py-1.5 rounded-full text-sm font-bold border ${
+//                                 isApplied ? 'bg-green-100 text-green-700 border-green-200' : 
+//                                 !isEligible ? 'bg-red-50 text-red-700 border-red-200' : 
+//                                 isExpired ? 'bg-gray-100 text-gray-500 border-gray-200' : 
+//                                 'bg-blue-50 text-blue-700 border-blue-200'
+//                             }`}>
+//                                 {isApplied ? (
+//                                     <span className="flex items-center gap-1"><CheckCircle size={16}/> Applied</span>
+//                                 ) : !isEligible ? (
+//                                     <span className="flex items-center gap-1"><Ban size={16}/> Not Eligible</span>
+//                                 ) : isExpired ? (
+//                                     <span className="flex items-center gap-1"><Lock size={16}/> Closed</span>
+//                                 ) : (
+//                                     <span className="flex items-center gap-1"><CheckCircle size={16}/> Open</span>
+//                                 )}
+//                             </div>
+//                             <span className="text-xs text-gray-500 font-medium">Posted: {job.postedAt || 'N/A'}</span>
+//                         </div>
+//                     </div>
+
+//                     {/* Job Summary */}
+//                     {job.summary && (
+//                         <div className="mb-6 p-6 bg-white rounded-2xl border shadow-sm">
+//                             <h3 className="text-lg font-bold text-gray-900 mb-3">About this Role</h3>
+//                             <p className="text-gray-700 leading-relaxed">{job.summary}</p>
+//                         </div>
+//                     )}
+
+//                     {/* Responsibilities */}
+//                     {responsibilities.length > 0 && (
+//                         <div className="mb-6 p-6 bg-white rounded-2xl border shadow-sm">
+//                             <h3 className="text-lg font-bold text-gray-900 mb-4">Key Responsibilities</h3>
+//                             <ul className="space-y-2">
+//                                 {responsibilities.map((resp: string, idx: number) => (
+//                                     <li key={idx} className="flex items-start gap-2">
+//                                         <span className="text-blue-600 mt-1">•</span>
+//                                         <span className="text-gray-700">{resp}</span>
+//                                     </li>
+//                                 ))}
+//                             </ul>
+//                         </div>
+//                     )}
+
+//                     {/* Qualifications */}
+//                     {qualifications.length > 0 && (
+//                         <div className="mb-6 p-6 bg-white rounded-2xl border shadow-sm">
+//                             <h3 className="text-lg font-bold text-gray-900 mb-4">Required Qualifications</h3>
+//                             <ul className="space-y-2">
+//                                 {qualifications.map((qual: string, idx: number) => (
+//                                     <li key={idx} className="flex items-start gap-2">
+//                                         <span className="text-green-600 mt-1">✓</span>
+//                                         <span className="text-gray-700">{qual}</span>
+//                                     </li>
+//                                 ))}
+//                             </ul>
+//                         </div>
+//                     )}
+
+//                     {/* Preferred Qualifications */}
+//                     {preferredQualifications.length > 0 && (
+//                         <div className="mb-6 p-6 bg-blue-50 rounded-2xl border border-blue-100">
+//                             <h3 className="text-lg font-bold text-blue-900 mb-4">Preferred Qualifications</h3>
+//                             <ul className="space-y-2">
+//                                 {preferredQualifications.map((pref: string, idx: number) => (
+//                                     <li key={idx} className="flex items-start gap-2">
+//                                         <span className="text-blue-600 mt-1">⭐</span>
+//                                         <span className="text-blue-800">{pref}</span>
+//                                     </li>
+//                                 ))}
+//                             </ul>
+//                         </div>
+//                     )}
+
+//                     {/* Eligibility Criteria */}
+//                     <div className="mb-6 p-6 bg-purple-50 rounded-2xl border border-purple-100">
+//                         <h3 className="text-lg font-bold text-purple-900 mb-4">Eligibility Criteria</h3>
+//                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//                             {job.minUgScore && (
+//                                 <div className="flex justify-between items-center py-2 border-b border-purple-100">
+//                                     <span className="text-purple-800 font-medium">Min UG Score:</span>
+//                                     <span className="text-purple-900 font-bold">{job.minUgScore} {job.formatUg || '%'}</span>
+//                                 </div>
+//                             )}
+//                             {job.min10thScore && (
+//                                 <div className="flex justify-between items-center py-2 border-b border-purple-100">
+//                                     <span className="text-purple-800 font-medium">Min 10th Score:</span>
+//                                     <span className="text-purple-900 font-bold">{job.min10thScore} {job.format10th || '%'}</span>
+//                                 </div>
+//                             )}
+//                             {job.min12thScore && (
+//                                 <div className="flex justify-between items-center py-2 border-b border-purple-100">
+//                                     <span className="text-purple-800 font-medium">Min 12th Score:</span>
+//                                     <span className="text-purple-900 font-bold">{job.min12thScore} {job.format12th || '%'}</span>
+//                                 </div>
+//                             )}
+//                             {job.maxBacklogs !== undefined && (
+//                                 <div className="flex justify-between items-center py-2 border-b border-purple-100">
+//                                     <span className="text-purple-800 font-medium">Max Backlogs:</span>
+//                                     <span className="text-purple-900 font-bold">{job.maxBacklogs}</span>
+//                                 </div>
+//                             )}
+//                             {job.allowGaps !== undefined && (
+//                                 <div className="flex justify-between items-center py-2 border-b border-purple-100">
+//                                     <span className="text-purple-800 font-medium">Gap Years Allowed:</span>
+//                                     <span className="text-purple-900 font-bold">{job.allowGaps ? 'Yes' : 'No'}</span>
+//                                 </div>
+//                             )}
+//                         </div>
+//                     </div>
+
+//                     {/* Benefits */}
+//                     {benefits.length > 0 && (
+//                         <div className="mb-6 p-6 bg-green-50 rounded-2xl border border-green-100">
+//                             <h3 className="text-lg font-bold text-green-900 mb-4">Benefits & Perks</h3>
+//                             <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+//                                 {benefits.map((benefit: string, idx: number) => (
+//                                     <li key={idx} className="flex items-start gap-2">
+//                                         <span className="text-green-600 mt-1">✓</span>
+//                                         <span className="text-green-800">{benefit}</span>
+//                                     </li>
+//                                 ))}
+//                             </ul>
+//                         </div>
+//                     )}
+
+//                     {/* Selection Process */}
+//                     {rounds.length > 0 && (
+//                         <div className="mb-8 pb-8 border-b bg-white p-6 rounded-2xl border shadow-sm">
+//                             <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><List size={18} className="text-blue-600"/> Selection Process</h3>
+//                             <div className="space-y-3">
+//                                 {rounds.map((round: any, idx: number) => (
+//                                     <div key={idx} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
+//                                         <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">{idx + 1}</span>
+//                                         <div>
+//                                             <p className="font-bold text-gray-800 text-sm">{round.name}</p>
+//                                             <p className="text-xs text-gray-500 flex items-center gap-1"><CalendarIcon size={10}/> {round.date}</p>
+//                                         </div>
+//                                     </div>
+//                                 ))}
+//                             </div>
+//                         </div>
+//                     )}
+
+//                     {/* Attachments */}
+//                     {documents.length > 0 && (
+//                         <div className="mb-8 p-6 bg-blue-50 rounded-xl border border-blue-100">
+//                             <h3 className="text-sm font-bold text-blue-800 mb-3 uppercase tracking-wider">Attachments</h3>
+//                             <div className="flex flex-wrap gap-3">
+//                                 {documents.map((doc: any, i: number) => (
+//                                     <a key={i} href={doc.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 text-blue-700 font-bold text-xs transition-colors shadow-sm w-full md:w-auto justify-center md:justify-start">
+//                                         <FileText size={16}/> {doc.name}
+//                                     </a>
+//                                 ))}
+//                             </div>
+//                         </div>
+//                     )}
+
+//                     {/* CRITICAL FIX: Action buttons properly synced with viewData */}
+//                     <div className="mt-auto pt-8 border-t bg-gray-50/50 p-6 rounded-xl border border-gray-200 pb-20 md:pb-6">
+//                         {isApplied ? (
+//                             <div className="flex flex-col md:flex-row justify-between items-center gap-6 animate-in fade-in">
+//                                 <div className="text-green-800">
+//                                     <div className="flex items-center gap-2 font-bold text-xl">
+//                                         <CheckCircle size={24}/> Application Submitted
+//                                     </div>
+//                                     <p className="text-sm opacity-80 mt-1">You have successfully applied for this position. Track your status in the App Status tab.</p>
+//                                 </div>
+//                                 <button disabled className="w-full md:w-auto px-8 py-3 bg-green-100 text-green-800 font-bold rounded-lg border border-green-200">
+//                                     Applied
+//                                 </button>
+//                             </div>
+//                         ) : !isEligible ? (
+//                             <div className="flex flex-col gap-4 animate-in fade-in">
+//                                     <div className="flex items-center gap-3 text-red-800 font-bold text-xl">
+//                                         <div className="p-2 bg-red-100 rounded-full"><AlertTriangle size={24}/></div>
+//                                         Not Eligible to Apply
+//                                     </div>
+//                                     <div className="bg-red-50 border-l-4 border-red-500 p-5 rounded-r-lg shadow-sm">
+//                                         <h5 className="text-red-900 font-bold mb-2">Reason:</h5>
+//                                         <p className="text-red-700 font-medium text-sm md:text-lg leading-relaxed">
+//                                             {eligibilityReason || "You do not meet the academic or batch requirements for this position."}
+//                                         </p>
+//                                     </div>
+//                                     <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
+//                                         <div className="flex items-center gap-2">
+//                                             <Lock size={14}/> Application Locked
+//                                         </div>
+//                                         <div>
+//                                             Deadline: <span className="font-bold">{job.applicationDeadline}</span>
+//                                         </div>
+//                                     </div>
+//                             </div>
+//                         ) : (
+//                             <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+//                                 <div className="text-sm text-gray-600 w-full md:w-auto flex justify-between md:block">
+//                                     <span className="block text-xs font-bold text-gray-400 uppercase mb-1">Last Date to Apply</span>
+//                                     <span className={`font-bold text-lg ${isExpired ? 'text-red-600' : 'text-gray-900'}`}>{job.applicationDeadline}</span>
+//                                 </div>
+                                
+//                                 <div className="w-full md:w-auto">
+//                                     {isExpired ? (
+//                                         <div className="px-8 py-3 bg-gray-200 text-gray-500 font-bold rounded-lg flex items-center justify-center gap-2 cursor-not-allowed w-full md:w-auto">
+//                                             <Lock size={20}/> Applications Closed
+//                                         </div>
+//                                     ) : isNotInterested ? (
+//                                         <div className="px-8 py-3 bg-gray-100 text-gray-600 font-bold rounded-lg border border-gray-200 flex items-center justify-center gap-2 w-full md:w-auto">
+//                                             <Ban size={20}/> Marked as Not Interested
+//                                         </div>
+//                                     ) : (
+//                                         <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+//                                             <button onClick={() => onNotInterested(job.id)} className="w-full md:w-auto flex-1 px-5 py-3 bg-white border border-gray-300 text-gray-600 font-bold rounded-lg hover:bg-gray-100 transition-colors">
+//                                                 Not Interested
+//                                             </button>
+                                            
+//                                             {job.externalLink ? (
+//                                                 <a 
+//                                                     href={job.externalLink} 
+//                                                     target="_blank" 
+//                                                     rel="noreferrer"
+//                                                     className="w-full md:w-auto flex-1 px-8 py-3 bg-blue-600 text-white font-bold rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-md"
+//                                                 >
+//                                                     Apply Externally <ExternalLink size={18}/>
+//                                                 </a>
+//                                             ) : (
+//                                                 <button 
+//                                                     onClick={() => onApply(job.id)} 
+//                                                     className="w-full md:w-auto flex-[2] px-8 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-all shadow-md flex items-center justify-center gap-2"
+//                                                 >
+//                                                     Apply Now <Briefcase size={20}/>
+//                                                 </button>
+//                                             )}
+//                                         </div>
+//                                     )}
+//                                 </div>
+//                             </div>
+//                         )}
+//                     </div>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// };
+import React from 'react';
 import { Job, Student, StudentJobView } from '../../../../../types';
 import { 
-    ArrowLeft, Building, 
-    CheckCircle, MapPin, Briefcase, Ban, Lock, AlertTriangle, ExternalLink, Calendar as CalendarIcon, FileText, List, Loader2 
+    ArrowLeft, Building, CheckCircle, MapPin, Briefcase, Ban, 
+    Lock, AlertTriangle, ExternalLink, Calendar as CalendarIcon, 
+    FileText, List, DollarSign, Clock, ShieldCheck, Tag, Info, 
+    Award, Layers, Target, Users
 } from 'lucide-react';
-import { JobService } from '../../../../../services/jobService';
-import { JobOverviewTab } from '../../../cp-portal/jobs/details/JobOverviewTab';
-
-/**
- * COMPLETE FIXED: JobDetailView with proper status syncing
- * 
- * KEY FIXES:
- * 1. Receives viewData prop with student eligibility/application status
- * 2. Shows correct status badge based on viewData flags
- * 3. Shows/hides action buttons based on actual state
- * 4. Properly maps job field values (responsibilities, qualifications, etc.)
- */
 
 interface JobDetailViewProps {
     job: Job;
     student: Student;
-    viewData: StudentJobView;  // CRITICAL: Added this prop
+    viewData: StudentJobView;
     onBack: () => void;
     onApply: (id: string) => void;
     onNotInterested: (id: string) => void;
@@ -242,14 +630,11 @@ interface JobDetailViewProps {
 export const JobDetailView: React.FC<JobDetailViewProps> = ({ 
     job, student, viewData, onBack, onApply, onNotInterested
 }) => {
-    const [loading, setLoading] = useState(false);
-
-    // CRITICAL: Use viewData that was passed from parent
     const { isApplied, isEligible, eligibilityReason, isExpired, isNotInterested } = viewData;
     
     if (!job) {
         return (
-            <div className="p-12 text-center text-gray-500 animate-in fade-in">
+            <div className="p-12 text-center text-gray-500">
                 <Briefcase size={48} className="mx-auto mb-4 opacity-20" />
                 <p>Job information is currently unavailable.</p>
                 <button onClick={onBack} className="mt-4 text-blue-600 font-bold hover:underline">Back to Jobs</button>
@@ -257,347 +642,270 @@ export const JobDetailView: React.FC<JobDetailViewProps> = ({
         );
     }
 
-    // CRITICAL FIX: Use job fields directly (already mapped in JobService)
-    const companyName = job.companyName || job.company || 'Unknown Company';
-    const jobType = job.jobType || job.type || 'Full-Time';
-    const workMode = job.workMode || job.workArrangement || 'On-site';
-    
-    // Parse JSON fields for display
-    const responsibilities = (() => {
+    // Safely parse JSON or return defaults
+    const parseField = (field: any) => {
         try {
-            if (Array.isArray(job.responsibilitiesJson)) return job.responsibilitiesJson;
-            if (typeof job.responsibilitiesJson === 'string') {
-                return JSON.parse(job.responsibilitiesJson);
-            }
+            if (Array.isArray(field)) return field;
+            if (typeof field === 'string' && field.trim()) return JSON.parse(field);
             return [];
-        } catch (e) {
-            return [];
-        }
-    })();
-    
-    const qualifications = (() => {
-        try {
-            if (Array.isArray(job.qualificationsJson)) return job.qualificationsJson;
-            if (typeof job.qualificationsJson === 'string') {
-                return JSON.parse(job.qualificationsJson);
-            }
-            return [];
-        } catch (e) {
-            return [];
-        }
-    })();
-    
-    const preferredQualifications = (() => {
-        try {
-            if (Array.isArray(job.preferredQualificationsJson)) return job.preferredQualificationsJson;
-            if (typeof job.preferredQualificationsJson === 'string') {
-                return JSON.parse(job.preferredQualificationsJson);
-            }
-            return [];
-        } catch (e) {
-            return [];
-        }
-    })();
-    
-    const benefits = (() => {
-        try {
-            if (Array.isArray(job.benefitsJson)) return job.benefitsJson;
-            if (typeof job.benefitsJson === 'string') {
-                return JSON.parse(job.benefitsJson);
-            }
-            return [];
-        } catch (e) {
-            return [];
-        }
-    })();
-    
-    const rounds = (() => {
-        try {
-            if (Array.isArray(job.rounds)) return job.rounds;
-            if (typeof job.roundsJson === 'string') {
-                return JSON.parse(job.roundsJson);
-            }
-            return [];
-        } catch (e) {
-            return [];
-        }
-    })();
-    
-    const documents = (() => {
-        try {
-            if (Array.isArray(job.documents)) return job.documents;
-            if (typeof job.attachmentsJson === 'string') {
-                return JSON.parse(job.attachmentsJson);
-            }
-            return [];
-        } catch (e) {
-            return [];
-        }
-    })();
+        } catch (e) { return []; }
+    };
+
+    const responsibilities = parseField(job.responsibilitiesJson);
+    const qualifications = parseField(job.qualificationsJson);
+    const skills = parseField(job.skills || job.requiredSkillsJson);
+    const benefits = parseField(job.benefitsJson);
+    const rounds = parseField(job.roundsJson || job.rounds);
+    const documents = parseField(job.attachmentsJson || job.attachments);
 
     return (
         <div className="bg-white rounded-xl border shadow-sm h-full md:h-[calc(100vh-8rem)] flex flex-col animate-in fade-in slide-in-from-right-4 overflow-hidden absolute inset-0 z-20 md:static">
-            <div className="p-4 border-b flex items-center gap-3 bg-white z-10 rounded-t-xl shadow-sm">
-                <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors">
-                    <ArrowLeft size={20} />
-                </button>
-                <span className="font-bold text-gray-700">Back to Job List</span>
+            {/* Header */}
+            <div className="p-4 border-b flex items-center justify-between bg-white sticky top-0 z-30">
+                <div className="flex items-center gap-3">
+                    <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors">
+                        <ArrowLeft size={20} />
+                    </button>
+                    <div>
+                        <span className="block font-bold text-gray-800 leading-none">Job Details</span>
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wider">Ref: {job.id.substring(0,8)}</span>
+                    </div>
+                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto w-full bg-gray-50/30">
-                <div className="p-4 md:p-8 max-w-5xl mx-auto min-h-full flex flex-col">
+                <div className="p-4 md:p-8 max-w-6xl mx-auto">
+                    
+                    {/* Top Branding & Status Section */}
                     <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8">
-                        <div className="flex items-start gap-4">
-                            <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-2xl font-bold text-gray-500 border shrink-0">
-                                {companyName[0] || '?'}
+                        <div className="flex items-start gap-5">
+                            <div className="w-20 h-20 bg-white border-2 border-gray-100 rounded-2xl flex items-center justify-center text-3xl font-bold text-blue-600 shadow-sm shrink-0 overflow-hidden">
+                                {job.companyLogo ? (
+                                    <img src={job.companyLogo} alt="logo" className="w-full h-full object-contain" />
+                                ) : (
+                                    <span>{job.companyName?.[0] || job.company?.[0] || 'J'}</span>
+                                )}
                             </div>
                             <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{job.title || 'Job Title'}</h1>
-                                <div className="flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm text-gray-600">
-                                    <span className="font-bold flex items-center gap-1"><Building size={14} className="md:w-4 md:h-4"/> {companyName}</span>
-                                    <span className="hidden md:inline text-gray-300">|</span>
-                                    <span className="flex items-center gap-1"><MapPin size={14} className="md:w-4 md:h-4"/> {job.location || 'Location TBA'}</span>
-                                    <span className="hidden md:inline text-gray-300">|</span>
-                                    <span className="flex items-center gap-1"><Briefcase size={14} className="md:w-4 md:h-4"/> {jobType}</span>
-                                    <span className="hidden md:inline text-gray-300">|</span>
-                                    <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-full">{workMode}</span>
+                                <h1 className="text-2xl md:text-4xl font-black text-gray-900 mb-2 leading-tight tracking-tight">
+                                    {job.title}
+                                </h1>
+                                <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-sm">
+                                    <span className="font-bold text-blue-700 flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded">
+                                        <Building size={16}/> {job.companyName || job.company}
+                                    </span>
+                                    <span className="flex items-center gap-1.5 text-gray-500 font-medium">
+                                        <MapPin size={16}/> {job.location || 'Remote'}
+                                    </span>
+                                    <span className="flex items-center gap-1.5 text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded">
+                                        <Clock size={16}/> {job.jobType || 'Full-time'}
+                                    </span>
                                 </div>
                             </div>
                         </div>
-                        
-                        {/* CRITICAL FIX: Status badge properly synced with viewData */}
-                        <div className="flex flex-row md:flex-col items-center md:items-end gap-2 w-full md:w-auto justify-between md:justify-start mt-2 md:mt-0">
-                            <div className={`px-4 py-1.5 rounded-full text-sm font-bold border ${
+
+                        <div className="flex flex-col items-end gap-3 shrink-0 w-full md:w-auto">
+                            <div className={`px-4 py-2 rounded-full text-xs font-black tracking-widest border shadow-sm flex items-center gap-2 ${
                                 isApplied ? 'bg-green-100 text-green-700 border-green-200' : 
                                 !isEligible ? 'bg-red-50 text-red-700 border-red-200' : 
                                 isExpired ? 'bg-gray-100 text-gray-500 border-gray-200' : 
-                                'bg-blue-50 text-blue-700 border-blue-200'
+                                'bg-indigo-600 text-white border-indigo-700'
                             }`}>
-                                {isApplied ? (
-                                    <span className="flex items-center gap-1"><CheckCircle size={16}/> Applied</span>
-                                ) : !isEligible ? (
-                                    <span className="flex items-center gap-1"><Ban size={16}/> Not Eligible</span>
-                                ) : isExpired ? (
-                                    <span className="flex items-center gap-1"><Lock size={16}/> Closed</span>
-                                ) : (
-                                    <span className="flex items-center gap-1"><CheckCircle size={16}/> Open</span>
-                                )}
+                                {isApplied ? <CheckCircle size={14}/> : !isEligible ? <Ban size={14}/> : <Target size={14}/>}
+                                {isApplied ? 'APPLICATION SUBMITTED' : !isEligible ? 'NOT ELIGIBLE' : isExpired ? 'APPLICATIONS CLOSED' : 'OPEN FOR APPLICATIONS'}
                             </div>
-                            <span className="text-xs text-gray-500 font-medium">Posted: {job.postedAt || 'N/A'}</span>
                         </div>
                     </div>
 
-                    {/* Job Summary */}
-                    {job.summary && (
-                        <div className="mb-6 p-6 bg-white rounded-2xl border shadow-sm">
-                            <h3 className="text-lg font-bold text-gray-900 mb-3">About this Role</h3>
-                            <p className="text-gray-700 leading-relaxed">{job.summary}</p>
+                    {/* Quick Highlights Bar (Compensation, Bond, etc) */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                            <div className="text-blue-600 mb-1"><DollarSign size={20}/></div>
+                            <p className="text-[10px] uppercase font-bold text-gray-400">Compensation (CTC)</p>
+                            <p className="font-extrabold text-gray-900">{job.salaryRange || 'Best in Industry'}</p>
                         </div>
-                    )}
-
-                    {/* Responsibilities */}
-                    {responsibilities.length > 0 && (
-                        <div className="mb-6 p-6 bg-white rounded-2xl border shadow-sm">
-                            <h3 className="text-lg font-bold text-gray-900 mb-4">Key Responsibilities</h3>
-                            <ul className="space-y-2">
-                                {responsibilities.map((resp: string, idx: number) => (
-                                    <li key={idx} className="flex items-start gap-2">
-                                        <span className="text-blue-600 mt-1">•</span>
-                                        <span className="text-gray-700">{resp}</span>
-                                    </li>
-                                ))}
-                            </ul>
+                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                            <div className="text-orange-600 mb-1"><ShieldCheck size={20}/></div>
+                            <p className="text-[10px] uppercase font-bold text-gray-400">Service Bond</p>
+                            <p className="font-extrabold text-gray-900">{job.serviceBond || 'No Bond'}</p>
                         </div>
-                    )}
-
-                    {/* Qualifications */}
-                    {qualifications.length > 0 && (
-                        <div className="mb-6 p-6 bg-white rounded-2xl border shadow-sm">
-                            <h3 className="text-lg font-bold text-gray-900 mb-4">Required Qualifications</h3>
-                            <ul className="space-y-2">
-                                {qualifications.map((qual: string, idx: number) => (
-                                    <li key={idx} className="flex items-start gap-2">
-                                        <span className="text-green-600 mt-1">✓</span>
-                                        <span className="text-gray-700">{qual}</span>
-                                    </li>
-                                ))}
-                            </ul>
+                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                            <div className="text-purple-600 mb-1"><CalendarIcon size={20}/></div>
+                            <p className="text-[10px] uppercase font-bold text-gray-400">Joining Date</p>
+                            <p className="font-extrabold text-gray-900">{job.joiningDate || 'Immediate'}</p>
                         </div>
-                    )}
-
-                    {/* Preferred Qualifications */}
-                    {preferredQualifications.length > 0 && (
-                        <div className="mb-6 p-6 bg-blue-50 rounded-2xl border border-blue-100">
-                            <h3 className="text-lg font-bold text-blue-900 mb-4">Preferred Qualifications</h3>
-                            <ul className="space-y-2">
-                                {preferredQualifications.map((pref: string, idx: number) => (
-                                    <li key={idx} className="flex items-start gap-2">
-                                        <span className="text-blue-600 mt-1">⭐</span>
-                                        <span className="text-blue-800">{pref}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-
-                    {/* Eligibility Criteria */}
-                    <div className="mb-6 p-6 bg-purple-50 rounded-2xl border border-purple-100">
-                        <h3 className="text-lg font-bold text-purple-900 mb-4">Eligibility Criteria</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {job.minUgScore && (
-                                <div className="flex justify-between items-center py-2 border-b border-purple-100">
-                                    <span className="text-purple-800 font-medium">Min UG Score:</span>
-                                    <span className="text-purple-900 font-bold">{job.minUgScore} {job.formatUg || '%'}</span>
-                                </div>
-                            )}
-                            {job.min10thScore && (
-                                <div className="flex justify-between items-center py-2 border-b border-purple-100">
-                                    <span className="text-purple-800 font-medium">Min 10th Score:</span>
-                                    <span className="text-purple-900 font-bold">{job.min10thScore} {job.format10th || '%'}</span>
-                                </div>
-                            )}
-                            {job.min12thScore && (
-                                <div className="flex justify-between items-center py-2 border-b border-purple-100">
-                                    <span className="text-purple-800 font-medium">Min 12th Score:</span>
-                                    <span className="text-purple-900 font-bold">{job.min12thScore} {job.format12th || '%'}</span>
-                                </div>
-                            )}
-                            {job.maxBacklogs !== undefined && (
-                                <div className="flex justify-between items-center py-2 border-b border-purple-100">
-                                    <span className="text-purple-800 font-medium">Max Backlogs:</span>
-                                    <span className="text-purple-900 font-bold">{job.maxBacklogs}</span>
-                                </div>
-                            )}
-                            {job.allowGaps !== undefined && (
-                                <div className="flex justify-between items-center py-2 border-b border-purple-100">
-                                    <span className="text-purple-800 font-medium">Gap Years Allowed:</span>
-                                    <span className="text-purple-900 font-bold">{job.allowGaps ? 'Yes' : 'No'}</span>
-                                </div>
-                            )}
+                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                            <div className="text-emerald-600 mb-1"><Layers size={20}/></div>
+                            <p className="text-[10px] uppercase font-bold text-gray-400">Openings</p>
+                            <p className="font-extrabold text-gray-900">{job.vacancies || 'Multiple'}</p>
                         </div>
                     </div>
 
-                    {/* Benefits */}
-                    {benefits.length > 0 && (
-                        <div className="mb-6 p-6 bg-green-50 rounded-2xl border border-green-100">
-                            <h3 className="text-lg font-bold text-green-900 mb-4">Benefits & Perks</h3>
-                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                {benefits.map((benefit: string, idx: number) => (
-                                    <li key={idx} className="flex items-start gap-2">
-                                        <span className="text-green-600 mt-1">✓</span>
-                                        <span className="text-green-800">{benefit}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Main Content Area */}
+                        <div className="lg:col-span-2 space-y-8">
+                            
+                            {/* About the Job */}
+                            <section>
+                                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                    <Info size={22} className="text-blue-600"/> Role Description
+                                </h3>
+                                <div className="bg-white p-6 rounded-2xl border shadow-sm leading-relaxed text-gray-600 whitespace-pre-line">
+                                    {job.summary || 'No description provided.'}
+                                </div>
+                            </section>
 
-                    {/* Selection Process */}
-                    {rounds.length > 0 && (
-                        <div className="mb-8 pb-8 border-b bg-white p-6 rounded-2xl border shadow-sm">
-                            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><List size={18} className="text-blue-600"/> Selection Process</h3>
-                            <div className="space-y-3">
-                                {rounds.map((round: any, idx: number) => (
-                                    <div key={idx} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                        <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">{idx + 1}</span>
-                                        <div>
-                                            <p className="font-bold text-gray-800 text-sm">{round.name}</p>
-                                            <p className="text-xs text-gray-500 flex items-center gap-1"><CalendarIcon size={10}/> {round.date}</p>
+                            {/* Required Skills (Tags) */}
+                            {skills.length > 0 && (
+                                <section>
+                                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                        <Award size={22} className="text-orange-500"/> Required Skills
+                                    </h3>
+                                    <div className="flex flex-wrap gap-2">
+                                        {skills.map((skill: string, idx: number) => (
+                                            <span key={idx} className="px-4 py-2 bg-orange-50 text-orange-700 border border-orange-100 rounded-xl font-bold text-sm flex items-center gap-2">
+                                                <Tag size={14}/> {skill}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
+
+                            {/* Key Responsibilities */}
+                            {responsibilities.length > 0 && (
+                                <section>
+                                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                        <List size={22} className="text-emerald-500"/> Key Responsibilities
+                                    </h3>
+                                    <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
+                                        {responsibilities.map((item: string, idx: number) => (
+                                            <div key={idx} className="flex gap-4">
+                                                <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-bold shrink-0 mt-1">
+                                                    {idx + 1}
+                                                </div>
+                                                <p className="text-gray-600 leading-snug">{item}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
+                        </div>
+
+                        {/* Sidebar */}
+                        <div className="space-y-6">
+                            {/* Eligibility Snapshot */}
+                            <div className={`p-6 rounded-2xl border-2 ${isEligible ? 'bg-indigo-50/50 border-indigo-100' : 'bg-red-50 border-red-100'}`}>
+                                <h3 className="font-black text-gray-900 mb-4 flex items-center justify-between">
+                                    Academic Criteria
+                                    {isEligible ? <CheckCircle className="text-green-500" size={20}/> : <AlertTriangle className="text-red-500" size={20}/>}
+                                </h3>
+                                <div className="space-y-3">
+                                    {[
+                                        { label: 'Minimum UG', val: job.minUgScore, unit: job.formatUg || '%' },
+                                        { label: '10th & 12th', val: job.min10thScore, unit: job.format10th || '%' },
+                                        { label: 'History of Arrears', val: job.maxBacklogs, unit: 'Max' },
+                                    ].map((crit, i) => crit.val !== undefined && (
+                                        <div key={i} className="flex justify-between items-center py-2 border-b border-gray-200/50 last:border-0">
+                                            <span className="text-sm text-gray-500 font-medium">{crit.label}</span>
+                                            <span className="font-bold text-gray-900">{crit.val} {crit.unit}</span>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Attachments */}
-                    {documents.length > 0 && (
-                        <div className="mb-8 p-6 bg-blue-50 rounded-xl border border-blue-100">
-                            <h3 className="text-sm font-bold text-blue-800 mb-3 uppercase tracking-wider">Attachments</h3>
-                            <div className="flex flex-wrap gap-3">
-                                {documents.map((doc: any, i: number) => (
-                                    <a key={i} href={doc.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 text-blue-700 font-bold text-xs transition-colors shadow-sm w-full md:w-auto justify-center md:justify-start">
-                                        <FileText size={16}/> {doc.name}
-                                    </a>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* CRITICAL FIX: Action buttons properly synced with viewData */}
-                    <div className="mt-auto pt-8 border-t bg-gray-50/50 p-6 rounded-xl border border-gray-200 pb-20 md:pb-6">
-                        {isApplied ? (
-                            <div className="flex flex-col md:flex-row justify-between items-center gap-6 animate-in fade-in">
-                                <div className="text-green-800">
-                                    <div className="flex items-center gap-2 font-bold text-xl">
-                                        <CheckCircle size={24}/> Application Submitted
-                                    </div>
-                                    <p className="text-sm opacity-80 mt-1">You have successfully applied for this position. Track your status in the App Status tab.</p>
+                                    ))}
                                 </div>
-                                <button disabled className="w-full md:w-auto px-8 py-3 bg-green-100 text-green-800 font-bold rounded-lg border border-green-200">
-                                    Applied
-                                </button>
+                            </div>
+
+                            {/* Selection Rounds Timeline */}
+                            {rounds.length > 0 && (
+                                <div className="bg-white p-6 rounded-2xl border shadow-sm">
+                                    <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                        <Users size={18} className="text-blue-500"/> Hiring Process
+                                    </h3>
+                                    <div className="space-y-6 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
+                                        {rounds.map((round: any, idx: number) => (
+                                            <div key={idx} className="relative pl-8">
+                                                <div className="absolute left-0 top-1 w-6 h-6 bg-white border-2 border-blue-500 rounded-full z-10 flex items-center justify-center">
+                                                    <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                                                </div>
+                                                <p className="text-sm font-black text-gray-800">{round.name}</p>
+                                                <p className="text-xs text-gray-400 font-medium mt-1">{round.date || 'To be announced'}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Attachments */}
+                            {documents.length > 0 && (
+                                <div className="bg-indigo-900 p-6 rounded-2xl shadow-lg">
+                                    <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                                        <FileText size={18}/> Resources
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {documents.map((doc: any, i: number) => (
+                                            <a key={i} href={doc.url} target="_blank" rel="noreferrer" 
+                                               className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-white border border-white/10">
+                                                <div className="p-2 bg-white/20 rounded-lg"><FileText size={14}/></div>
+                                                <span className="text-xs font-bold truncate uppercase tracking-tighter">{doc.name}</span>
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Fixed Action Footer for Student Portal */}
+                    <div className="mt-12 mb-20 md:mb-6 pt-8 border-t">
+                        {isApplied ? (
+                            <div className="bg-green-50 border border-green-200 p-8 rounded-3xl text-center">
+                                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <CheckCircle size={32}/>
+                                </div>
+                                <h2 className="text-2xl font-black text-green-900">Application Submitted!</h2>
+                                <p className="text-green-700 mt-2">You have successfully expressed interest. You can track this application in your dashboard.</p>
                             </div>
                         ) : !isEligible ? (
-                            <div className="flex flex-col gap-4 animate-in fade-in">
-                                    <div className="flex items-center gap-3 text-red-800 font-bold text-xl">
-                                        <div className="p-2 bg-red-100 rounded-full"><AlertTriangle size={24}/></div>
-                                        Not Eligible to Apply
+                            <div className="bg-red-50 border border-red-100 p-6 rounded-3xl">
+                                <div className="flex items-start gap-4">
+                                    <div className="p-3 bg-red-100 text-red-600 rounded-2xl"><AlertTriangle size={24}/></div>
+                                    <div>
+                                        <h4 className="text-lg font-bold text-red-900">Ineligible to Apply</h4>
+                                        <p className="text-red-700 mt-1">{eligibilityReason || "Your current profile doesn't meet the recruiter's specific requirements."}</p>
                                     </div>
-                                    <div className="bg-red-50 border-l-4 border-red-500 p-5 rounded-r-lg shadow-sm">
-                                        <h5 className="text-red-900 font-bold mb-2">Reason:</h5>
-                                        <p className="text-red-700 font-medium text-sm md:text-lg leading-relaxed">
-                                            {eligibilityReason || "You do not meet the academic or batch requirements for this position."}
-                                        </p>
-                                    </div>
-                                    <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
-                                        <div className="flex items-center gap-2">
-                                            <Lock size={14}/> Application Locked
-                                        </div>
-                                        <div>
-                                            Deadline: <span className="font-bold">{job.applicationDeadline}</span>
-                                        </div>
-                                    </div>
+                                </div>
+                            </div>
+                        ) : isExpired ? (
+                            <div className="bg-gray-100 p-8 rounded-3xl text-center border-2 border-dashed border-gray-200">
+                                <Lock className="mx-auto mb-3 text-gray-400" size={30}/>
+                                <h3 className="text-xl font-bold text-gray-600">This Opportunity is Closed</h3>
+                                <p className="text-gray-500">The application deadline has passed.</p>
                             </div>
                         ) : (
-                            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-                                <div className="text-sm text-gray-600 w-full md:w-auto flex justify-between md:block">
-                                    <span className="block text-xs font-bold text-gray-400 uppercase mb-1">Last Date to Apply</span>
-                                    <span className={`font-bold text-lg ${isExpired ? 'text-red-600' : 'text-gray-900'}`}>{job.applicationDeadline}</span>
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white p-6 rounded-3xl border-2 border-blue-50 shadow-xl">
+                                <div>
+                                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Deadine to Apply</span>
+                                    <p className="text-2xl font-black text-gray-900">{job.applicationDeadline || 'As soon as possible'}</p>
                                 </div>
                                 
-                                <div className="w-full md:w-auto">
-                                    {isExpired ? (
-                                        <div className="px-8 py-3 bg-gray-200 text-gray-500 font-bold rounded-lg flex items-center justify-center gap-2 cursor-not-allowed w-full md:w-auto">
-                                            <Lock size={20}/> Applications Closed
-                                        </div>
-                                    ) : isNotInterested ? (
-                                        <div className="px-8 py-3 bg-gray-100 text-gray-600 font-bold rounded-lg border border-gray-200 flex items-center justify-center gap-2 w-full md:w-auto">
-                                            <Ban size={20}/> Marked as Not Interested
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-                                            <button onClick={() => onNotInterested(job.id)} className="w-full md:w-auto flex-1 px-5 py-3 bg-white border border-gray-300 text-gray-600 font-bold rounded-lg hover:bg-gray-100 transition-colors">
-                                                Not Interested
+                                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                                    {!isNotInterested ? (
+                                        <>
+                                            <button 
+                                                onClick={() => onNotInterested(job.id)}
+                                                className="px-8 py-4 text-gray-500 font-bold hover:bg-gray-50 rounded-2xl transition-all border border-gray-200"
+                                            >
+                                                Hide / Not Interested
                                             </button>
-                                            
-                                            {job.externalLink ? (
-                                                <a 
-                                                    href={job.externalLink} 
-                                                    target="_blank" 
-                                                    rel="noreferrer"
-                                                    className="w-full md:w-auto flex-1 px-8 py-3 bg-blue-600 text-white font-bold rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-md"
-                                                >
-                                                    Apply Externally <ExternalLink size={18}/>
-                                                </a>
-                                            ) : (
-                                                <button 
-                                                    onClick={() => onApply(job.id)} 
-                                                    className="w-full md:w-auto flex-[2] px-8 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-all shadow-md flex items-center justify-center gap-2"
-                                                >
-                                                    Apply Now <Briefcase size={20}/>
-                                                </button>
-                                            )}
+                                            <button 
+                                                onClick={() => onApply(job.id)}
+                                                className="px-12 py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-200 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3"
+                                            >
+                                                {job.externalLink ? 'Apply Externally' : 'Submit Application'} 
+                                                <ExternalLink size={20}/>
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <div className="flex items-center gap-3 px-8 py-4 bg-gray-50 text-gray-400 font-bold rounded-2xl border-2 border-dashed italic">
+                                            <Ban size={20}/> You marked this as Not Interested
                                         </div>
                                     )}
                                 </div>

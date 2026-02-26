@@ -26,6 +26,8 @@ public interface StudentPublicationRepository extends JpaRepository<StudentPubli
     @Transactional
     @Query("DELETE FROM StudentPublication p WHERE p.id = :id AND p.student.id = :studentId")
     int deleteByPublicationIdAndStudentId(@Param("id") String id, @Param("studentId") String studentId);
+
+	long countByStudent_Id(String studentId);
     
     
 }

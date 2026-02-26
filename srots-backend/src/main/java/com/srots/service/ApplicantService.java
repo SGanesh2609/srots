@@ -31,4 +31,6 @@ public interface ApplicantService {
 //    List<TimelineDTO> getHiringTimeline(String jobId, String studentId) throws Exception;
     public List<ApplicationListDTO> getStudentApplications();
     public List<TimelineDTO> getHiringTimeline(String jobId) throws Exception;
+    
+    public Map<String, Object> getEligibleStudentsDisplay(String jobId) throws Exception;
 }

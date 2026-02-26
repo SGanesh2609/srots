@@ -1,7 +1,412 @@
+//package com.srots.service;
+//
+//import java.time.LocalDateTime;
+//import java.util.UUID;
+//
+//import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.security.access.AccessDeniedException;
+//import org.springframework.stereotype.Service;
+//import org.springframework.web.multipart.MultipartFile;
+//
+//import com.fasterxml.jackson.databind.ObjectMapper;
+//import com.srots.dto.AddressRequest;
+//import com.srots.dto.studentDTOs.SectionRequest;
+//import com.srots.exception.ResourceNotFoundException;
+//import com.srots.model.StudentCertification;
+//import com.srots.model.StudentExperience;
+//import com.srots.model.StudentLanguage;
+//import com.srots.model.StudentProfile;
+//import com.srots.model.StudentProject;
+//import com.srots.model.StudentPublication;
+//import com.srots.model.StudentResume;
+//import com.srots.model.StudentSkill;
+//import com.srots.model.StudentSocialLink;
+//import com.srots.model.User;
+//import com.srots.repository.StudentCertificationRepository;
+//import com.srots.repository.StudentExperienceRepository;
+//import com.srots.repository.StudentLanguageRepository;
+//import com.srots.repository.StudentProfileRepository;
+//import com.srots.repository.StudentProjectRepository;
+//import com.srots.repository.StudentPublicationRepository;
+//import com.srots.repository.StudentResumeRepository;
+//import com.srots.repository.StudentSkillRepository;
+//import com.srots.repository.StudentSocialLinkRepository;
+//
+//import jakarta.persistence.EntityManager;
+//import jakarta.persistence.PersistenceContext;
+//import jakarta.transaction.Transactional;
+//
+//@Service
+//public class StudentServiceImpl implements StudentService {
+//
+//    @Autowired private StudentProfileRepository profileRepo;
+//    @Autowired private StudentSkillRepository skillRepo;
+//    @Autowired private StudentExperienceRepository experienceRepo;
+//    @Autowired private StudentResumeRepository resumeRepo;
+//    @Autowired private StudentProjectRepository prjRepo;
+//    @Autowired private StudentCertificationRepository certRepo;
+//    @Autowired private StudentSocialLinkRepository socialRepo;
+//    @Autowired private StudentLanguageRepository languageRepo;
+//    @Autowired private StudentPublicationRepository publicationRepo;
+//    @Autowired private ObjectMapper objectMapper;
+//    @Autowired private FileService fileService;
+//    
+//    @PersistenceContext
+//    private EntityManager entityManager;
+//
+//    /**
+//     * Helper to create a User reference for Foreign Key mapping
+//     */
+//    private User getStudentReference(String studentId) {
+//        User user = new User();
+//        user.setId(studentId);
+//        return user;
+//    }
+//
+//    /**
+//     * Helper to verify if an existing record belongs to the authenticated student
+//     */
+//    private void verifyOwnership(String recordOwnerId, String authenticatedId) {
+//        if (!recordOwnerId.equals(authenticatedId)) {
+//            throw new AccessDeniedException("Unauthorized: You do not own this record.");
+//        }
+//    }
+//
+//    // --- Tab 1: General Profile ---
+//    @Transactional
+//    public StudentProfile updateGeneralProfile(String studentId, StudentProfile updatedData) {
+//        StudentProfile existing = profileRepo.findById(studentId)
+//            .orElseThrow(() -> new ResourceNotFoundException("Student profile not found"));
+//
+//        existing.setPersonalEmail(updatedData.getPersonalEmail());
+//        existing.setLinkedinProfile(updatedData.getLinkedinProfile());
+//        existing.setGapInStudies(updatedData.getGapInStudies());
+//        existing.setGapDuration(updatedData.getGapDuration());
+//        existing.setGapReason(updatedData.getGapReason());
+//        existing.setDrivingLicense(updatedData.getDrivingLicense());
+//        existing.setUpdatedAt(LocalDateTime.now());
+//
+//        return profileRepo.save(existing);
+//    }
+//
+//    // --- Tab 2: Address ---
+//    @Transactional
+//    public StudentProfile updateAddress(String studentId, String type, AddressRequest dto) {
+//        StudentProfile profile = profileRepo.findById(studentId)
+//            .orElseThrow(() -> new ResourceNotFoundException("Profile not found"));
+//        try {
+//            String jsonString = objectMapper.writeValueAsString(dto);
+//            if ("current".equalsIgnoreCase(type)) profile.setCurrentAddress(jsonString);
+//            else profile.setPermanentAddress(jsonString);
+//            return profileRepo.save(profile);
+//        } catch (Exception e) {
+//            throw new RuntimeException("Address conversion failed: " + e.getMessage());
+//        }
+//    }
+//
+//    // --- Tab 3: Resumes (with physical deletion and default flag logic) ---
+// // --- Tab 3: Resumes (with physical deletion and default flag logic) ---
+//    @Transactional
+//    public StudentResume uploadResume(String studentId, MultipartFile file) {
+//        // 1. Requirement: Max 3 Resumes
+//        long count = resumeRepo.countByStudent_Id(studentId); 
+//        if (count >= 3) {
+//            throw new RuntimeException("Maximum 3 resumes allowed. Please delete an existing one first.");
+//        }
+//
+//        // 2. Physical Upload: Category set to "students"
+//        // Parameters: file, subfolder (e.g., "resumes"), category ("students")
+//        String fileUrl = fileService.uploadFile(file, "resumes", "students");
+//
+//        // 3. Database Entry
+//        StudentResume resume = new StudentResume();
+//        resume.setStudent(getStudentReference(studentId)); 
+//        resume.setFileName(file.getOriginalFilename());
+//        resume.setFileUrl(fileUrl);
+//        resume.setUploadedAt(LocalDateTime.now());
+//        
+//        // Logic: First resume uploaded becomes the default automatically
+//        resume.setIsDefault(count == 0);
+//        
+//        return resumeRepo.save(resume);
+//    }
+//    
+//    @Transactional
+//    public String deleteResume(String studentId, String resumeId) {
+//        // 1. Find the record
+//        StudentResume resume = resumeRepo.findById(resumeId)
+//            .orElseThrow(() -> new ResourceNotFoundException("Resume not found"));
+//
+//        // 2. Security: Ensure the student owns this resume
+//        verifyOwnership(resume.getStudent().getId(), studentId);
+//
+//        boolean wasDefault = Boolean.TRUE.equals(resume.getIsDefault());
+//        String fileUrl = resume.getFileUrl();
+//
+//        // 3. Database Deletion
+//        resumeRepo.delete(resume);
+//
+//        // 4. Physical Deletion: Remove file from file system/S3
+//        fileService.deleteFile(fileUrl); 
+//
+//        // 5. Logic: If the deleted resume was the default, make the next available one default
+//        if (wasDefault) {
+//            resumeRepo.findFirstByStudent_Id(studentId).ifPresent(next -> {
+//                next.setIsDefault(true);
+//                resumeRepo.save(next);
+//            });
+//        }
+//        
+//        return "Resume and physical file deleted successfully";
+//    }
+//    
+//    @Transactional
+//    public void setDefaultResume(String studentId, String resumeId) {
+//        // 1. Verify the resume exists and belongs to the student
+//        StudentResume targetResume = resumeRepo.findById(resumeId)
+//            .orElseThrow(() -> new ResourceNotFoundException("Resume not found"));
+//        
+//        verifyOwnership(targetResume.getStudent().getId(), studentId);
+//
+//        // 2. Set all resumes for this student to NOT default
+//        // Logic: Ensures only one resume is active at a time
+//        resumeRepo.findAllByStudent_Id(studentId).forEach(r -> {
+//            r.setIsDefault(false);
+//            resumeRepo.save(r);
+//        });
+//
+//        // 3. Set the chosen resume as default
+//        targetResume.setIsDefault(true);
+//        resumeRepo.save(targetResume);
+//        
+//        // Clear cache to ensure the UI gets the updated list
+//        entityManager.flush();
+//        entityManager.clear();
+//    }
+//
+//    // --- Portfolio Sections (Unified Logic: Create/Update/Delete) ---
+//
+// // --- 1. Skills ---
+//    @Transactional
+//    public Object manageSkill(String studentId, SectionRequest<StudentSkill> request) {
+//        StudentSkill data = request.getData();
+//        if (data.getId() != null && !data.getId().trim().isEmpty()) {
+//            StudentSkill existing = skillRepo.findById(data.getId())
+//                .orElseThrow(() -> new ResourceNotFoundException("Skill not found"));
+//            verifyOwnership(existing.getStudent().getId(), studentId);
+//            existing.setName(data.getName());
+//            existing.setProficiency(data.getProficiency());
+//            return skillRepo.save(existing);
+//        } 
+//        data.setId(UUID.randomUUID().toString());
+//        data.setStudent(getStudentReference(studentId));
+//        return skillRepo.save(data);
+//    }
+//
+// // --- Manage Certification ---
+//    @Transactional
+//    public Object manageCertification(String studentId, SectionRequest<StudentCertification> request) {
+//        StudentCertification data = request.getData();
+//        if (data.getId() != null && !data.getId().trim().isEmpty()) {
+//            StudentCertification existing = certRepo.findById(data.getId())
+//                .orElseThrow(() -> new ResourceNotFoundException("Certification not found"));
+//            verifyOwnership(existing.getStudent().getId(), studentId);
+//
+//            existing.setName(data.getName());
+//            existing.setOrganizer(data.getOrganizer()); // Using your field name
+//            existing.setCredentialUrl(data.getCredentialUrl());
+//            existing.setIssueDate(data.getIssueDate());
+//            existing.setExpiryDate(data.getExpiryDate());
+//            existing.setScore(data.getScore());
+//            return certRepo.save(existing);
+//        }
+//        data.setId(UUID.randomUUID().toString());
+//        data.setStudent(getStudentReference(studentId));
+//        return certRepo.save(data);
+//    }
+//
+//    // --- Manage Project ---
+//    @Transactional
+//    public Object manageProject(String studentId, SectionRequest<StudentProject> request) {
+//        StudentProject data = request.getData();
+//        if (data.getId() != null && !data.getId().trim().isEmpty()) {
+//            StudentProject existing = prjRepo.findById(data.getId())
+//                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+//            verifyOwnership(existing.getStudent().getId(), studentId);
+//
+//            existing.setTitle(data.getTitle());
+//            existing.setDomain(data.getDomain()); // Using your field name
+//            existing.setTechUsed(data.getTechUsed()); // Using your field name
+//            existing.setProjectLink(data.getProjectLink());
+//            existing.setDescription(data.getDescription());
+//            existing.setStartDate(data.getStartDate());
+//            existing.setEndDate(data.getEndDate());
+//            existing.setIsCurrent(data.getIsCurrent());
+//            return prjRepo.save(existing);
+//        }
+//        data.setId(UUID.randomUUID().toString());
+//        data.setStudent(getStudentReference(studentId));
+//        return prjRepo.save(data);
+//    }
+//
+//    // --- Manage Experience ---
+//    @Transactional
+//    public Object manageExperience(String studentId, SectionRequest<StudentExperience> request) {
+//        StudentExperience data = request.getData();
+//        if (data.getId() != null && !data.getId().trim().isEmpty()) {
+//            StudentExperience existing = experienceRepo.findById(data.getId())
+//                .orElseThrow(() -> new ResourceNotFoundException("Experience not found"));
+//            verifyOwnership(existing.getStudent().getId(), studentId);
+//
+//            existing.setTitle(data.getTitle());
+//            existing.setCompany(data.getCompany());
+//            existing.setLocation(data.getLocation());
+//            existing.setType(data.getType());
+//            existing.setStartDate(data.getStartDate());
+//            existing.setEndDate(data.getEndDate());
+//            existing.setIsCurrent(data.getIsCurrent());
+//            existing.setDescription(data.getDescription());
+//            return experienceRepo.save(existing);
+//        }
+//        data.setId(UUID.randomUUID().toString());
+//        data.setStudent(getStudentReference(studentId));
+//        return experienceRepo.save(data);
+//    }
+//    
+// // --- Manage Languages ---
+//    @Transactional
+//    public Object manageLanguage(String studentId, SectionRequest<StudentLanguage> request) {
+//        StudentLanguage data = request.getData();
+//        if (data.getId() != null && !data.getId().trim().isEmpty()) {
+//            StudentLanguage existing = languageRepo.findById(data.getId())
+//                .orElseThrow(() -> new ResourceNotFoundException("Language not found"));
+//            verifyOwnership(existing.getStudent().getId(), studentId);
+//
+//            existing.setName(data.getName()); // Matches your 'name' field
+//            existing.setProficiency(data.getProficiency()); // Matches your 'LangProficiency' enum
+//            return languageRepo.save(existing);
+//        }
+//        data.setId(UUID.randomUUID().toString());
+//        data.setStudent(getStudentReference(studentId));
+//        return languageRepo.save(data);
+//    }
+//
+//    // --- Manage Publications ---
+//    @Transactional
+//    public Object managePublication(String studentId, SectionRequest<StudentPublication> request) {
+//        StudentPublication data = request.getData();
+//        if (data.getId() != null && !data.getId().trim().isEmpty()) {
+//            StudentPublication existing = publicationRepo.findById(data.getId())
+//                .orElseThrow(() -> new ResourceNotFoundException("Publication not found"));
+//            verifyOwnership(existing.getStudent().getId(), studentId);
+//
+//            existing.setTitle(data.getTitle());
+//            existing.setPublisher(data.getPublisher()); // Matches your 'publisher' field
+//            existing.setPublicationUrl(data.getPublicationUrl());
+//            existing.setPublishDate(data.getPublishDate());
+//            return publicationRepo.save(existing);
+//        }
+//        data.setId(UUID.randomUUID().toString());
+//        data.setStudent(getStudentReference(studentId));
+//        return publicationRepo.save(data);
+//    }
+//
+//    // --- Manage Social Links ---
+//    @Transactional
+//    public Object manageSocialLink(String studentId, SectionRequest<StudentSocialLink> request) {
+//        StudentSocialLink data = request.getData();
+//        if (data.getId() != null && !data.getId().trim().isEmpty()) {
+//            StudentSocialLink existing = socialRepo.findById(data.getId())
+//                .orElseThrow(() -> new ResourceNotFoundException("Social link not found"));
+//            verifyOwnership(existing.getStudent().getId(), studentId);
+//
+//            existing.setPlatform(data.getPlatform()); // Matches your 'Platform' enum
+//            existing.setUrl(data.getUrl());
+//            return socialRepo.save(existing);
+//        }
+//        data.setId(UUID.randomUUID().toString());
+//        data.setStudent(getStudentReference(studentId));
+//        return socialRepo.save(data);
+//    }
+//    
+//    
+// // --- Helper for Bulletproof Deletion ---
+// // --- Optimized Deletion Methods ---
+//
+//    @Transactional
+//    public void removeSkill(String studentId, String skillId) {
+//        int deleted = skillRepo.deleteBySkillIdAndStudentId(skillId, studentId);
+//        validateDelete(deleted, "Skill");
+//    }
+//
+//    @Transactional
+//    public void removeProject(String studentId, String id) {
+//        int deleted = prjRepo.deleteByProjectIdAndStudentId(id, studentId);
+//        validateDelete(deleted, "Project");
+//    }
+//
+//    @Transactional
+//    public void removeExperience(String studentId, String id) {
+//        int deleted = experienceRepo.deleteByExperienceIdAndStudentId(id, studentId);
+//        validateDelete(deleted, "Experience");
+//    }
+//
+//    @Transactional
+//    public void removeCertification(String studentId, String id) {
+//        int deleted = certRepo.deleteByCertificationIdAndStudentId(id, studentId);
+//        validateDelete(deleted, "Certification");
+//    }
+//
+//    @Transactional
+//    public void removeLanguage(String studentId, String id) {
+//        int deleted = languageRepo.deleteByLanguageIdAndStudentId(id, studentId);
+//        validateDelete(deleted, "Language");
+//    }
+//
+//    @Transactional
+//    public void removePublication(String studentId, String id) {
+//        int deleted = publicationRepo.deleteByPublicationIdAndStudentId(id, studentId);
+//        validateDelete(deleted, "Publication");
+//    }
+//
+//    @Transactional
+//    public void removeSocialLink(String studentId, String id) {
+//        int deleted = socialRepo.deleteBySocialLinkIdAndStudentId(id, studentId);
+//        validateDelete(deleted, "Social Link");
+//    }
+//
+//    /**
+//     * Shared logic to finalize deletion and sync persistence context.
+//     * 1. Check if the database actually removed a row.
+//     * 2. Flush the SQL DELETE command immediately.
+//     * 3. Clear the EntityManager to prevent Hibernate from 'resurrecting' 
+//     * the deleted object from its internal cache.
+//     */
+//    private void validateDelete(int rowsAffected, String section) {
+//        if (rowsAffected == 0) {
+//            // If rowsAffected is 0, it means either the ID doesn't exist
+//            // OR the studentId didn't match (Security breach attempt)
+//            throw new ResourceNotFoundException(section + " not found or unauthorized");
+//        }
+//        entityManager.flush();
+//        entityManager.clear();
+//    }
+//
+//	
+//
+//}
+
 package com.srots.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
@@ -10,7 +415,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.srots.dto.AddressRequest;
+import com.srots.dto.Student360Response;
 import com.srots.dto.studentDTOs.SectionRequest;
+import com.srots.dto.studentDTOs.StudentSelfUpdateRequest;
 import com.srots.exception.ResourceNotFoundException;
 import com.srots.model.StudentCertification;
 import com.srots.model.StudentExperience;
@@ -31,52 +438,71 @@ import com.srots.repository.StudentPublicationRepository;
 import com.srots.repository.StudentResumeRepository;
 import com.srots.repository.StudentSkillRepository;
 import com.srots.repository.StudentSocialLinkRepository;
+import com.srots.repository.UserRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 
+
 @Service
 public class StudentServiceImpl implements StudentService {
 
-    @Autowired private StudentProfileRepository profileRepo;
-    @Autowired private StudentSkillRepository skillRepo;
-    @Autowired private StudentExperienceRepository experienceRepo;
-    @Autowired private StudentResumeRepository resumeRepo;
-    @Autowired private StudentProjectRepository prjRepo;
+    // ─── Limits ───────────────────────────────────────────────────────────────
+    private static final int MAX_RESUMES        = 3;
+    private static final int MAX_PROJECTS       = 4;
+    private static final int MAX_CERTIFICATIONS = 6;
+    private static final int MAX_EXPERIENCE     = 4;
+    private static final int MAX_PUBLICATIONS   = 4;
+
+    // ─── Grace period thresholds (must match frontend lifecycle policy card) ──
+    // 0 to -90 days past expiry  → Grace Period
+    // -90+ days past expiry      → To Be Deleted
+    private static final long GRACE_PERIOD_DAYS   = 90L;
+
+    // ─── Dependencies ─────────────────────────────────────────────────────────
+    @Autowired private StudentProfileRepository       profileRepo;
+    @Autowired private StudentSkillRepository         skillRepo;
+    @Autowired private StudentExperienceRepository    experienceRepo;
+    @Autowired private StudentResumeRepository        resumeRepo;
+    @Autowired private StudentProjectRepository       prjRepo;
     @Autowired private StudentCertificationRepository certRepo;
-    @Autowired private StudentSocialLinkRepository socialRepo;
-    @Autowired private StudentLanguageRepository languageRepo;
-    @Autowired private StudentPublicationRepository publicationRepo;
-    @Autowired private ObjectMapper objectMapper;
-    @Autowired private FileService fileService;
-    
+    @Autowired private StudentSocialLinkRepository    socialRepo;
+    @Autowired private StudentLanguageRepository      languageRepo;
+    @Autowired private StudentPublicationRepository   publicationRepo;
+    @Autowired private ObjectMapper                   objectMapper;
+    @Autowired private FileService                    fileService;
+    @Autowired private UserAccountService             userAccountService;
+    @Autowired private UserRepository                 userRepository;   // NEW: needed to fetch user.fullName / user.email
+
     @PersistenceContext
     private EntityManager entityManager;
 
-    /**
-     * Helper to create a User reference for Foreign Key mapping
-     */
+    // ─── Helper: User reference (FK only) ────────────────────────────────────
+
     private User getStudentReference(String studentId) {
         User user = new User();
         user.setId(studentId);
         return user;
     }
 
-    /**
-     * Helper to verify if an existing record belongs to the authenticated student
-     */
     private void verifyOwnership(String recordOwnerId, String authenticatedId) {
         if (!recordOwnerId.equals(authenticatedId)) {
             throw new AccessDeniedException("Unauthorized: You do not own this record.");
         }
     }
 
-    // --- Tab 1: General Profile ---
+    private Student360Response buildStudent360(String studentId) {
+        return userAccountService.getStudent360(studentId);
+    }
+
+    // ─── Tab 1: General Profile (legacy) ─────────────────────────────────────
+
+    @Override
     @Transactional
     public StudentProfile updateGeneralProfile(String studentId, StudentProfile updatedData) {
         StudentProfile existing = profileRepo.findById(studentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Student profile not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found"));
 
         existing.setPersonalEmail(updatedData.getPersonalEmail());
         existing.setLinkedinProfile(updatedData.getLinkedinProfile());
@@ -84,180 +510,235 @@ public class StudentServiceImpl implements StudentService {
         existing.setGapDuration(updatedData.getGapDuration());
         existing.setGapReason(updatedData.getGapReason());
         existing.setDrivingLicense(updatedData.getDrivingLicense());
-        existing.setUpdatedAt(LocalDateTime.now());
-
         return profileRepo.save(existing);
     }
 
-    // --- Tab 2: Address ---
+    // ─── Student Self-Service Update ──────────────────────────────────────────
+
+    @Override
     @Transactional
-    public StudentProfile updateAddress(String studentId, String type, AddressRequest dto) {
-        StudentProfile profile = profileRepo.findById(studentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Profile not found"));
-        try {
-            String jsonString = objectMapper.writeValueAsString(dto);
-            if ("current".equalsIgnoreCase(type)) profile.setCurrentAddress(jsonString);
-            else profile.setPermanentAddress(jsonString);
-            return profileRepo.save(profile);
-        } catch (Exception e) {
-            throw new RuntimeException("Address conversion failed: " + e.getMessage());
-        }
+    public Student360Response updateSelfProfile(String studentId, StudentSelfUpdateRequest request) {
+        StudentProfile existing = profileRepo.findById(studentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found: " + studentId));
+
+        if (request.getCommunicationEmail() != null)
+            existing.setCommunicationEmail(request.getCommunicationEmail());
+        if (request.getPersonalEmail() != null)
+            existing.setPersonalEmail(request.getPersonalEmail());
+        if (request.getPreferredContactMethod() != null)
+            existing.setPreferredContactMethod(request.getPreferredContactMethod());
+        if (request.getLinkedInProfile() != null)
+            existing.setLinkedinProfile(request.getLinkedInProfile());
+        if (request.getGapInStudies() != null)
+            existing.setGapInStudies(request.getGapInStudies());
+        if (request.getGapDuration() != null)
+            existing.setGapDuration(request.getGapDuration());
+        if (request.getGapReason() != null)
+            existing.setGapReason(request.getGapReason());
+        if (request.getDrivingLicense() != null)
+            existing.setDrivingLicense(request.getDrivingLicense());
+        if (request.getPassportNumber() != null)
+            existing.setPassportNumber(request.getPassportNumber());
+        if (request.getPassportIssueDate() != null)
+            existing.setPassportIssueDate(request.getPassportIssueDate());
+        if (request.getPassportExpiryDate() != null)
+            existing.setPassportExpiryDate(request.getPassportExpiryDate());
+        if (request.getDayScholar() != null)
+            existing.setDayScholar(request.getDayScholar());
+
+        profileRepo.save(existing);
+        return buildStudent360(studentId);
     }
 
-    // --- Tab 3: Resumes (with physical deletion and default flag logic) ---
- // --- Tab 3: Resumes (with physical deletion and default flag logic) ---
+    // ─── Address ──────────────────────────────────────────────────────────────
+
+    @Override
     @Transactional
-    public StudentResume uploadResume(String studentId, MultipartFile file) {
-        // 1. Requirement: Max 3 Resumes
-        long count = resumeRepo.countByStudent_Id(studentId); 
-        if (count >= 3) {
-            throw new RuntimeException("Maximum 3 resumes allowed. Please delete an existing one first.");
+    public Student360Response updateAddress(String studentId, String type, AddressRequest dto) {
+        StudentProfile profile = profileRepo.findById(studentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found: " + studentId));
+        try {
+            String jsonString = objectMapper.writeValueAsString(dto);
+            if ("current".equalsIgnoreCase(type)) {
+                profile.setCurrentAddress(jsonString);
+            } else if ("permanent".equalsIgnoreCase(type)) {
+                profile.setPermanentAddress(jsonString);
+            } else {
+                throw new IllegalArgumentException(
+                        "Invalid address type: '" + type + "'. Use 'current' or 'permanent'.");
+            }
+            profileRepo.save(profile);
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Address update failed: " + e.getMessage());
+        }
+        return buildStudent360(studentId);
+    }
+
+    // ─── Resumes ──────────────────────────────────────────────────────────────
+
+    @Override
+    @Transactional
+    public Student360Response uploadResume(String studentId, MultipartFile file) {
+        long count = resumeRepo.countByStudent_Id(studentId);
+        if (count >= MAX_RESUMES) {
+            throw new RuntimeException(
+                    "Maximum " + MAX_RESUMES + " resumes allowed. Please delete an existing one first.");
         }
 
-        // 2. Physical Upload: Category set to "students"
-        // Parameters: file, subfolder (e.g., "resumes"), category ("students")
         String fileUrl = fileService.uploadFile(file, "resumes", "students");
 
-        // 3. Database Entry
         StudentResume resume = new StudentResume();
-        resume.setStudent(getStudentReference(studentId)); 
+        resume.setStudent(getStudentReference(studentId));
         resume.setFileName(file.getOriginalFilename());
         resume.setFileUrl(fileUrl);
         resume.setUploadedAt(LocalDateTime.now());
-        
-        // Logic: First resume uploaded becomes the default automatically
         resume.setIsDefault(count == 0);
-        
-        return resumeRepo.save(resume);
-    }
-    
-    @Transactional
-    public String deleteResume(String studentId, String resumeId) {
-        // 1. Find the record
-        StudentResume resume = resumeRepo.findById(resumeId)
-            .orElseThrow(() -> new ResourceNotFoundException("Resume not found"));
+        resumeRepo.save(resume);
 
-        // 2. Security: Ensure the student owns this resume
+        return buildStudent360(studentId);
+    }
+
+    @Override
+    @Transactional
+    public Student360Response deleteResume(String studentId, String resumeId) {
+        StudentResume resume = resumeRepo.findById(resumeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Resume not found"));
+
         verifyOwnership(resume.getStudent().getId(), studentId);
 
         boolean wasDefault = Boolean.TRUE.equals(resume.getIsDefault());
         String fileUrl = resume.getFileUrl();
 
-        // 3. Database Deletion
         resumeRepo.delete(resume);
+        fileService.deleteFile(fileUrl);
 
-        // 4. Physical Deletion: Remove file from file system/S3
-        fileService.deleteFile(fileUrl); 
-
-        // 5. Logic: If the deleted resume was the default, make the next available one default
         if (wasDefault) {
             resumeRepo.findFirstByStudent_Id(studentId).ifPresent(next -> {
                 next.setIsDefault(true);
                 resumeRepo.save(next);
             });
         }
-        
-        return "Resume and physical file deleted successfully";
+
+        return buildStudent360(studentId);
     }
-    
+
+    @Override
     @Transactional
-    public void setDefaultResume(String studentId, String resumeId) {
-        // 1. Verify the resume exists and belongs to the student
+    public Student360Response setDefaultResume(String studentId, String resumeId) {
         StudentResume targetResume = resumeRepo.findById(resumeId)
-            .orElseThrow(() -> new ResourceNotFoundException("Resume not found"));
-        
+                .orElseThrow(() -> new ResourceNotFoundException("Resume not found"));
+
         verifyOwnership(targetResume.getStudent().getId(), studentId);
 
-        // 2. Set all resumes for this student to NOT default
-        // Logic: Ensures only one resume is active at a time
         resumeRepo.findAllByStudent_Id(studentId).forEach(r -> {
             r.setIsDefault(false);
             resumeRepo.save(r);
         });
 
-        // 3. Set the chosen resume as default
         targetResume.setIsDefault(true);
         resumeRepo.save(targetResume);
-        
-        // Clear cache to ensure the UI gets the updated list
+
         entityManager.flush();
         entityManager.clear();
+
+        return buildStudent360(studentId);
     }
 
-    // --- Portfolio Sections (Unified Logic: Create/Update/Delete) ---
+    // ─── Skills ───────────────────────────────────────────────────────────────
 
- // --- 1. Skills ---
+    @Override
     @Transactional
-    public Object manageSkill(String studentId, SectionRequest<StudentSkill> request) {
+    public Student360Response manageSkill(String studentId, SectionRequest<StudentSkill> request) {
         StudentSkill data = request.getData();
         if (data.getId() != null && !data.getId().trim().isEmpty()) {
             StudentSkill existing = skillRepo.findById(data.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Skill not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Skill not found"));
             verifyOwnership(existing.getStudent().getId(), studentId);
             existing.setName(data.getName());
             existing.setProficiency(data.getProficiency());
-            return skillRepo.save(existing);
-        } 
-        data.setId(UUID.randomUUID().toString());
-        data.setStudent(getStudentReference(studentId));
-        return skillRepo.save(data);
+            skillRepo.save(existing);
+        } else {
+            data.setId(UUID.randomUUID().toString());
+            data.setStudent(getStudentReference(studentId));
+            skillRepo.save(data);
+        }
+        return buildStudent360(studentId);
     }
 
- // --- Manage Certification ---
+    // ─── Certifications ───────────────────────────────────────────────────────
+
+    @Override
     @Transactional
-    public Object manageCertification(String studentId, SectionRequest<StudentCertification> request) {
+    public Student360Response manageCertification(String studentId, SectionRequest<StudentCertification> request) {
         StudentCertification data = request.getData();
         if (data.getId() != null && !data.getId().trim().isEmpty()) {
             StudentCertification existing = certRepo.findById(data.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Certification not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Certification not found"));
             verifyOwnership(existing.getStudent().getId(), studentId);
-
             existing.setName(data.getName());
-            existing.setOrganizer(data.getOrganizer()); // Using your field name
+            existing.setOrganizer(data.getOrganizer());
             existing.setCredentialUrl(data.getCredentialUrl());
             existing.setIssueDate(data.getIssueDate());
             existing.setExpiryDate(data.getExpiryDate());
             existing.setScore(data.getScore());
-            return certRepo.save(existing);
+            certRepo.save(existing);
+        } else {
+            long count = certRepo.countByStudent_Id(studentId);
+            if (count >= MAX_CERTIFICATIONS) {
+                throw new RuntimeException(
+                        "Maximum " + MAX_CERTIFICATIONS + " certifications allowed. Please delete an existing one first.");
+            }
+            data.setId(UUID.randomUUID().toString());
+            data.setStudent(getStudentReference(studentId));
+            certRepo.save(data);
         }
-        data.setId(UUID.randomUUID().toString());
-        data.setStudent(getStudentReference(studentId));
-        return certRepo.save(data);
+        return buildStudent360(studentId);
     }
 
-    // --- Manage Project ---
+    // ─── Projects ─────────────────────────────────────────────────────────────
+
+    @Override
     @Transactional
-    public Object manageProject(String studentId, SectionRequest<StudentProject> request) {
+    public Student360Response manageProject(String studentId, SectionRequest<StudentProject> request) {
         StudentProject data = request.getData();
         if (data.getId() != null && !data.getId().trim().isEmpty()) {
             StudentProject existing = prjRepo.findById(data.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
             verifyOwnership(existing.getStudent().getId(), studentId);
-
             existing.setTitle(data.getTitle());
-            existing.setDomain(data.getDomain()); // Using your field name
-            existing.setTechUsed(data.getTechUsed()); // Using your field name
+            existing.setDomain(data.getDomain());
+            existing.setTechUsed(data.getTechUsed());
             existing.setProjectLink(data.getProjectLink());
             existing.setDescription(data.getDescription());
             existing.setStartDate(data.getStartDate());
             existing.setEndDate(data.getEndDate());
             existing.setIsCurrent(data.getIsCurrent());
-            return prjRepo.save(existing);
+            prjRepo.save(existing);
+        } else {
+            long count = prjRepo.countByStudent_Id(studentId);
+            if (count >= MAX_PROJECTS) {
+                throw new RuntimeException(
+                        "Maximum " + MAX_PROJECTS + " projects allowed. Please delete an existing one first.");
+            }
+            data.setId(UUID.randomUUID().toString());
+            data.setStudent(getStudentReference(studentId));
+            prjRepo.save(data);
         }
-        data.setId(UUID.randomUUID().toString());
-        data.setStudent(getStudentReference(studentId));
-        return prjRepo.save(data);
+        return buildStudent360(studentId);
     }
 
-    // --- Manage Experience ---
+    // ─── Experience ───────────────────────────────────────────────────────────
+
+    @Override
     @Transactional
-    public Object manageExperience(String studentId, SectionRequest<StudentExperience> request) {
+    public Student360Response manageExperience(String studentId, SectionRequest<StudentExperience> request) {
         StudentExperience data = request.getData();
         if (data.getId() != null && !data.getId().trim().isEmpty()) {
             StudentExperience existing = experienceRepo.findById(data.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Experience not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Experience not found"));
             verifyOwnership(existing.getStudent().getId(), studentId);
-
             existing.setTitle(data.getTitle());
             existing.setCompany(data.getCompany());
             existing.setLocation(data.getLocation());
@@ -266,132 +747,276 @@ public class StudentServiceImpl implements StudentService {
             existing.setEndDate(data.getEndDate());
             existing.setIsCurrent(data.getIsCurrent());
             existing.setDescription(data.getDescription());
-            return experienceRepo.save(existing);
+            experienceRepo.save(existing);
+        } else {
+            long count = experienceRepo.countByStudent_Id(studentId);
+            if (count >= MAX_EXPERIENCE) {
+                throw new RuntimeException(
+                        "Maximum " + MAX_EXPERIENCE + " experience entries allowed. Please delete an existing one first.");
+            }
+            data.setId(UUID.randomUUID().toString());
+            data.setStudent(getStudentReference(studentId));
+            experienceRepo.save(data);
         }
-        data.setId(UUID.randomUUID().toString());
-        data.setStudent(getStudentReference(studentId));
-        return experienceRepo.save(data);
+        return buildStudent360(studentId);
     }
-    
- // --- Manage Languages ---
+
+    // ─── Languages ────────────────────────────────────────────────────────────
+
+    @Override
     @Transactional
-    public Object manageLanguage(String studentId, SectionRequest<StudentLanguage> request) {
+    public Student360Response manageLanguage(String studentId, SectionRequest<StudentLanguage> request) {
         StudentLanguage data = request.getData();
         if (data.getId() != null && !data.getId().trim().isEmpty()) {
             StudentLanguage existing = languageRepo.findById(data.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Language not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Language not found"));
             verifyOwnership(existing.getStudent().getId(), studentId);
-
-            existing.setName(data.getName()); // Matches your 'name' field
-            existing.setProficiency(data.getProficiency()); // Matches your 'LangProficiency' enum
-            return languageRepo.save(existing);
+            existing.setName(data.getName());
+            existing.setProficiency(data.getProficiency());
+            languageRepo.save(existing);
+        } else {
+            data.setId(UUID.randomUUID().toString());
+            data.setStudent(getStudentReference(studentId));
+            languageRepo.save(data);
         }
-        data.setId(UUID.randomUUID().toString());
-        data.setStudent(getStudentReference(studentId));
-        return languageRepo.save(data);
+        return buildStudent360(studentId);
     }
 
-    // --- Manage Publications ---
+    // ─── Publications ─────────────────────────────────────────────────────────
+
+    @Override
     @Transactional
-    public Object managePublication(String studentId, SectionRequest<StudentPublication> request) {
+    public Student360Response managePublication(String studentId, SectionRequest<StudentPublication> request) {
         StudentPublication data = request.getData();
         if (data.getId() != null && !data.getId().trim().isEmpty()) {
             StudentPublication existing = publicationRepo.findById(data.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Publication not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Publication not found"));
             verifyOwnership(existing.getStudent().getId(), studentId);
-
             existing.setTitle(data.getTitle());
-            existing.setPublisher(data.getPublisher()); // Matches your 'publisher' field
+            existing.setPublisher(data.getPublisher());
             existing.setPublicationUrl(data.getPublicationUrl());
             existing.setPublishDate(data.getPublishDate());
-            return publicationRepo.save(existing);
+            publicationRepo.save(existing);
+        } else {
+            long count = publicationRepo.countByStudent_Id(studentId);
+            if (count >= MAX_PUBLICATIONS) {
+                throw new RuntimeException(
+                        "Maximum " + MAX_PUBLICATIONS + " publications allowed. Please delete an existing one first.");
+            }
+            data.setId(UUID.randomUUID().toString());
+            data.setStudent(getStudentReference(studentId));
+            publicationRepo.save(data);
         }
-        data.setId(UUID.randomUUID().toString());
-        data.setStudent(getStudentReference(studentId));
-        return publicationRepo.save(data);
+        return buildStudent360(studentId);
     }
 
-    // --- Manage Social Links ---
+    // ─── Social Links ─────────────────────────────────────────────────────────
+
+    @Override
     @Transactional
-    public Object manageSocialLink(String studentId, SectionRequest<StudentSocialLink> request) {
+    public Student360Response manageSocialLink(String studentId, SectionRequest<StudentSocialLink> request) {
         StudentSocialLink data = request.getData();
         if (data.getId() != null && !data.getId().trim().isEmpty()) {
             StudentSocialLink existing = socialRepo.findById(data.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Social link not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Social link not found"));
             verifyOwnership(existing.getStudent().getId(), studentId);
-
-            existing.setPlatform(data.getPlatform()); // Matches your 'Platform' enum
+            existing.setPlatform(data.getPlatform());
             existing.setUrl(data.getUrl());
-            return socialRepo.save(existing);
+            socialRepo.save(existing);
+        } else {
+            data.setId(UUID.randomUUID().toString());
+            data.setStudent(getStudentReference(studentId));
+            socialRepo.save(data);
         }
-        data.setId(UUID.randomUUID().toString());
-        data.setStudent(getStudentReference(studentId));
-        return socialRepo.save(data);
+        return buildStudent360(studentId);
     }
-    
-    
- // --- Helper for Bulletproof Deletion ---
- // --- Optimized Deletion Methods ---
 
+    // ─── Remove methods ───────────────────────────────────────────────────────
+
+    @Override
     @Transactional
-    public void removeSkill(String studentId, String skillId) {
+    public Student360Response removeSkill(String studentId, String skillId) {
         int deleted = skillRepo.deleteBySkillIdAndStudentId(skillId, studentId);
         validateDelete(deleted, "Skill");
+        return buildStudent360(studentId);
     }
 
+    @Override
     @Transactional
-    public void removeProject(String studentId, String id) {
+    public Student360Response removeProject(String studentId, String id) {
         int deleted = prjRepo.deleteByProjectIdAndStudentId(id, studentId);
         validateDelete(deleted, "Project");
+        return buildStudent360(studentId);
     }
 
+    @Override
     @Transactional
-    public void removeExperience(String studentId, String id) {
+    public Student360Response removeExperience(String studentId, String id) {
         int deleted = experienceRepo.deleteByExperienceIdAndStudentId(id, studentId);
         validateDelete(deleted, "Experience");
+        return buildStudent360(studentId);
     }
 
+    @Override
     @Transactional
-    public void removeCertification(String studentId, String id) {
+    public Student360Response removeCertification(String studentId, String id) {
         int deleted = certRepo.deleteByCertificationIdAndStudentId(id, studentId);
         validateDelete(deleted, "Certification");
+        return buildStudent360(studentId);
     }
 
+    @Override
     @Transactional
-    public void removeLanguage(String studentId, String id) {
+    public Student360Response removeLanguage(String studentId, String id) {
         int deleted = languageRepo.deleteByLanguageIdAndStudentId(id, studentId);
         validateDelete(deleted, "Language");
+        return buildStudent360(studentId);
     }
 
+    @Override
     @Transactional
-    public void removePublication(String studentId, String id) {
+    public Student360Response removePublication(String studentId, String id) {
         int deleted = publicationRepo.deleteByPublicationIdAndStudentId(id, studentId);
         validateDelete(deleted, "Publication");
+        return buildStudent360(studentId);
     }
 
+    @Override
     @Transactional
-    public void removeSocialLink(String studentId, String id) {
+    public Student360Response removeSocialLink(String studentId, String id) {
         int deleted = socialRepo.deleteBySocialLinkIdAndStudentId(id, studentId);
         validateDelete(deleted, "Social Link");
+        return buildStudent360(studentId);
+    }
+
+    // ─── Account Management ───────────────────────────────────────────────────
+
+    /**
+     * FIXED: Was returning List<StudentProfile> (raw entity) — frontend got blank table.
+     *
+     * Now returns List<Map<String, Object>> with flat shape:
+     *   { id, name, email, expiryIn, status }
+     *
+     * The `id` field is the rollNumber — this is what AtRiskStudentList renders
+     * in the "Roll Number" column via {stu.id}.
+     *
+     * The `expiryIn` field is the signed number of days until expiry:
+     *   Positive  → account still active, expiring in N days
+     *   Negative  → account already expired N days ago
+     *
+     * Status logic (matches the lifecycle policy card in the UI):
+     *   expiryIn >= 0                → "Expiring Soon"
+     *   expiryIn < 0 && >= -90       → "Grace Period"
+     *   expiryIn < -90               → "To Be Deleted"
+     *
+     * Includes: accounts expiring within 30 days AND accounts up to 180 days past expiry.
+     * Accounts more than 180 days past expiry are assumed already deleted and excluded.
+     */
+    @Override
+    public List<Map<String, Object>> getExpiringStudents(String collegeId) {
+        LocalDate today = LocalDate.now();
+        LocalDate warningWindow = today.plusDays(30);
+        LocalDate cutoff = today.minusDays(180); // Stop showing after 180 days past expiry
+
+        List<StudentProfile> profiles = profileRepo.findByCollegeId(collegeId);
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        for (StudentProfile profile : profiles) {
+            LocalDate expiry = profile.getPremiumEndDate();
+            if (expiry == null) continue;
+
+            // Only include if within the warning window (30 days ahead) or still in grace/deletion range
+            if (expiry.isAfter(warningWindow) || expiry.isBefore(cutoff)) continue;
+
+            // Calculate signed days to expiry
+            long daysToExpiry = today.until(expiry, ChronoUnit.DAYS);
+            // Note: if expiry is today, daysToExpiry = 0 (boundary — show as Expiring Soon)
+            // if expiry was yesterday, daysToExpiry = -1 (Grace Period)
+
+            String status;
+            if (daysToExpiry >= 0) {
+                status = "Expiring Soon";
+            } else if (daysToExpiry >= -GRACE_PERIOD_DAYS) {
+                status = "Grace Period";
+            } else {
+                status = "To Be Deleted";
+            }
+
+            // Fetch User to get fullName and email
+            // profileRepo.findByCollegeId should JOIN fetch the user — if not, we fall back to userRepository
+            User user = profile.getUser();
+            if (user == null) {
+                user = userRepository.findById(profile.getUserId()).orElse(null);
+            }
+            if (user == null) continue; // Orphaned profile — skip
+
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("id", profile.getRollNumber());       // "Roll Number" column: stu.id
+            entry.put("name", user.getFullName());           // "Name" column: stu.name
+            entry.put("email", user.getEmail());             // "Email" column: stu.email
+            entry.put("expiryIn", daysToExpiry);             // "Days to Expiry" column: stu.expiryIn
+            entry.put("status", status);                     // Status badge: stu.status
+
+            result.add(entry);
+        }
+
+        // Sort: expiring soonest first, then deepest in grace/deletion last
+        result.sort((a, b) -> Long.compare((long) a.get("expiryIn"), (long) b.get("expiryIn")));
+
+        return result;
     }
 
     /**
-     * Shared logic to finalize deletion and sync persistence context.
-     * 1. Check if the database actually removed a row.
-     * 2. Flush the SQL DELETE command immediately.
-     * 3. Clear the EntityManager to prevent Hibernate from 'resurrecting' 
-     * the deleted object from its internal cache.
+     * FIXED: Was returning { total, active, expiring30, expiring7, expired }.
+     * Frontend AccountStats reads stats.expiring, stats.grace, stats.toBeDeleted —
+     * all three showed 0 because none of those keys existed.
+     *
+     * Now returns exactly { expiring, grace, toBeDeleted } matching AccountStatsProps.
+     *
+     * Lifecycle boundaries (matching the policy card displayed in ManagingStudentAccounts):
+     *   expiring:    premiumEndDate is between today (exclusive) and today+30 (inclusive)
+     *   grace:       premiumEndDate is between today-90 (exclusive) and today (inclusive)
+     *   toBeDeleted: premiumEndDate is today-90 or earlier
      */
+    @Override
+    public Map<String, Long> getAccountStats(String collegeId) {
+        List<StudentProfile> profiles = profileRepo.findByCollegeId(collegeId);
+        LocalDate today = LocalDate.now();
+        LocalDate graceCutoff = today.minusDays(GRACE_PERIOD_DAYS);  // 90 days ago
+        LocalDate expiryWindow = today.plusDays(30);                  // 30 days ahead
+
+        long expiring = profiles.stream()
+                .filter(p -> p.getPremiumEndDate() != null)
+                // Active but expiring within 30 days (not yet expired)
+                .filter(p -> p.getPremiumEndDate().isAfter(today) && !p.getPremiumEndDate().isAfter(expiryWindow))
+                .count();
+
+        long grace = profiles.stream()
+                .filter(p -> p.getPremiumEndDate() != null)
+                // Expired but within 90-day grace window
+                .filter(p -> !p.getPremiumEndDate().isAfter(today) && p.getPremiumEndDate().isAfter(graceCutoff))
+                .count();
+
+        long toBeDeleted = profiles.stream()
+                .filter(p -> p.getPremiumEndDate() != null)
+                // Expired more than 90 days ago — scheduled for deletion
+                .filter(p -> !p.getPremiumEndDate().isAfter(graceCutoff))
+                .count();
+
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("expiring", expiring);         // matches stats.expiring in AccountStats
+        stats.put("grace", grace);               // matches stats.grace in AccountStats
+        stats.put("toBeDeleted", toBeDeleted);   // matches stats.toBeDeleted in AccountStats
+        return stats;
+    }
+
+    // ─── Private helpers ──────────────────────────────────────────────────────
+
     private void validateDelete(int rowsAffected, String section) {
         if (rowsAffected == 0) {
-            // If rowsAffected is 0, it means either the ID doesn't exist
-            // OR the studentId didn't match (Security breach attempt)
             throw new ResourceNotFoundException(section + " not found or unauthorized");
         }
         entityManager.flush();
         entityManager.clear();
     }
-
-	
-
 }

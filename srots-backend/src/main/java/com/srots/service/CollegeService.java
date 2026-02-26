@@ -2,6 +2,8 @@ package com.srots.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.srots.dto.collegedto.AboutSectionDTO;
@@ -21,7 +23,7 @@ public interface CollegeService {
     public List<Object> getBranchesByCollegeId(String id);
     public Object getSocialMediaByCollegeId(String id);
     public List<Object> getAboutSectionsByCollegeId(String id);
-    public void deleteCollege(String id);
+//    public void deleteCollege(String id);
     
  // New partial methods
     String updateCollegeLogo(String id, MultipartFile file);
@@ -33,4 +35,12 @@ public interface CollegeService {
     
     public CollegeResponse updateBranch(String id, String branchCode, BranchDTO branch);
     public CollegeResponse deleteBranch(String id, String branchCode);
+    
+    
+    public void permanentDelete(String id);
+    public void softDelete(String id);
+    public void activate(String id);
+    public void deactivate(String id);
+    
+    public Page<CollegeResponse> getColleges(String query, boolean includeInactive, Pageable pageable);
 }

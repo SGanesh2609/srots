@@ -118,6 +118,14 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
     
+    @Column(nullable = false)
+    private Boolean isDeleted = false;
+    
+    private LocalDateTime deletedAt;
+    
+    @Column(length = 100)
+    private String deletedBy;
+    
     
  // ... inside User class ...
 
@@ -152,6 +160,37 @@ public class User {
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnoreProperties("student")
     private List<StudentSkill> skills = new ArrayList<>();
+    
+    /**
+     * Exposes rollNumber at root level of User JSON for list endpoints.
+     * The studentProfile field is @JsonIgnore to prevent recursion, but we
+     * can safely expose individual scalar fields via @JsonProperty getters.
+     *
+     * Result in JSON: { "id": "...", "rollNumber": "20701A0536", ... }
+     */
+    @JsonProperty("rollNumber")
+    public String getRollNumberForJson() {
+        return (studentProfile != null) ? studentProfile.getRollNumber() : null;
+    }
+
+    /**
+     * Exposes branch at root level of User JSON for list endpoints.
+     * Same pattern as getRollNumberForJson().
+     *
+     * Result in JSON: { "id": "...", "branch": "CSE", ... }
+     */
+    @JsonProperty("branch")
+    public String getBranchForJson() {
+        return (studentProfile != null) ? studentProfile.getBranch() : null;
+    }
+
+    /**
+     * OPTIONAL: Also expose batch for filtering in the list view.
+     */
+    @JsonProperty("batch")
+    public Integer getBatchForJson() {
+        return (studentProfile != null) ? studentProfile.getBatch() : null;
+    }
 
 	public String getId() {
 		return id;
@@ -423,6 +462,30 @@ public class User {
 
 	public void setLastDeviceInfo(String lastDeviceInfo) {
 		this.lastDeviceInfo = lastDeviceInfo;
+	}
+
+	public Boolean getIsDeleted() {
+		return isDeleted;
+	}
+
+	public void setIsDeleted(Boolean isDeleted) {
+		this.isDeleted = isDeleted;
+	}
+
+	public LocalDateTime getDeletedAt() {
+		return deletedAt;
+	}
+
+	public void setDeletedAt(LocalDateTime deletedAt) {
+		this.deletedAt = deletedAt;
+	}
+
+	public String getDeletedBy() {
+		return deletedBy;
+	}
+
+	public void setDeletedBy(String deletedBy) {
+		this.deletedBy = deletedBy;
 	}
 	
 	

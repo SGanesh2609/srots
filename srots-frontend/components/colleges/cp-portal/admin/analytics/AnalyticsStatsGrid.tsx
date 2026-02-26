@@ -29,18 +29,23 @@ interface AnalyticsStatsGridProps {
 export const AnalyticsStatsGrid: React.FC<AnalyticsStatsGridProps> = ({ stats }) => {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {stats.map((stat, index) => (
-                <div key={index} className="bg-white p-6 rounded-xl border shadow-sm hover:shadow-md transition-shadow group">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
-                            <stat.icon size={24} />
+            {stats.map((stat, idx) => (
+                <div key={idx} className="bg-white p-7 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all group overflow-hidden relative">
+                    <div className={`absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 ${stat.bg} rounded-full opacity-20 group-hover:scale-150 transition-transform duration-500`}></div>
+
+                    <div className="flex justify-between items-start relative z-10">
+                        <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} shadow-sm group-hover:scale-110 transition-transform`}>
+                            <stat.icon size={20} />
                         </div>
-                        <span className={`text-xs font-bold px-2 py-1 rounded-full bg-gray-100 text-gray-600`}>
-                            {stat.change}
-                        </span>
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${stat.color} opacity-70`}>{stat.change}</span>
                     </div>
-                    <h3 className="text-3xl font-bold text-gray-900">{stat.value}</h3>
-                    <p className="text-sm text-gray-500 font-medium mt-1">{stat.label}</p>
+
+                    <div className="mt-6 relative z-10">
+                        <h3 className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{stat.label}</h3>
+                        <p className="text-3xl font-black text-gray-900 group-hover:text-blue-700 transition-colors">
+                            {stat.value}
+                        </p>
+                    </div>
                 </div>
             ))}
         </div>

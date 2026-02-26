@@ -26,4 +26,6 @@ public interface StudentCertificationRepository extends JpaRepository<StudentCer
     @Transactional
     @Query("DELETE FROM StudentCertification c WHERE c.id = :id AND c.student.id = :studentId")
     int deleteByCertificationIdAndStudentId(@Param("id") String id, @Param("studentId") String studentId);
+
+	long countByStudent_Id(String studentId);
 }

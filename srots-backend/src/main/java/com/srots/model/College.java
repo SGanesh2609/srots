@@ -55,6 +55,9 @@ public class College {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
     private String branches;
+    
+    @Column(nullable = false)
+    private boolean active = true;
 
     @CreationTimestamp @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -81,9 +84,15 @@ public class College {
 
 
 
+	
+
+
+
+
 	public College(String id, String name, String code, String type, String email, String phone, String landline,
 			String logoUrl, String addressJson, String socialMedia, String aboutSections, String branches,
-			LocalDateTime createdAt, LocalDateTime updatedAt, List<Post> posts, List<Job> jobs, List<User> users) {
+			boolean active, LocalDateTime createdAt, LocalDateTime updatedAt, List<Post> posts, List<Job> jobs,
+			List<User> users) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -97,12 +106,17 @@ public class College {
 		this.socialMedia = socialMedia;
 		this.aboutSections = aboutSections;
 		this.branches = branches;
+		this.active = active;
 		this.createdAt = createdAt;
 		this.updatedAt = updatedAt;
 		this.posts = posts;
 		this.jobs = jobs;
 		this.users = users;
 	}
+
+
+
+
 
 
 
@@ -250,6 +264,14 @@ public class College {
 
 	public void setUpdatedAt(LocalDateTime updatedAt) {
 		this.updatedAt = updatedAt;
+	}
+
+	public boolean isActive() {
+		return active;
+	}
+
+	public void setActive(boolean active) {
+		this.active = active;
 	}
     
     

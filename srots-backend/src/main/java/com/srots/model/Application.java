@@ -28,7 +28,7 @@ public class Application {
 	private AppStatus status = AppStatus.Applied;
 
 	public enum AppStatus {
-		Applied, Shortlisted, Rejected, Hired, Not_Interested, Offer_Released
+		Applied, Shortlisted, Rejected, Hired, Not_Interested, Offer_Released, PLACED
 	}
 
 	private String currentRoundStatus;
@@ -44,6 +44,8 @@ public class Application {
 	public enum AppliedBy {
 	    Self, CP_Admin, CP_Staff
 	}
+	
+	private LocalDateTime placedAt;
 
 	
 

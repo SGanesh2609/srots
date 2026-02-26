@@ -1,3 +1,625 @@
+//package com.srots.model;
+//
+//import java.math.BigDecimal;
+//import java.time.LocalDate;
+//import java.time.LocalDateTime;
+//import java.util.List;
+//
+//import org.hibernate.annotations.CreationTimestamp;
+//import org.hibernate.annotations.JdbcTypeCode;
+//import org.hibernate.type.SqlTypes;
+//
+//import com.fasterxml.jackson.annotation.JsonIgnore;
+//import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+//import com.fasterxml.jackson.annotation.JsonValue;
+//
+//import jakarta.persistence.CascadeType;
+//import jakarta.persistence.Column;
+//import jakarta.persistence.Entity;
+//import jakarta.persistence.EnumType;
+//import jakarta.persistence.Enumerated;
+//import jakarta.persistence.FetchType;
+//import jakarta.persistence.GeneratedValue;
+//import jakarta.persistence.GenerationType;
+//import jakarta.persistence.Id;
+//import jakarta.persistence.JoinColumn;
+//import jakarta.persistence.ManyToOne;
+//import jakarta.persistence.OneToMany;
+//import jakarta.persistence.Table;
+//import lombok.AllArgsConstructor;
+//import lombok.Builder;
+//import lombok.Data;
+//import lombok.NoArgsConstructor;
+//
+//@Entity
+//@Table(name = "jobs")
+//@Data
+//@NoArgsConstructor
+//@AllArgsConstructor
+//@Builder
+//public class Job {
+//
+//    @Id
+//    @GeneratedValue(strategy = GenerationType.UUID)
+//    @Column(columnDefinition = "CHAR(36)")
+//    private String id;
+//
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "college_id")
+//    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "jobs", "posts", "users"})
+//    private College college;
+//
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "posted_by_id")
+//    @JsonIgnoreProperties({
+//        "hibernateLazyInitializer", 
+//        "handler", 
+//        "passwordHash", 
+//        "jobs",      // Stop loop back to jobs
+//        "college",   // Stop loop back to college (since Job already has college)
+//        "studentProfile",
+//        "educationRecords"
+//    })
+//    private User postedBy;
+//
+//    private String title;
+//    private String companyName;
+//    private String hiringDepartment;
+//
+//    @Enumerated(EnumType.STRING)
+//    private JobType jobType;
+//
+//    @Enumerated(EnumType.STRING)
+//    private WorkMode workMode;
+//
+//    private String location;
+//    private String salaryRange;
+//
+//    @Column(columnDefinition = "TEXT")
+//    private String summary;
+//
+//    @JdbcTypeCode(SqlTypes.JSON)
+//    private String responsibilitiesJson;
+//
+//    @JdbcTypeCode(SqlTypes.JSON)
+//    private String qualificationsJson;
+//
+//    @JdbcTypeCode(SqlTypes.JSON)
+//    private String preferredQualificationsJson;
+//
+//    @JdbcTypeCode(SqlTypes.JSON)
+//    private String benefitsJson;
+//
+//    @Column(columnDefinition = "TEXT")
+//    private String companyCulture;
+//
+//    @Column(columnDefinition = "TEXT")
+//    private String physicalDemands;
+//
+//    @Column(columnDefinition = "TEXT")
+//    private String eeoStatement;
+//
+//    private String internalId;
+//    private LocalDate applicationDeadline;
+//
+//    @Column(columnDefinition = "TEXT")
+//    private String externalLink;
+//
+//    @Enumerated(EnumType.STRING)
+//    private JobStatus status = JobStatus.Active;
+//
+//    @CreationTimestamp
+//    private LocalDateTime postedAt;
+//
+//    @Column(precision = 5, scale = 2)
+//    private BigDecimal minUgScore;
+//    private String formatUg;
+//    private Integer maxBacklogs;
+//
+//    @Column(precision = 5, scale = 2)
+//    private BigDecimal min10thScore;
+//    private String format10th;
+//
+//    @Column(precision = 5, scale = 2)
+//    private BigDecimal min12thScore;
+//    private String format12th;
+//
+//    private Boolean isDiplomaEligible = false;
+//
+//    @Column(precision = 5, scale = 2)
+//    private BigDecimal minDiplomaScore;
+//    private String formatDiploma;
+//
+//    private Boolean allowGaps = false;
+//    private Integer maxGapYears = 0;
+//
+//    @JdbcTypeCode(SqlTypes.JSON)
+//    private String allowedBranches;
+//
+//    @JdbcTypeCode(SqlTypes.JSON)
+//    private String eligibleBatches;
+//
+//    @JdbcTypeCode(SqlTypes.JSON)
+//    private String roundsJson;
+//
+//    @JdbcTypeCode(SqlTypes.JSON)
+//    private String requiredFieldsJson;
+//
+//    @JdbcTypeCode(SqlTypes.JSON)
+//    private String attachmentsJson;
+//
+//    private String avoidListUrl;
+//
+//    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
+//    @JsonIgnore
+//    private List<Application> applications;
+//
+// // SOFT DELETE SUPPORT
+//    @Column(name = "deleted_at")
+//    private LocalDateTime deletedAt;
+//    
+//    @Column(name = "deleted_by_id")
+//    private String deletedById;
+//
+//    // --- ENUMS ---
+//
+//    public enum JobStatus { Active, Closed, Draft }
+//
+//    public enum JobType {
+//        Full_Time("Full Time"), Internship("Internship"), Contract("Contract");
+//        private final String display;
+//        JobType(String display) { this.display = display; }
+//        @JsonValue public String getDisplay() { return display; }
+//
+//        public static JobType fromString(String text) {
+//            if (text == null || text.isBlank()) return null;
+//            String clean = text.trim().replace(" ", "").replace("_", "").toLowerCase();
+//            for (JobType t : JobType.values()) {
+//                if (t.name().replace("_", "").toLowerCase().equals(clean)) return t;
+//            }
+//            return null;
+//        }
+//    }
+//
+//    public enum WorkMode {
+//        On_Site("On-Site"), Remote("Remote"), Hybrid("Hybrid");
+//        private final String display;
+//        WorkMode(String display) { this.display = display; }
+//        @JsonValue public String getDisplay() { return display; }
+//
+//        public static WorkMode fromString(String text) {
+//            if (text == null || text.isBlank()) return null;
+//            String clean = text.trim().replace(" ", "").replace("-", "").replace("_", "").toLowerCase();
+//            for (WorkMode m : WorkMode.values()) {
+//                if (m.name().replace("_", "").toLowerCase().equals(clean)) return m;
+//            }
+//            return null;
+//        }
+//    }
+//
+//	public Job() {
+//		super();
+//		// TODO Auto-generated constructor stub
+//	}
+//
+//	
+//	
+//	public Job(String id, College college, User postedBy, String title, String companyName, String hiringDepartment,
+//			JobType jobType, WorkMode workMode, String location, String salaryRange, String summary,
+//			String responsibilitiesJson, String qualificationsJson, String preferredQualificationsJson,
+//			String benefitsJson, String companyCulture, String physicalDemands, String eeoStatement, String internalId,
+//			LocalDate applicationDeadline, String externalLink, JobStatus status, LocalDateTime postedAt,
+//			BigDecimal minUgScore, String formatUg, Integer maxBacklogs, BigDecimal min10thScore, String format10th,
+//			BigDecimal min12thScore, String format12th, Boolean isDiplomaEligible, BigDecimal minDiplomaScore,
+//			String formatDiploma, Boolean allowGaps, Integer maxGapYears, String allowedBranches,
+//			String eligibleBatches, String roundsJson, String requiredFieldsJson, String attachmentsJson,
+//			String avoidListUrl, List<Application> applications, LocalDateTime deletedAt, String deletedById) {
+//		super();
+//		this.id = id;
+//		this.college = college;
+//		this.postedBy = postedBy;
+//		this.title = title;
+//		this.companyName = companyName;
+//		this.hiringDepartment = hiringDepartment;
+//		this.jobType = jobType;
+//		this.workMode = workMode;
+//		this.location = location;
+//		this.salaryRange = salaryRange;
+//		this.summary = summary;
+//		this.responsibilitiesJson = responsibilitiesJson;
+//		this.qualificationsJson = qualificationsJson;
+//		this.preferredQualificationsJson = preferredQualificationsJson;
+//		this.benefitsJson = benefitsJson;
+//		this.companyCulture = companyCulture;
+//		this.physicalDemands = physicalDemands;
+//		this.eeoStatement = eeoStatement;
+//		this.internalId = internalId;
+//		this.applicationDeadline = applicationDeadline;
+//		this.externalLink = externalLink;
+//		this.status = status;
+//		this.postedAt = postedAt;
+//		this.minUgScore = minUgScore;
+//		this.formatUg = formatUg;
+//		this.maxBacklogs = maxBacklogs;
+//		this.min10thScore = min10thScore;
+//		this.format10th = format10th;
+//		this.min12thScore = min12thScore;
+//		this.format12th = format12th;
+//		this.isDiplomaEligible = isDiplomaEligible;
+//		this.minDiplomaScore = minDiplomaScore;
+//		this.formatDiploma = formatDiploma;
+//		this.allowGaps = allowGaps;
+//		this.maxGapYears = maxGapYears;
+//		this.allowedBranches = allowedBranches;
+//		this.eligibleBatches = eligibleBatches;
+//		this.roundsJson = roundsJson;
+//		this.requiredFieldsJson = requiredFieldsJson;
+//		this.attachmentsJson = attachmentsJson;
+//		this.avoidListUrl = avoidListUrl;
+//		this.applications = applications;
+//		this.deletedAt = deletedAt;
+//		this.deletedById = deletedById;
+//	}
+//
+//
+//
+//	/**
+//     * Mark this job as soft deleted
+//     */
+//    public void softDelete(String userId) {
+//        this.deletedAt = LocalDateTime.now();
+//        this.deletedById = userId;
+//    }
+//    
+//    /**
+//     * Check if job is soft deleted
+//     */
+//    public boolean isDeleted() {
+//        return this.deletedAt != null;
+//    }
+//
+//	public String getId() {
+//		return id;
+//	}
+//
+//	public void setId(String id) {
+//		this.id = id;
+//	}
+//
+//	public College getCollege() {
+//		return college;
+//	}
+//
+//	public void setCollege(College college) {
+//		this.college = college;
+//	}
+//
+//	public User getPostedBy() {
+//		return postedBy;
+//	}
+//
+//	public void setPostedBy(User postedBy) {
+//		this.postedBy = postedBy;
+//	}
+//
+//	public String getTitle() {
+//		return title;
+//	}
+//
+//	public void setTitle(String title) {
+//		this.title = title;
+//	}
+//
+//	public String getCompanyName() {
+//		return companyName;
+//	}
+//
+//	public void setCompanyName(String companyName) {
+//		this.companyName = companyName;
+//	}
+//
+//	public String getHiringDepartment() {
+//		return hiringDepartment;
+//	}
+//
+//	public void setHiringDepartment(String hiringDepartment) {
+//		this.hiringDepartment = hiringDepartment;
+//	}
+//
+//	public JobType getJobType() {
+//		return jobType;
+//	}
+//
+//	public void setJobType(JobType jobType) {
+//		this.jobType = jobType;
+//	}
+//
+//	public WorkMode getWorkMode() {
+//		return workMode;
+//	}
+//
+//	public void setWorkMode(WorkMode workMode) {
+//		this.workMode = workMode;
+//	}
+//
+//	public String getLocation() {
+//		return location;
+//	}
+//
+//	public void setLocation(String location) {
+//		this.location = location;
+//	}
+//
+//	public String getSalaryRange() {
+//		return salaryRange;
+//	}
+//
+//	public void setSalaryRange(String salaryRange) {
+//		this.salaryRange = salaryRange;
+//	}
+//
+//	public String getSummary() {
+//		return summary;
+//	}
+//
+//	public void setSummary(String summary) {
+//		this.summary = summary;
+//	}
+//
+//	public String getResponsibilitiesJson() {
+//		return responsibilitiesJson;
+//	}
+//
+//	public void setResponsibilitiesJson(String responsibilitiesJson) {
+//		this.responsibilitiesJson = responsibilitiesJson;
+//	}
+//
+//	public String getQualificationsJson() {
+//		return qualificationsJson;
+//	}
+//
+//	public void setQualificationsJson(String qualificationsJson) {
+//		this.qualificationsJson = qualificationsJson;
+//	}
+//
+//	public String getPreferredQualificationsJson() {
+//		return preferredQualificationsJson;
+//	}
+//
+//	public void setPreferredQualificationsJson(String preferredQualificationsJson) {
+//		this.preferredQualificationsJson = preferredQualificationsJson;
+//	}
+//
+//	public String getBenefitsJson() {
+//		return benefitsJson;
+//	}
+//
+//	public void setBenefitsJson(String benefitsJson) {
+//		this.benefitsJson = benefitsJson;
+//	}
+//
+//	public String getCompanyCulture() {
+//		return companyCulture;
+//	}
+//
+//	public void setCompanyCulture(String companyCulture) {
+//		this.companyCulture = companyCulture;
+//	}
+//
+//	public String getPhysicalDemands() {
+//		return physicalDemands;
+//	}
+//
+//	public void setPhysicalDemands(String physicalDemands) {
+//		this.physicalDemands = physicalDemands;
+//	}
+//
+//	public String getEeoStatement() {
+//		return eeoStatement;
+//	}
+//
+//	public void setEeoStatement(String eeoStatement) {
+//		this.eeoStatement = eeoStatement;
+//	}
+//
+//	public String getInternalId() {
+//		return internalId;
+//	}
+//
+//	public void setInternalId(String internalId) {
+//		this.internalId = internalId;
+//	}
+//
+//	public LocalDate getApplicationDeadline() {
+//		return applicationDeadline;
+//	}
+//
+//	public void setApplicationDeadline(LocalDate applicationDeadline) {
+//		this.applicationDeadline = applicationDeadline;
+//	}
+//
+//	public String getExternalLink() {
+//		return externalLink;
+//	}
+//
+//	public void setExternalLink(String externalLink) {
+//		this.externalLink = externalLink;
+//	}
+//
+//	public JobStatus getStatus() {
+//		return status;
+//	}
+//
+//	public void setStatus(JobStatus status) {
+//		this.status = status;
+//	}
+//
+//	public LocalDateTime getPostedAt() {
+//		return postedAt;
+//	}
+//
+//	public void setPostedAt(LocalDateTime postedAt) {
+//		this.postedAt = postedAt;
+//	}
+//
+//	public BigDecimal getMinUgScore() {
+//		return minUgScore;
+//	}
+//
+//	public void setMinUgScore(BigDecimal minUgScore) {
+//		this.minUgScore = minUgScore;
+//	}
+//
+//	public String getFormatUg() {
+//		return formatUg;
+//	}
+//
+//	public void setFormatUg(String formatUg) {
+//		this.formatUg = formatUg;
+//	}
+//
+//	public Integer getMaxBacklogs() {
+//		return maxBacklogs;
+//	}
+//
+//	public void setMaxBacklogs(Integer maxBacklogs) {
+//		this.maxBacklogs = maxBacklogs;
+//	}
+//
+//	public BigDecimal getMin10thScore() {
+//		return min10thScore;
+//	}
+//
+//	public void setMin10thScore(BigDecimal min10thScore) {
+//		this.min10thScore = min10thScore;
+//	}
+//
+//	public String getFormat10th() {
+//		return format10th;
+//	}
+//
+//	public void setFormat10th(String format10th) {
+//		this.format10th = format10th;
+//	}
+//
+//	public BigDecimal getMin12thScore() {
+//		return min12thScore;
+//	}
+//
+//	public void setMin12thScore(BigDecimal min12thScore) {
+//		this.min12thScore = min12thScore;
+//	}
+//
+//	public String getFormat12th() {
+//		return format12th;
+//	}
+//
+//	public void setFormat12th(String format12th) {
+//		this.format12th = format12th;
+//	}
+//
+//	public Boolean getIsDiplomaEligible() {
+//		return isDiplomaEligible;
+//	}
+//
+//	public void setIsDiplomaEligible(Boolean isDiplomaEligible) {
+//		this.isDiplomaEligible = isDiplomaEligible;
+//	}
+//
+//	public BigDecimal getMinDiplomaScore() {
+//		return minDiplomaScore;
+//	}
+//
+//	public void setMinDiplomaScore(BigDecimal minDiplomaScore) {
+//		this.minDiplomaScore = minDiplomaScore;
+//	}
+//
+//	public String getFormatDiploma() {
+//		return formatDiploma;
+//	}
+//
+//	public void setFormatDiploma(String formatDiploma) {
+//		this.formatDiploma = formatDiploma;
+//	}
+//
+//	public Boolean getAllowGaps() {
+//		return allowGaps;
+//	}
+//
+//	public void setAllowGaps(Boolean allowGaps) {
+//		this.allowGaps = allowGaps;
+//	}
+//
+//	public Integer getMaxGapYears() {
+//		return maxGapYears;
+//	}
+//
+//	public void setMaxGapYears(Integer maxGapYears) {
+//		this.maxGapYears = maxGapYears;
+//	}
+//
+//	public String getAllowedBranches() {
+//		return allowedBranches;
+//	}
+//
+//	public void setAllowedBranches(String allowedBranches) {
+//		this.allowedBranches = allowedBranches;
+//	}
+//
+//	public String getEligibleBatches() {
+//		return eligibleBatches;
+//	}
+//
+//	public void setEligibleBatches(String eligibleBatches) {
+//		this.eligibleBatches = eligibleBatches;
+//	}
+//
+//	public String getRoundsJson() {
+//		return roundsJson;
+//	}
+//
+//	public void setRoundsJson(String roundsJson) {
+//		this.roundsJson = roundsJson;
+//	}
+//
+//	public String getRequiredFieldsJson() {
+//		return requiredFieldsJson;
+//	}
+//
+//	public void setRequiredFieldsJson(String requiredFieldsJson) {
+//		this.requiredFieldsJson = requiredFieldsJson;
+//	}
+//
+//	public String getAttachmentsJson() {
+//		return attachmentsJson;
+//	}
+//
+//	public void setAttachmentsJson(String attachmentsJson) {
+//		this.attachmentsJson = attachmentsJson;
+//	}
+//
+//	public String getAvoidListUrl() {
+//		return avoidListUrl;
+//	}
+//
+//	public void setAvoidListUrl(String avoidListUrl) {
+//		this.avoidListUrl = avoidListUrl;
+//	}
+//
+//	public List<Application> getApplications() {
+//		return applications;
+//	}
+//
+//	public void setApplications(List<Application> applications) {
+//		this.applications = applications;
+//	}
+//    
+//    
+//    
+//    
+//}
+
+
 package com.srots.model;
 
 import java.math.BigDecimal;
@@ -19,6 +641,21 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * ENTERPRISE JOB ENTITY
+ *
+ * KEY FIX in this version:
+ *   The database was originally created with enum values "On_site" / "Full_time"
+ *   (lowercase second word). The new enum constants are "On_Site" / "Full_Time".
+ *
+ *   @Enumerated(EnumType.STRING) uses Enum.valueOf(dbValue) which is 100% case-sensitive.
+ *   "On_site" ≠ "On_Site" → throws NoEnumConstantException → 400 Bad Request on every read.
+ *
+ *   Solution: Replace @Enumerated with @Convert using custom AttributeConverters.
+ *   The converter's convertToEntityAttribute() calls fromString() which normalises
+ *   the DB value before matching — so "On_site", "On-Site", "onsite" all resolve
+ *   correctly to WorkMode.On_Site. New writes always store the canonical name.
+ */
 @Entity
 @Table(name = "jobs")
 @Data
@@ -40,24 +677,30 @@ public class Job {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "posted_by_id")
     @JsonIgnoreProperties({
-        "hibernateLazyInitializer", 
-        "handler", 
-        "passwordHash", 
-        "jobs",      // Stop loop back to jobs
-        "college",   // Stop loop back to college (since Job already has college)
-        "studentProfile",
-        "educationRecords"
+        "hibernateLazyInitializer", "handler", "passwordHash", "jobs", "college",
+        "studentProfile", "educationRecords"
     })
     private User postedBy;
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // BASIC INFO
+    // ═══════════════════════════════════════════════════════════════════════
     private String title;
     private String companyName;
     private String hiringDepartment;
 
-    @Enumerated(EnumType.STRING)
+    /**
+     * CHANGED from @Enumerated(EnumType.STRING) to @Convert.
+     * Handles legacy DB values: "Full_time" → Full_Time, "Internship" → Internship
+     */
+    @Convert(converter = Job.JobTypeConverter.class)
     private JobType jobType;
 
-    @Enumerated(EnumType.STRING)
+    /**
+     * CHANGED from @Enumerated(EnumType.STRING) to @Convert.
+     * Handles legacy DB values: "On_site" → On_Site, "Remote" → Remote
+     */
+    @Convert(converter = Job.WorkModeConverter.class)
     private WorkMode workMode;
 
     private String location;
@@ -66,6 +709,14 @@ public class Job {
     @Column(columnDefinition = "TEXT")
     private String summary;
 
+    @Column(columnDefinition = "TEXT")
+    private String externalLink;
+
+    private String internalId;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // JSON ARRAYS
+    // ═══════════════════════════════════════════════════════════════════════
     @JdbcTypeCode(SqlTypes.JSON)
     private String responsibilitiesJson;
 
@@ -78,6 +729,9 @@ public class Job {
     @JdbcTypeCode(SqlTypes.JSON)
     private String benefitsJson;
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // ADDITIONAL DETAILS
+    // ═══════════════════════════════════════════════════════════════════════
     @Column(columnDefinition = "TEXT")
     private String companyCulture;
 
@@ -87,22 +741,54 @@ public class Job {
     @Column(columnDefinition = "TEXT")
     private String eeoStatement;
 
-    private String internalId;
     private LocalDate applicationDeadline;
 
-    @Column(columnDefinition = "TEXT")
-    private String externalLink;
-
+    // JobStatus values (Active/Closed/Draft) haven't changed — safe to keep @Enumerated
     @Enumerated(EnumType.STRING)
     private JobStatus status = JobStatus.Active;
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // TIMESTAMPS & AUDIT
+    // ═══════════════════════════════════════════════════════════════════════
     @CreationTimestamp
     private LocalDateTime postedAt;
 
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private User updatedBy;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SOFT DELETE FIELDS
+    // ═══════════════════════════════════════════════════════════════════════
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deleted_by")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private User deletedBy;
+
+    @Column(name = "restored_at")
+    private LocalDateTime restoredAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "restored_by")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private User restoredBy;
+
+    @Column(name = "deletion_reason")
+    private String deletionReason;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ELIGIBILITY CRITERIA (flat fields)
+    // ═══════════════════════════════════════════════════════════════════════
     @Column(precision = 5, scale = 2)
     private BigDecimal minUgScore;
     private String formatUg;
-    private Integer maxBacklogs;
 
     @Column(precision = 5, scale = 2)
     private BigDecimal min10thScore;
@@ -112,15 +798,18 @@ public class Job {
     private BigDecimal min12thScore;
     private String format12th;
 
-    private Boolean isDiplomaEligible = false;
-
     @Column(precision = 5, scale = 2)
     private BigDecimal minDiplomaScore;
     private String formatDiploma;
 
+    private Integer maxBacklogs;
+    private Boolean isDiplomaEligible = false;
     private Boolean allowGaps = false;
     private Integer maxGapYears = 0;
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // JSON FIELDS
+    // ═══════════════════════════════════════════════════════════════════════
     @JdbcTypeCode(SqlTypes.JSON)
     private String allowedBranches;
 
@@ -138,443 +827,367 @@ public class Job {
 
     private String avoidListUrl;
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // RELATIONS
+    // ═══════════════════════════════════════════════════════════════════════
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Application> applications;
 
-    // --- ENUMS ---
+    // ═══════════════════════════════════════════════════════════════════════
+    // HELPERS
+    // ═══════════════════════════════════════════════════════════════════════
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
 
-    public enum JobStatus { Active, Closed, Draft }
+    public boolean isActive() {
+        return !isDeleted() && status == JobStatus.Active;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ENUMS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public enum JobStatus {
+        Active, Closed, Draft
+    }
 
     public enum JobType {
-        Full_Time("Full Time"), Internship("Internship"), Contract("Contract");
-        private final String display;
-        JobType(String display) { this.display = display; }
-        @JsonValue public String getDisplay() { return display; }
+        Full_Time("Full-Time"),
+        Internship("Internship"),
+        Contract("Contract"),
+        Part_Time("Part-Time");
 
+        private final String display;
+
+        JobType(String display) { this.display = display; }
+
+        @JsonValue
+        public String getDisplay() { return display; }
+
+        /**
+         * Normalises any variant before matching:
+         * "Full-Time", "Full Time", "Full_Time", "full_time", "fulltime",
+         * "Full_time" (old DB value) → all map to Full_Time.
+         */
         public static JobType fromString(String text) {
-            if (text == null || text.isBlank()) return null;
-            String clean = text.trim().replace(" ", "").replace("_", "").toLowerCase();
+            if (text == null || text.isBlank()) return Full_Time;
+            String clean = text.trim()
+                    .replace(" ", "").replace("-", "").replace("_", "").toLowerCase();
             for (JobType t : JobType.values()) {
+                // match against enum constant name
                 if (t.name().replace("_", "").toLowerCase().equals(clean)) return t;
+                // also match against display string
+                if (t.display.replace(" ", "").replace("-", "").toLowerCase().equals(clean)) return t;
             }
-            return null;
+            return Full_Time;
         }
     }
 
     public enum WorkMode {
-        On_Site("On-Site"), Remote("Remote"), Hybrid("Hybrid");
-        private final String display;
-        WorkMode(String display) { this.display = display; }
-        @JsonValue public String getDisplay() { return display; }
+        On_Site("On-Site"),
+        Remote("Remote"),
+        Hybrid("Hybrid");
 
+        private final String display;
+
+        WorkMode(String display) { this.display = display; }
+
+        @JsonValue
+        public String getDisplay() { return display; }
+
+        /**
+         * Normalises any variant before matching:
+         * "On-Site", "On_Site", "On_site" (old DB!), "onsite", "on-site"
+         * → all collapse to "onsite" after stripping → match On_Site.
+         */
         public static WorkMode fromString(String text) {
-            if (text == null || text.isBlank()) return null;
-            String clean = text.trim().replace(" ", "").replace("-", "").replace("_", "").toLowerCase();
+            if (text == null || text.isBlank()) return On_Site;
+            String clean = text.trim()
+                    .replace(" ", "").replace("-", "").replace("_", "").toLowerCase();
             for (WorkMode m : WorkMode.values()) {
                 if (m.name().replace("_", "").toLowerCase().equals(clean)) return m;
+                if (m.display.replace(" ", "").replace("-", "").toLowerCase().equals(clean)) return m;
             }
-            return null;
+            return On_Site;
         }
     }
 
-	public Job() {
+    // ═══════════════════════════════════════════════════════════════════════
+    // ATTRIBUTE CONVERTERS  ← THE ACTUAL FIX
+    //
+    // Why these exist:
+    //   @Enumerated(EnumType.STRING) calls Enum.valueOf(dbValue) internally.
+    //   Enum.valueOf() is strict — "On_site" ≠ "On_Site" → exception.
+    //
+    //   These converters intercept Hibernate's read/write path:
+    //   • convertToDatabaseColumn → always writes the canonical enum name
+    //     ("On_Site", "Full_Time") so new rows are consistent.
+    //   • convertToEntityAttribute → calls fromString() which normalises the
+    //     raw DB string before matching, so old "On_site" rows work fine.
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @Converter
+    public static class WorkModeConverter implements AttributeConverter<WorkMode, String> {
+
+        @Override
+        public String convertToDatabaseColumn(WorkMode attribute) {
+            // Write canonical name → new rows always get "On_Site" not "On_site"
+            return (attribute == null) ? null : attribute.name();
+        }
+
+        @Override
+        public WorkMode convertToEntityAttribute(String dbData) {
+            // fromString() normalises "On_site" → On_Site safely
+            return (dbData == null || dbData.isBlank()) ? null : WorkMode.fromString(dbData);
+        }
+    }
+
+    @Converter
+    public static class JobTypeConverter implements AttributeConverter<JobType, String> {
+
+        @Override
+        public String convertToDatabaseColumn(JobType attribute) {
+            return (attribute == null) ? null : attribute.name();
+        }
+
+        @Override
+        public JobType convertToEntityAttribute(String dbData) {
+            return (dbData == null || dbData.isBlank()) ? null : JobType.fromString(dbData);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // EXPLICIT CONSTRUCTORS (required because @AllArgsConstructor from Lombok
+    // conflicts with manually-written ones when both @Data and explicit
+    // constructors are present — keep only what you need below)
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    
+
+    public Job(String id, College college, User postedBy, String title, String companyName,
+               String hiringDepartment, JobType jobType, WorkMode workMode, String location,
+               String salaryRange, String summary, String externalLink, String internalId,
+               String responsibilitiesJson, String qualificationsJson,
+               String preferredQualificationsJson, String benefitsJson,
+               String companyCulture, String physicalDemands, String eeoStatement,
+               LocalDate applicationDeadline, JobStatus status, LocalDateTime postedAt,
+               LocalDateTime updatedAt, User updatedBy, LocalDateTime deletedAt, User deletedBy,
+               LocalDateTime restoredAt, User restoredBy, String deletionReason,
+               BigDecimal minUgScore, String formatUg, BigDecimal min10thScore, String format10th,
+               BigDecimal min12thScore, String format12th, BigDecimal minDiplomaScore,
+               String formatDiploma, Integer maxBacklogs, Boolean isDiplomaEligible,
+               Boolean allowGaps, Integer maxGapYears, String allowedBranches,
+               String eligibleBatches, String roundsJson, String requiredFieldsJson,
+               String attachmentsJson, String avoidListUrl, List<Application> applications) {
+        this.id = id;
+        this.college = college;
+        this.postedBy = postedBy;
+        this.title = title;
+        this.companyName = companyName;
+        this.hiringDepartment = hiringDepartment;
+        this.jobType = jobType;
+        this.workMode = workMode;
+        this.location = location;
+        this.salaryRange = salaryRange;
+        this.summary = summary;
+        this.externalLink = externalLink;
+        this.internalId = internalId;
+        this.responsibilitiesJson = responsibilitiesJson;
+        this.qualificationsJson = qualificationsJson;
+        this.preferredQualificationsJson = preferredQualificationsJson;
+        this.benefitsJson = benefitsJson;
+        this.companyCulture = companyCulture;
+        this.physicalDemands = physicalDemands;
+        this.eeoStatement = eeoStatement;
+        this.applicationDeadline = applicationDeadline;
+        this.status = status;
+        this.postedAt = postedAt;
+        this.updatedAt = updatedAt;
+        this.updatedBy = updatedBy;
+        this.deletedAt = deletedAt;
+        this.deletedBy = deletedBy;
+        this.restoredAt = restoredAt;
+        this.restoredBy = restoredBy;
+        this.deletionReason = deletionReason;
+        this.minUgScore = minUgScore;
+        this.formatUg = formatUg;
+        this.min10thScore = min10thScore;
+        this.format10th = format10th;
+        this.min12thScore = min12thScore;
+        this.format12th = format12th;
+        this.minDiplomaScore = minDiplomaScore;
+        this.formatDiploma = formatDiploma;
+        this.maxBacklogs = maxBacklogs;
+        this.isDiplomaEligible = isDiplomaEligible;
+        this.allowGaps = allowGaps;
+        this.maxGapYears = maxGapYears;
+        this.allowedBranches = allowedBranches;
+        this.eligibleBatches = eligibleBatches;
+        this.roundsJson = roundsJson;
+        this.requiredFieldsJson = requiredFieldsJson;
+        this.attachmentsJson = attachmentsJson;
+        this.avoidListUrl = avoidListUrl;
+        this.applications = applications;
+    }
+
+    // ─── Getters & Setters ───────────────────────────────────────────────────
+
+    public Job() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
 
-	public Job(String id, College college, User postedBy, String title, String companyName, String hiringDepartment,
-			JobType jobType, WorkMode workMode, String location, String salaryRange, String summary,
-			String responsibilitiesJson, String qualificationsJson, String preferredQualificationsJson,
-			String benefitsJson, String companyCulture, String physicalDemands, String eeoStatement, String internalId,
-			LocalDate applicationDeadline, String externalLink, JobStatus status, LocalDateTime postedAt,
-			BigDecimal minUgScore, String formatUg, Integer maxBacklogs, BigDecimal min10thScore, String format10th,
-			BigDecimal min12thScore, String format12th, Boolean isDiplomaEligible, BigDecimal minDiplomaScore,
-			String formatDiploma, Boolean allowGaps, Integer maxGapYears, String allowedBranches,
-			String eligibleBatches, String roundsJson, String requiredFieldsJson, String attachmentsJson,
-			String avoidListUrl, List<Application> applications) {
-		super();
-		this.id = id;
-		this.college = college;
-		this.postedBy = postedBy;
-		this.title = title;
-		this.companyName = companyName;
-		this.hiringDepartment = hiringDepartment;
-		this.jobType = jobType;
-		this.workMode = workMode;
-		this.location = location;
-		this.salaryRange = salaryRange;
-		this.summary = summary;
-		this.responsibilitiesJson = responsibilitiesJson;
-		this.qualificationsJson = qualificationsJson;
-		this.preferredQualificationsJson = preferredQualificationsJson;
-		this.benefitsJson = benefitsJson;
-		this.companyCulture = companyCulture;
-		this.physicalDemands = physicalDemands;
-		this.eeoStatement = eeoStatement;
-		this.internalId = internalId;
-		this.applicationDeadline = applicationDeadline;
-		this.externalLink = externalLink;
-		this.status = status;
-		this.postedAt = postedAt;
-		this.minUgScore = minUgScore;
-		this.formatUg = formatUg;
-		this.maxBacklogs = maxBacklogs;
-		this.min10thScore = min10thScore;
-		this.format10th = format10th;
-		this.min12thScore = min12thScore;
-		this.format12th = format12th;
-		this.isDiplomaEligible = isDiplomaEligible;
-		this.minDiplomaScore = minDiplomaScore;
-		this.formatDiploma = formatDiploma;
-		this.allowGaps = allowGaps;
-		this.maxGapYears = maxGapYears;
-		this.allowedBranches = allowedBranches;
-		this.eligibleBatches = eligibleBatches;
-		this.roundsJson = roundsJson;
-		this.requiredFieldsJson = requiredFieldsJson;
-		this.attachmentsJson = attachmentsJson;
-		this.avoidListUrl = avoidListUrl;
-		this.applications = applications;
-	}
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public College getCollege() {
-		return college;
-	}
-
-	public void setCollege(College college) {
-		this.college = college;
-	}
-
-	public User getPostedBy() {
-		return postedBy;
-	}
-
-	public void setPostedBy(User postedBy) {
-		this.postedBy = postedBy;
-	}
-
-	public String getTitle() {
-		return title;
-	}
-
-	public void setTitle(String title) {
-		this.title = title;
-	}
-
-	public String getCompanyName() {
-		return companyName;
-	}
-
-	public void setCompanyName(String companyName) {
-		this.companyName = companyName;
-	}
-
-	public String getHiringDepartment() {
-		return hiringDepartment;
-	}
-
-	public void setHiringDepartment(String hiringDepartment) {
-		this.hiringDepartment = hiringDepartment;
-	}
-
-	public JobType getJobType() {
-		return jobType;
-	}
-
-	public void setJobType(JobType jobType) {
-		this.jobType = jobType;
-	}
-
-	public WorkMode getWorkMode() {
-		return workMode;
-	}
-
-	public void setWorkMode(WorkMode workMode) {
-		this.workMode = workMode;
-	}
-
-	public String getLocation() {
-		return location;
-	}
-
-	public void setLocation(String location) {
-		this.location = location;
-	}
-
-	public String getSalaryRange() {
-		return salaryRange;
-	}
-
-	public void setSalaryRange(String salaryRange) {
-		this.salaryRange = salaryRange;
-	}
-
-	public String getSummary() {
-		return summary;
-	}
-
-	public void setSummary(String summary) {
-		this.summary = summary;
-	}
-
-	public String getResponsibilitiesJson() {
-		return responsibilitiesJson;
-	}
-
-	public void setResponsibilitiesJson(String responsibilitiesJson) {
-		this.responsibilitiesJson = responsibilitiesJson;
-	}
-
-	public String getQualificationsJson() {
-		return qualificationsJson;
-	}
-
-	public void setQualificationsJson(String qualificationsJson) {
-		this.qualificationsJson = qualificationsJson;
-	}
-
-	public String getPreferredQualificationsJson() {
-		return preferredQualificationsJson;
-	}
-
-	public void setPreferredQualificationsJson(String preferredQualificationsJson) {
-		this.preferredQualificationsJson = preferredQualificationsJson;
-	}
-
-	public String getBenefitsJson() {
-		return benefitsJson;
-	}
-
-	public void setBenefitsJson(String benefitsJson) {
-		this.benefitsJson = benefitsJson;
-	}
-
-	public String getCompanyCulture() {
-		return companyCulture;
-	}
-
-	public void setCompanyCulture(String companyCulture) {
-		this.companyCulture = companyCulture;
-	}
-
-	public String getPhysicalDemands() {
-		return physicalDemands;
-	}
-
-	public void setPhysicalDemands(String physicalDemands) {
-		this.physicalDemands = physicalDemands;
-	}
-
-	public String getEeoStatement() {
-		return eeoStatement;
-	}
-
-	public void setEeoStatement(String eeoStatement) {
-		this.eeoStatement = eeoStatement;
-	}
-
-	public String getInternalId() {
-		return internalId;
-	}
-
-	public void setInternalId(String internalId) {
-		this.internalId = internalId;
-	}
-
-	public LocalDate getApplicationDeadline() {
-		return applicationDeadline;
-	}
-
-	public void setApplicationDeadline(LocalDate applicationDeadline) {
-		this.applicationDeadline = applicationDeadline;
-	}
-
-	public String getExternalLink() {
-		return externalLink;
-	}
-
-	public void setExternalLink(String externalLink) {
-		this.externalLink = externalLink;
-	}
-
-	public JobStatus getStatus() {
-		return status;
-	}
-
-	public void setStatus(JobStatus status) {
-		this.status = status;
-	}
-
-	public LocalDateTime getPostedAt() {
-		return postedAt;
-	}
-
-	public void setPostedAt(LocalDateTime postedAt) {
-		this.postedAt = postedAt;
-	}
-
-	public BigDecimal getMinUgScore() {
-		return minUgScore;
-	}
-
-	public void setMinUgScore(BigDecimal minUgScore) {
-		this.minUgScore = minUgScore;
-	}
-
-	public String getFormatUg() {
-		return formatUg;
-	}
-
-	public void setFormatUg(String formatUg) {
-		this.formatUg = formatUg;
-	}
-
-	public Integer getMaxBacklogs() {
-		return maxBacklogs;
-	}
-
-	public void setMaxBacklogs(Integer maxBacklogs) {
-		this.maxBacklogs = maxBacklogs;
-	}
-
-	public BigDecimal getMin10thScore() {
-		return min10thScore;
-	}
-
-	public void setMin10thScore(BigDecimal min10thScore) {
-		this.min10thScore = min10thScore;
-	}
-
-	public String getFormat10th() {
-		return format10th;
-	}
-
-	public void setFormat10th(String format10th) {
-		this.format10th = format10th;
-	}
-
-	public BigDecimal getMin12thScore() {
-		return min12thScore;
-	}
-
-	public void setMin12thScore(BigDecimal min12thScore) {
-		this.min12thScore = min12thScore;
-	}
-
-	public String getFormat12th() {
-		return format12th;
-	}
-
-	public void setFormat12th(String format12th) {
-		this.format12th = format12th;
-	}
-
-	public Boolean getIsDiplomaEligible() {
-		return isDiplomaEligible;
-	}
-
-	public void setIsDiplomaEligible(Boolean isDiplomaEligible) {
-		this.isDiplomaEligible = isDiplomaEligible;
-	}
-
-	public BigDecimal getMinDiplomaScore() {
-		return minDiplomaScore;
-	}
-
-	public void setMinDiplomaScore(BigDecimal minDiplomaScore) {
-		this.minDiplomaScore = minDiplomaScore;
-	}
-
-	public String getFormatDiploma() {
-		return formatDiploma;
-	}
-
-	public void setFormatDiploma(String formatDiploma) {
-		this.formatDiploma = formatDiploma;
-	}
-
-	public Boolean getAllowGaps() {
-		return allowGaps;
-	}
-
-	public void setAllowGaps(Boolean allowGaps) {
-		this.allowGaps = allowGaps;
-	}
-
-	public Integer getMaxGapYears() {
-		return maxGapYears;
-	}
-
-	public void setMaxGapYears(Integer maxGapYears) {
-		this.maxGapYears = maxGapYears;
-	}
-
-	public String getAllowedBranches() {
-		return allowedBranches;
-	}
-
-	public void setAllowedBranches(String allowedBranches) {
-		this.allowedBranches = allowedBranches;
-	}
-
-	public String getEligibleBatches() {
-		return eligibleBatches;
-	}
-
-	public void setEligibleBatches(String eligibleBatches) {
-		this.eligibleBatches = eligibleBatches;
-	}
-
-	public String getRoundsJson() {
-		return roundsJson;
-	}
-
-	public void setRoundsJson(String roundsJson) {
-		this.roundsJson = roundsJson;
-	}
-
-	public String getRequiredFieldsJson() {
-		return requiredFieldsJson;
-	}
-
-	public void setRequiredFieldsJson(String requiredFieldsJson) {
-		this.requiredFieldsJson = requiredFieldsJson;
-	}
-
-	public String getAttachmentsJson() {
-		return attachmentsJson;
-	}
-
-	public void setAttachmentsJson(String attachmentsJson) {
-		this.attachmentsJson = attachmentsJson;
-	}
-
-	public String getAvoidListUrl() {
-		return avoidListUrl;
-	}
-
-	public void setAvoidListUrl(String avoidListUrl) {
-		this.avoidListUrl = avoidListUrl;
-	}
-
-	public List<Application> getApplications() {
-		return applications;
-	}
-
-	public void setApplications(List<Application> applications) {
-		this.applications = applications;
-	}
-    
-    
-    
-    
+	public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+
+    public College getCollege() { return college; }
+    public void setCollege(College college) { this.college = college; }
+
+    public User getPostedBy() { return postedBy; }
+    public void setPostedBy(User postedBy) { this.postedBy = postedBy; }
+
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+
+    public String getCompanyName() { return companyName; }
+    public void setCompanyName(String companyName) { this.companyName = companyName; }
+
+    public String getHiringDepartment() { return hiringDepartment; }
+    public void setHiringDepartment(String hiringDepartment) { this.hiringDepartment = hiringDepartment; }
+
+    public JobType getJobType() { return jobType; }
+    public void setJobType(JobType jobType) { this.jobType = jobType; }
+
+    public WorkMode getWorkMode() { return workMode; }
+    public void setWorkMode(WorkMode workMode) { this.workMode = workMode; }
+
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
+
+    public String getSalaryRange() { return salaryRange; }
+    public void setSalaryRange(String salaryRange) { this.salaryRange = salaryRange; }
+
+    public String getSummary() { return summary; }
+    public void setSummary(String summary) { this.summary = summary; }
+
+    public String getExternalLink() { return externalLink; }
+    public void setExternalLink(String externalLink) { this.externalLink = externalLink; }
+
+    public String getInternalId() { return internalId; }
+    public void setInternalId(String internalId) { this.internalId = internalId; }
+
+    public String getResponsibilitiesJson() { return responsibilitiesJson; }
+    public void setResponsibilitiesJson(String v) { this.responsibilitiesJson = v; }
+
+    public String getQualificationsJson() { return qualificationsJson; }
+    public void setQualificationsJson(String v) { this.qualificationsJson = v; }
+
+    public String getPreferredQualificationsJson() { return preferredQualificationsJson; }
+    public void setPreferredQualificationsJson(String v) { this.preferredQualificationsJson = v; }
+
+    public String getBenefitsJson() { return benefitsJson; }
+    public void setBenefitsJson(String v) { this.benefitsJson = v; }
+
+    public String getCompanyCulture() { return companyCulture; }
+    public void setCompanyCulture(String companyCulture) { this.companyCulture = companyCulture; }
+
+    public String getPhysicalDemands() { return physicalDemands; }
+    public void setPhysicalDemands(String physicalDemands) { this.physicalDemands = physicalDemands; }
+
+    public String getEeoStatement() { return eeoStatement; }
+    public void setEeoStatement(String eeoStatement) { this.eeoStatement = eeoStatement; }
+
+    public LocalDate getApplicationDeadline() { return applicationDeadline; }
+    public void setApplicationDeadline(LocalDate v) { this.applicationDeadline = v; }
+
+    public JobStatus getStatus() { return status; }
+    public void setStatus(JobStatus status) { this.status = status; }
+
+    public LocalDateTime getPostedAt() { return postedAt; }
+    public void setPostedAt(LocalDateTime postedAt) { this.postedAt = postedAt; }
+
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public User getUpdatedBy() { return updatedBy; }
+    public void setUpdatedBy(User updatedBy) { this.updatedBy = updatedBy; }
+
+    public LocalDateTime getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
+
+    public User getDeletedBy() { return deletedBy; }
+    public void setDeletedBy(User deletedBy) { this.deletedBy = deletedBy; }
+
+    public LocalDateTime getRestoredAt() { return restoredAt; }
+    public void setRestoredAt(LocalDateTime restoredAt) { this.restoredAt = restoredAt; }
+
+    public User getRestoredBy() { return restoredBy; }
+    public void setRestoredBy(User restoredBy) { this.restoredBy = restoredBy; }
+
+    public String getDeletionReason() { return deletionReason; }
+    public void setDeletionReason(String deletionReason) { this.deletionReason = deletionReason; }
+
+    public BigDecimal getMinUgScore() { return minUgScore; }
+    public void setMinUgScore(BigDecimal v) { this.minUgScore = v; }
+
+    public String getFormatUg() { return formatUg; }
+    public void setFormatUg(String formatUg) { this.formatUg = formatUg; }
+
+    public BigDecimal getMin10thScore() { return min10thScore; }
+    public void setMin10thScore(BigDecimal v) { this.min10thScore = v; }
+
+    public String getFormat10th() { return format10th; }
+    public void setFormat10th(String format10th) { this.format10th = format10th; }
+
+    public BigDecimal getMin12thScore() { return min12thScore; }
+    public void setMin12thScore(BigDecimal v) { this.min12thScore = v; }
+
+    public String getFormat12th() { return format12th; }
+    public void setFormat12th(String format12th) { this.format12th = format12th; }
+
+    public BigDecimal getMinDiplomaScore() { return minDiplomaScore; }
+    public void setMinDiplomaScore(BigDecimal v) { this.minDiplomaScore = v; }
+
+    public String getFormatDiploma() { return formatDiploma; }
+    public void setFormatDiploma(String formatDiploma) { this.formatDiploma = formatDiploma; }
+
+    public Integer getMaxBacklogs() { return maxBacklogs; }
+    public void setMaxBacklogs(Integer maxBacklogs) { this.maxBacklogs = maxBacklogs; }
+
+    public Boolean getIsDiplomaEligible() { return isDiplomaEligible; }
+    public void setIsDiplomaEligible(Boolean v) { this.isDiplomaEligible = v; }
+
+    public Boolean getAllowGaps() { return allowGaps; }
+    public void setAllowGaps(Boolean allowGaps) { this.allowGaps = allowGaps; }
+
+    public Integer getMaxGapYears() { return maxGapYears; }
+    public void setMaxGapYears(Integer maxGapYears) { this.maxGapYears = maxGapYears; }
+
+    public String getAllowedBranches() { return allowedBranches; }
+    public void setAllowedBranches(String v) { this.allowedBranches = v; }
+
+    public String getEligibleBatches() { return eligibleBatches; }
+    public void setEligibleBatches(String v) { this.eligibleBatches = v; }
+
+    public String getRoundsJson() { return roundsJson; }
+    public void setRoundsJson(String roundsJson) { this.roundsJson = roundsJson; }
+
+    public String getRequiredFieldsJson() { return requiredFieldsJson; }
+    public void setRequiredFieldsJson(String v) { this.requiredFieldsJson = v; }
+
+    public String getAttachmentsJson() { return attachmentsJson; }
+    public void setAttachmentsJson(String v) { this.attachmentsJson = v; }
+
+    public String getAvoidListUrl() { return avoidListUrl; }
+    public void setAvoidListUrl(String avoidListUrl) { this.avoidListUrl = avoidListUrl; }
+
+    public List<Application> getApplications() { return applications; }
+    public void setApplications(List<Application> applications) { this.applications = applications; }
 }

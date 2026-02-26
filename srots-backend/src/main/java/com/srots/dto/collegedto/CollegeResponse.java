@@ -22,6 +22,7 @@ public class CollegeResponse {
     private long studentCount;
     private long cphCount;
     private long activeJobs;
+    private boolean active;
 	public CollegeResponse() {
 		super();
 		// TODO Auto-generated constructor stub
@@ -35,9 +36,11 @@ public class CollegeResponse {
 		this.logoUrl = logoUrl;
 	}
 
+	
+
 	public CollegeResponse(String id, String name, String code, String type, String email, String phone, String logoUrl,
 			String address, Object address_json, Object socialMedia, List<Object> aboutSections, List<Object> branches,
-			long studentCount, long cphCount, long activeJobs) {
+			long studentCount, long cphCount, long activeJobs, boolean active) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -54,6 +57,7 @@ public class CollegeResponse {
 		this.studentCount = studentCount;
 		this.cphCount = cphCount;
 		this.activeJobs = activeJobs;
+		this.active = active;
 	}
 
 	public String getId() {
@@ -140,6 +144,16 @@ public class CollegeResponse {
 	public void setActiveJobs(long activeJobs) {
 		this.activeJobs = activeJobs;
 	}
+
+	public boolean isActive() {
+		return active;
+	}
+
+	public void setActive(boolean active) {
+		this.active = active;
+	}
+	
+	
     
     
     

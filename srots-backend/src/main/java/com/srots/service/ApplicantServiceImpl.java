@@ -84,80 +84,80 @@ public class ApplicantServiceImpl implements ApplicantService {
 	
 	//--Dashboard and Management
 	
-	@Override
-	public JobApplicantsDashboardDTO getJobApplicantsDashboard(String jobId) throws Exception {
-	    Job job = jobRepo.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found"));
-	    List<Application> apps = appRepo.findByJobId(jobId);
-	    List<Map<String, Object>> rounds = mapper.readValue(job.getRoundsJson(), new TypeReference<>() {});
-
-	    // 1. Calculate Round-wise Summary (remains same)
-	    List<Map<String, Object>> roundSummaryList = new ArrayList<>();
-	    for (int i = 0; i < rounds.size(); i++) {
-	        int roundNum = i + 1;
-	        String roundName = (String) rounds.get(i).get("name");
-	        long countAtThisStage = apps.stream()
-	                .filter(a -> a.getCurrentRound() != null && a.getCurrentRound() == roundNum)
-	                .count();
-
-	        Map<String, Object> summary = new LinkedHashMap<>();
-	        summary.put("roundNumber", roundNum);
-	        summary.put("roundName", roundName);
-	        summary.put("studentCount", countAtThisStage);
-	        roundSummaryList.add(summary);
-	    }
-
-	    // 2. Prepare Headers - Added "Application Source" here
-	    List<String> requiredFields = mapper.readValue(job.getRequiredFieldsJson(), new TypeReference<List<String>>() {});
-	    List<String> uiHeaders = new ArrayList<>(List.of("Roll Number", "Full Name", "Current Status", "Application Source"));
-	    requiredFields.forEach(f -> uiHeaders.add(toTitleCase(f)));
-
-	    long hired = 0, rejected = 0, pending = 0;
-	    List<Map<String, Object>> studentList = new ArrayList<>();
-
-	    for (Application app : apps) {
-	        // FIX: Pass 4 arguments to ExportDataHolder to match the new constructor
-	        String source = app.getAppliedBy() != null ? app.getAppliedBy().name() : "Self";
-	        
-	        ExportDataHolder holder = new ExportDataHolder(
-	            app.getStudent(), 
-	            true, 
-	            app.getCurrentRoundStatus(), 
-	            source
-	        );
-
-	        String status = extractStudentField(app.getStudent(), "currentstatus", job, holder);
-	        
-	        // Stats Calculation
-	        if ("Hired".equalsIgnoreCase(status)) hired++;
-	        else if (status.toLowerCase().contains("rejected")) rejected++;
-	        else pending++;
-
-	        Map<String, Object> studentMap = new LinkedHashMap<>();
-	        studentMap.put("studentId", app.getStudent().getId());
-	        studentMap.put("Roll Number", extractStudentField(app.getStudent(), "rollnumber", job, holder));
-	        studentMap.put("Full Name", app.getStudent().getFullName());
-	        studentMap.put("Current Status", status);
-	        
-	        // Add Source to the Map for UI
-	        studentMap.put("Application Source", source);
-
-	        for (String field : requiredFields) {
-	            studentMap.put(toTitleCase(field), extractStudentField(app.getStudent(), field, job, holder));
-	        }
-	        studentList.add(studentMap);
-	    }
-
-	    Map<String, Long> globalStats = Map.of("Hired", hired, "Rejected", rejected, "Pending", pending);
-
-	    return new JobApplicantsDashboardDTO(
-	        job.getTitle(), 
-	        (long)apps.size(), 
-	        globalStats, 
-	        roundSummaryList, 
-	        uiHeaders, 
-	        studentList
-	    );
-	}
+//	@Override
+//	public JobApplicantsDashboardDTO getJobApplicantsDashboard(String jobId) throws Exception {
+//	    Job job = jobRepo.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found"));
+//	    List<Application> apps = appRepo.findByJobId(jobId);
+//	    List<Map<String, Object>> rounds = mapper.readValue(job.getRoundsJson(), new TypeReference<>() {});
+//
+//	    // 1. Calculate Round-wise Summary (remains same)
+//	    List<Map<String, Object>> roundSummaryList = new ArrayList<>();
+//	    for (int i = 0; i < rounds.size(); i++) {
+//	        int roundNum = i + 1;
+//	        String roundName = (String) rounds.get(i).get("name");
+//	        long countAtThisStage = apps.stream()
+//	                .filter(a -> a.getCurrentRound() != null && a.getCurrentRound() == roundNum)
+//	                .count();
+//
+//	        Map<String, Object> summary = new LinkedHashMap<>();
+//	        summary.put("roundNumber", roundNum);
+//	        summary.put("roundName", roundName);
+//	        summary.put("studentCount", countAtThisStage);
+//	        roundSummaryList.add(summary);
+//	    }
+//
+//	    // 2. Prepare Headers - Added "Application Source" here
+//	    List<String> requiredFields = mapper.readValue(job.getRequiredFieldsJson(), new TypeReference<List<String>>() {});
+//	    List<String> uiHeaders = new ArrayList<>(List.of("Roll Number", "Full Name", "Current Status", "Application Source"));
+//	    requiredFields.forEach(f -> uiHeaders.add(toTitleCase(f)));
+//
+//	    long hired = 0, rejected = 0, pending = 0;
+//	    List<Map<String, Object>> studentList = new ArrayList<>();
+//
+//	    for (Application app : apps) {
+//	        // FIX: Pass 4 arguments to ExportDataHolder to match the new constructor
+//	        String source = app.getAppliedBy() != null ? app.getAppliedBy().name() : "Self";
+//	        
+//	        ExportDataHolder holder = new ExportDataHolder(
+//	            app.getStudent(), 
+//	            true, 
+//	            app.getCurrentRoundStatus(), 
+//	            source
+//	        );
+//
+//	        String status = extractStudentField(app.getStudent(), "currentstatus", job, holder);
+//	        
+//	        // Stats Calculation
+//	        if ("Hired".equalsIgnoreCase(status)) hired++;
+//	        else if (status.toLowerCase().contains("rejected")) rejected++;
+//	        else pending++;
+//
+//	        Map<String, Object> studentMap = new LinkedHashMap<>();
+//	        studentMap.put("studentId", app.getStudent().getId());
+//	        studentMap.put("Roll Number", extractStudentField(app.getStudent(), "rollnumber", job, holder));
+//	        studentMap.put("Full Name", app.getStudent().getFullName());
+//	        studentMap.put("Current Status", status);
+//	        
+//	        // Add Source to the Map for UI
+//	        studentMap.put("Application Source", source);
+//
+//	        for (String field : requiredFields) {
+//	            studentMap.put(toTitleCase(field), extractStudentField(app.getStudent(), field, job, holder));
+//	        }
+//	        studentList.add(studentMap);
+//	    }
+//
+//	    Map<String, Long> globalStats = Map.of("Hired", hired, "Rejected", rejected, "Pending", pending);
+//
+//	    return new JobApplicantsDashboardDTO(
+//	        job.getTitle(), 
+//	        (long)apps.size(), 
+//	        globalStats, 
+//	        roundSummaryList, 
+//	        uiHeaders, 
+//	        studentList
+//	    );
+//	}
 	
 	
 	
@@ -307,40 +307,133 @@ public class ApplicantServiceImpl implements ApplicantService {
 	    return result;
 	}
 
-	public JobHiringStatsDTO getJobHiringStats(String jobId) throws Exception {
-	    Job job = jobRepo.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found"));
-	    List<Map<String, Object>> roundsList = mapper.readValue(job.getRoundsJson(), new TypeReference<>() {});
-	    List<JobRoundProgressDTO> roundStats = new ArrayList<>();
-
-	    for (int i = 0; i < roundsList.size(); i++) {
-	        int roundNum = i + 1;
-	        String roundName = (String) roundsList.get(i).get("name");
-
-	        long passed = appRepo.countByJobIdAndCurrentRoundAndCurrentRoundStatusContaining(jobId, roundNum, "Cleared");
-	        if (roundNum == roundsList.size()) {
-	            passed += appRepo.countByJobIdAndStatus(jobId, Application.AppStatus.Hired);
-	        }
-
-	        long rejected = appRepo.countByJobIdAndCurrentRoundAndCurrentRoundStatusContaining(jobId, roundNum, "Rejected");
-	        
-	        // Logic for Round Status
-	        String roundStatus = "Upcoming";
-	        if (passed > 0 || rejected > 0) {
-	            roundStatus = "In Progress";
-	        }
-	        
-	        // If there's anyone in a round higher than this, this round is "Completed"
-	        boolean hasHigherRound = appRepo.existsByJobIdAndCurrentRoundGreaterThan(jobId, roundNum);
-	        if (hasHigherRound) {
-	            roundStatus = "Completed";
-	        }
-
-	        roundStats.add(new JobRoundProgressDTO(roundNum, roundName, passed, rejected, 0, roundStatus));
-	    }
-
-	    return new JobHiringStatsDTO(jobId, job.getTitle(), roundsList.size(), roundStats);
-	}
-
+//	public JobHiringStatsDTO getJobHiringStats(String jobId) throws Exception {
+//	    Job job = jobRepo.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found"));
+//	    List<Map<String, Object>> roundsList = mapper.readValue(job.getRoundsJson(), new TypeReference<>() {});
+//	    List<JobRoundProgressDTO> roundStats = new ArrayList<>();
+//
+//	    for (int i = 0; i < roundsList.size(); i++) {
+//	        int roundNum = i + 1;
+//	        String roundName = (String) roundsList.get(i).get("name");
+//
+//	        long passed = appRepo.countByJobIdAndCurrentRoundAndCurrentRoundStatusContaining(jobId, roundNum, "Cleared");
+//	        if (roundNum == roundsList.size()) {
+//	            passed += appRepo.countByJobIdAndStatus(jobId, Application.AppStatus.Hired);
+//	        }
+//
+//	        long rejected = appRepo.countByJobIdAndCurrentRoundAndCurrentRoundStatusContaining(jobId, roundNum, "Rejected");
+//	        
+//	        // Logic for Round Status
+//	        String roundStatus = "Upcoming";
+//	        if (passed > 0 || rejected > 0) {
+//	            roundStatus = "In Progress";
+//	        }
+//	        
+//	        // If there's anyone in a round higher than this, this round is "Completed"
+//	        boolean hasHigherRound = appRepo.existsByJobIdAndCurrentRoundGreaterThan(jobId, roundNum);
+//	        if (hasHigherRound) {
+//	            roundStatus = "Completed";
+//	        }
+//
+//	        roundStats.add(new JobRoundProgressDTO(roundNum, roundName, passed, rejected, 0, roundStatus));
+//	    }
+//
+//	    return new JobHiringStatsDTO(jobId, job.getTitle(), roundsList.size(), roundStats);
+//	}
+	
+//	@Override
+//	public JobHiringStatsDTO getJobHiringStats(String jobId) throws Exception {
+//	    Job job = jobRepo.findById(jobId)
+//	        .orElseThrow(() -> new RuntimeException("Job not found"));
+//	    
+//	    List<Map<String, Object>> roundsList = mapper.readValue(
+//	        job.getRoundsJson(), 
+//	        new TypeReference<List<Map<String, Object>>>() {}
+//	    );
+//	    
+//	    // Get all applications for this job
+//	    List<Application> allApps = appRepo.findByJobId(jobId);
+//	    
+//	    // Find the maximum round any student has reached
+//	    int maxRoundReached = allApps.stream()
+//	        .map(Application::getCurrentRound)
+//	        .filter(r -> r != null)
+//	        .max(Integer::compareTo)
+//	        .orElse(0);
+//	    
+//	    List<JobRoundProgressDTO> roundStats = new ArrayList<>();
+//
+//	    for (int i = 0; i < roundsList.size(); i++) {
+//	        int roundNum = i + 1;
+//	        String roundName = (String) roundsList.get(i).get("name");
+//
+//	        // ═══════════════════════════════════════════════════════════════════
+//	        // FIXED: Count passed students correctly
+//	        // ═══════════════════════════════════════════════════════════════════
+//	        long passed = 0;
+//	        long rejected = 0;
+//	        
+//	        if (roundNum == roundsList.size()) {
+//	            // Last round: count "Hired" status as passed
+//	            passed = appRepo.countByJobIdAndStatus(jobId, Application.AppStatus.Hired);
+//	            
+//	            // Also count those who cleared this round but aren't marked Hired yet
+//	            long clearedInRound = appRepo.countByJobIdAndCurrentRoundAndCurrentRoundStatusContaining(
+//	                jobId, roundNum, "Cleared"
+//	            );
+//	            passed += clearedInRound;
+//	        } else {
+//	            // Not last round: count those who cleared this specific round
+//	            passed = appRepo.countByJobIdAndCurrentRoundAndCurrentRoundStatusContaining(
+//	                jobId, roundNum, "Cleared"
+//	            );
+//	        }
+//	        
+//	        // Count rejected in this round
+//	        rejected = appRepo.countByJobIdAndCurrentRoundAndCurrentRoundStatusContaining(
+//	            jobId, roundNum, "Rejected"
+//	        );
+//
+//	        // ═══════════════════════════════════════════════════════════════════
+//	        // FIXED: Calculate round status correctly
+//	        // ═══════════════════════════════════════════════════════════════════
+//	        String roundStatus = "Upcoming";
+//	        
+//	        if (maxRoundReached > roundNum) {
+//	            // Students have moved beyond this round → it's completed
+//	            roundStatus = "Completed";
+//	        } else if (maxRoundReached == roundNum) {
+//	            // Students are currently at this round
+//	            if (passed > 0 || rejected > 0) {
+//	                // Results have been uploaded for this round
+//	                roundStatus = "Completed";
+//	            } else {
+//	                // Students are here but no results yet
+//	                roundStatus = "In Progress";
+//	            }
+//	        } else {
+//	            // No one has reached this round yet
+//	            roundStatus = "Upcoming";
+//	        }
+//
+//	        roundStats.add(new JobRoundProgressDTO(
+//	            roundNum, 
+//	            roundName, 
+//	            passed, 
+//	            rejected, 
+//	            0,  // pending (calculated elsewhere if needed)
+//	            roundStatus
+//	        ));
+//	    }
+//
+//	    return new JobHiringStatsDTO(
+//	        jobId, 
+//	        job.getTitle(), 
+//	        roundsList.size(), 
+//	        roundStats
+//	    );
+//	}
+//
 	private String getCellValueAsString(Cell cell) {
 	    if (cell == null) return "";
 	    if (cell.getCellType() == CellType.NUMERIC) {
@@ -425,6 +518,22 @@ public class ApplicantServiceImpl implements ApplicantService {
 		List<EducationRecord> eduRecords = student.getEducationRecords();
 //        String key = fieldName.toLowerCase().replace(" ", "").replace("_", "");
 		String key = fieldName.toLowerCase().replaceAll("[ ._]", "");
+		
+		// --- Handle Dynamic Academic Scores with Dot Notation ---
+	    // Matches: class10.percentage, ug.cgpa, diploma.marks, etc.
+	    String lowerFieldName = fieldName.toLowerCase();
+	    if (lowerFieldName.contains("class10") || lowerFieldName.contains("10th")) {
+	        return formatToJobRequirement(eduRecords, "Class 10", extractTargetFormat(fieldName, job.getFormat10th()));
+	    }
+	    if (lowerFieldName.contains("class12") || lowerFieldName.contains("12th")) {
+	        return formatToJobRequirement(eduRecords, "Class 12", extractTargetFormat(fieldName, job.getFormat12th()));
+	    }
+	    if (lowerFieldName.contains("ug") || lowerFieldName.contains("btech") || lowerFieldName.contains("cgpa")) {
+	        return formatToJobRequirement(eduRecords, "Undergraduate", extractTargetFormat(fieldName, job.getFormatUg()));
+	    }
+	    if (lowerFieldName.contains("diploma")) {
+	        return formatToJobRequirement(eduRecords, "Diploma", extractTargetFormat(fieldName, job.getFormatDiploma()));
+	    }
 
 		return switch (key) {
 		// --- Basic User Info ---
@@ -465,10 +574,10 @@ public class ApplicantServiceImpl implements ApplicantService {
 		case "skills" -> student.getSkills().stream().map(StudentSkill::getName).collect(Collectors.joining(", "));
 
 		// --- Dynamic Academic Scores (Handling 10th, 12th, UG) ---
-		case "10thscore", "class10" -> formatToJobRequirement(eduRecords, "Class 10", job.getFormat10th());
-		case "12thscore", "class12" -> formatToJobRequirement(eduRecords, "Class 12", job.getFormat12th());
-		case "ugscore", "cgpa", "btechcgpa" -> formatToJobRequirement(eduRecords, "Undergraduate", job.getFormatUg());
-		case "diplomascore" -> formatToJobRequirement(eduRecords, "Diploma", job.getFormatDiploma());
+//		case "10thscore", "class10" -> formatToJobRequirement(eduRecords, "Class 10", job.getFormat10th());
+//		case "12thscore", "class12" -> formatToJobRequirement(eduRecords, "Class 12", job.getFormat12th());
+//		case "ugscore", "cgpa", "btechcgpa" -> formatToJobRequirement(eduRecords, "Undergraduate", job.getFormatUg());
+//		case "diplomascore" -> formatToJobRequirement(eduRecords, "Diploma", job.getFormatDiploma());
 
 		case "backlogs", "activebacklogs" -> {
 			int total = eduRecords.stream().mapToInt(EducationRecord::getCurrentArrears).sum();
@@ -490,162 +599,250 @@ public class ApplicantServiceImpl implements ApplicantService {
 		default -> "N/A";
 		};
 	}
+	
+	/**
+	 * Helper to determine if we should use the format from the field name (e.g. .percentage)
+	 * or the default format defined in the Job entity.
+	 */
+	private String extractTargetFormat(String fieldName, String jobDefaultFormat) {
+	    if (fieldName.contains(".")) {
+	        String suffix = fieldName.substring(fieldName.lastIndexOf(".") + 1).toLowerCase();
+	        if (suffix.contains("percentage")) return "PERCENTAGE";
+	        if (suffix.contains("cgpa")) return "CGPA10";
+	    }
+	    return jobDefaultFormat != null ? jobDefaultFormat : "PERCENTAGE";
+	}
 
+//	private String formatToJobRequirement(List<EducationRecord> records, String level, String targetFormat) {
+//		BigDecimal normalized = getNormalizedScore(records, level);
+//		if (normalized.compareTo(BigDecimal.ZERO) == 0)
+//			return "N/A";
+//
+//		// targetFormat comes from job.getFormat10th(), job.getFormatUg(), etc.
+//		if ("CGPA10".equalsIgnoreCase(targetFormat)) {
+//			return normalized.divide(new BigDecimal("10"), 2, RoundingMode.HALF_UP).toString();
+//		}
+//		if ("CGPA4".equalsIgnoreCase(targetFormat)) {
+//			return normalized.divide(new BigDecimal("25"), 2, RoundingMode.HALF_UP).toString();
+//		}
+//
+//		// Default: Show as Percentage
+//		return normalized.setScale(2, RoundingMode.HALF_UP).toString() + "%";
+//	}
+//	
+//	private BigDecimal getNormalizedScore(List<EducationRecord> records, String level) {
+//		if (records == null)
+//			return BigDecimal.ZERO;
+//
+//		// Normalize level string to match Enum values like "Class 10"
+//		String targetLevel = level.replace("10th", "Class 10").replace("12th", "Class 12");
+//
+//		return records.stream()
+//				.filter(r -> r.getLevel() != null && r.getLevel().toString().equalsIgnoreCase(targetLevel)).findFirst()
+//				.map(r -> {
+//					// 1. If system already calculated percentageEquiv, use it as the source of
+//					// truth
+//					if (r.getPercentageEquiv() != null && r.getPercentageEquiv().compareTo(BigDecimal.ZERO) > 0) {
+//						return r.getPercentageEquiv();
+//					}
+//
+//					// 2. Otherwise, parse the scoreDisplay string
+//					BigDecimal score = BigDecimal.ZERO;
+//					try {
+//						if (r.getScoreDisplay() != null) {
+//							score = new BigDecimal(r.getScoreDisplay().replaceAll("[^0-9.]", ""));
+//						}
+//					} catch (Exception e) {
+//						return BigDecimal.ZERO;
+//					}
+//
+//					// 3. Standardization Logic based on ScoreType Enum
+//					EducationRecord.ScoreType type = r.getScoreType();
+//					if (type == null)
+//						return score;
+//
+//					return switch (type) {
+//					case CGPA -> {
+//						// Logic: If score <= 4.0, it's a 4-point scale. If > 4.0, it's a 10-point
+//						// scale.
+//						if (score.compareTo(new BigDecimal("5.0")) <= 0) {
+//							yield score.multiply(new BigDecimal("25")); // 4.0 scale (4.0 * 25 = 100%)
+//						}
+//						yield score.multiply(new BigDecimal("10")); // 10.0 scale (9.2 * 10 = 92%)
+//					}
+//					case Grade -> {
+//						// Mapping standard grades to percentage if stored as numbers
+//						yield score.multiply(new BigDecimal("10"));
+//					}
+//					case Marks, Percentage -> score; // Marks are usually pre-calculated into percentageEquiv
+//					default -> score;
+//					};
+//				}).orElse(BigDecimal.ZERO);
+//	}
+	
 	private String formatToJobRequirement(List<EducationRecord> records, String level, String targetFormat) {
-		BigDecimal normalized = getNormalizedScore(records, level);
-		if (normalized.compareTo(BigDecimal.ZERO) == 0)
-			return "N/A";
+	    BigDecimal normalized = getNormalizedScore(records, level);
+	    
+	    if (normalized == null || normalized.compareTo(BigDecimal.ZERO) <= 0) {
+	        return "N/A";
+	    }
 
-		// targetFormat comes from job.getFormat10th(), job.getFormatUg(), etc.
-		if ("CGPA10".equalsIgnoreCase(targetFormat)) {
-			return normalized.divide(new BigDecimal("10"), 2, RoundingMode.HALF_UP).toString();
-		}
-		if ("CGPA4".equalsIgnoreCase(targetFormat)) {
-			return normalized.divide(new BigDecimal("25"), 2, RoundingMode.HALF_UP).toString();
-		}
+	    if (targetFormat == null) targetFormat = "PERCENTAGE";
+	    String fmt = targetFormat.toUpperCase();
 
-		// Default: Show as Percentage
-		return normalized.setScale(2, RoundingMode.HALF_UP).toString() + "%";
+	    // normalized is 0-100 (e.g., 90.00 for 90%)
+	    if (fmt.contains("CGPA10")) {
+	        // 90.00 -> 9.00
+	        return normalized.divide(new BigDecimal("10"), 2, RoundingMode.HALF_UP).toString();
+	    } 
+	    else if (fmt.contains("CGPA4")) {
+	        // 90.00 -> 3.6
+	        return normalized.divide(new BigDecimal("25"), 2, RoundingMode.HALF_UP).toString();
+	    } 
+	    else if (fmt.contains("MARKS")) {
+	        // If you store max marks, you could calculate absolute marks here. 
+	        // Defaulting to percentage if total marks aren't known.
+	        return normalized.setScale(0, RoundingMode.HALF_UP).toString();
+	    }
+
+	    // Default: Percentage (90.00%)
+	    return normalized.setScale(2, RoundingMode.HALF_UP).toString() + "%";
 	}
 	
 	private BigDecimal getNormalizedScore(List<EducationRecord> records, String level) {
-		if (records == null)
-			return BigDecimal.ZERO;
+	    if (records == null || records.isEmpty()) return BigDecimal.ZERO;
 
-		// Normalize level string to match Enum values like "Class 10"
-		String targetLevel = level.replace("10th", "Class 10").replace("12th", "Class 12");
+	    return records.stream()
+	        .filter(r -> r.getLevel() != null && r.getLevel().toString().equalsIgnoreCase(level))
+	        .findFirst()
+	        .map(r -> {
+	            // 1. Highest priority: System calculated percentage
+	            if (r.getPercentageEquiv() != null && r.getPercentageEquiv().compareTo(BigDecimal.ZERO) > 0) {
+	                return r.getPercentageEquiv();
+	            }
 
-		return records.stream()
-				.filter(r -> r.getLevel() != null && r.getLevel().toString().equalsIgnoreCase(targetLevel)).findFirst()
-				.map(r -> {
-					// 1. If system already calculated percentageEquiv, use it as the source of
-					// truth
-					if (r.getPercentageEquiv() != null && r.getPercentageEquiv().compareTo(BigDecimal.ZERO) > 0) {
-						return r.getPercentageEquiv();
-					}
+	            // 2. Fallback: Parse score_display (Handles "900/1000", "9.5", "85%")
+	            String display = r.getScoreDisplay();
+	            if (display == null || display.isBlank()) return BigDecimal.ZERO;
 
-					// 2. Otherwise, parse the scoreDisplay string
-					BigDecimal score = BigDecimal.ZERO;
-					try {
-						if (r.getScoreDisplay() != null) {
-							score = new BigDecimal(r.getScoreDisplay().replaceAll("[^0-9.]", ""));
-						}
-					} catch (Exception e) {
-						return BigDecimal.ZERO;
-					}
+	            try {
+	                // Check for fraction format (900/1000)
+	                if (display.contains("/")) {
+	                    String[] parts = display.split("/");
+	                    double obtained = Double.parseDouble(parts[0].trim());
+	                    double total = Double.parseDouble(parts[1].trim());
+	                    return BigDecimal.valueOf((obtained / total) * 100);
+	                }
 
-					// 3. Standardization Logic based on ScoreType Enum
-					EducationRecord.ScoreType type = r.getScoreType();
-					if (type == null)
-						return score;
+	                // Clean numeric string
+	                BigDecimal score = new BigDecimal(display.replaceAll("[^0-9.]", ""));
+	                EducationRecord.ScoreType type = r.getScoreType();
 
-					return switch (type) {
-					case CGPA -> {
-						// Logic: If score <= 4.0, it's a 4-point scale. If > 4.0, it's a 10-point
-						// scale.
-						if (score.compareTo(new BigDecimal("5.0")) <= 0) {
-							yield score.multiply(new BigDecimal("25")); // 4.0 scale (4.0 * 25 = 100%)
-						}
-						yield score.multiply(new BigDecimal("10")); // 10.0 scale (9.2 * 10 = 92%)
-					}
-					case Grade -> {
-						// Mapping standard grades to percentage if stored as numbers
-						yield score.multiply(new BigDecimal("10"));
-					}
-					case Marks, Percentage -> score; // Marks are usually pre-calculated into percentageEquiv
-					default -> score;
-					};
-				}).orElse(BigDecimal.ZERO);
+	                if (type == EducationRecord.ScoreType.CGPA) {
+	                    // Logic: Scale 4 or Scale 10?
+	                    if (score.compareTo(new BigDecimal("5.0")) <= 0) {
+	                        return score.multiply(new BigDecimal("25")); // 4.0 scale
+	                    }
+	                    return score.multiply(new BigDecimal("10")); // 10.0 scale
+	                }
+	                
+	                // If type is already percentage or marks (and we reached here), return as is
+	                return score;
+
+	            } catch (Exception e) {
+	                return BigDecimal.ZERO;
+	            }
+	        }).orElse(BigDecimal.ZERO);
 	}
 
-	private byte[] generateExportFile(Job job, List<ExportDataHolder> dataList, String format, String title,
-			boolean isEligibleExport) throws Exception {
-		List<String> requiredFields = mapper.readValue(job.getRequiredFieldsJson(), new TypeReference<List<String>>() {
-		});
-		boolean isCsv = "csv".equalsIgnoreCase(format);
-
-		// Unified Header List
-		List<String> staticHeaders = new ArrayList<>();
-		staticHeaders.add("Current Status"); // Shows round status or "Not Applied"
-		
-		if (!isEligibleExport) {
-	        staticHeaders.add("Application Source");
-	    }
-		
-		if (isEligibleExport) {
-			staticHeaders.add("Applied Status"); // Yes/No
-			staticHeaders.add("Last Login");
-		}
-
-		if (isCsv) {
-			StringBuilder csv = new StringBuilder();
-			// 1. Write Headers
-			staticHeaders.forEach(h -> csv.append(h).append(","));
-			requiredFields.forEach(f -> csv.append(toTitleCase(f)).append(","));
-			csv.append("\n");
-
-			// 2. Write Data Rows
-			for (ExportDataHolder holder : dataList) {
-				// Write Static Fields
-				csv.append("\"").append(extractStudentField(holder.user, "currentstatus", job, holder)).append("\",");
-				if (isEligibleExport) {
-					csv.append(holder.isApplied ? "Yes" : "No").append(",");
-					csv.append("\"").append(extractStudentField(holder.user, "lastlogin", job, holder)).append("\",");
-				}
-				// Write Dynamic Fields
-				for (String field : requiredFields) {
-					String val = extractStudentField(holder.user, field, job, holder);
-					csv.append("\"").append(val.replace("\"", "\"\"")).append("\",");
-				}
-				csv.append("\n");
-			}
-			return csv.toString().getBytes(StandardCharsets.UTF_8);
-		} else {
-			try (Workbook workbook = new XSSFWorkbook()) {
-				Sheet sheet = workbook.createSheet(title);
-				CellStyle headerStyle = workbook.createCellStyle();
-				Font font = workbook.createFont();
-				font.setBold(true);
-				headerStyle.setFont(font);
-
-				Row headerRow = sheet.createRow(0);
-				int col = 0;
-				for (String h : staticHeaders) {
-					Cell cell = headerRow.createCell(col++);
-					cell.setCellValue(h);
-					cell.setCellStyle(headerStyle);
-				}
-				for (String f : requiredFields) {
-					Cell cell = headerRow.createCell(col++);
-					cell.setCellValue(toTitleCase(f));
-					cell.setCellStyle(headerStyle);
-				}
-
-				int rowIdx = 1;
-				for (ExportDataHolder holder : dataList) {
-					Row row = sheet.createRow(rowIdx++);
-					int dataCol = 0;
-					// Write Static Fields
-					row.createCell(dataCol++)
-							.setCellValue(extractStudentField(holder.user, "currentstatus", job, holder));
-					if (isEligibleExport) {
-						row.createCell(dataCol++).setCellValue(holder.isApplied ? "Yes" : "No");
-						row.createCell(dataCol++)
-								.setCellValue(extractStudentField(holder.user, "lastlogin", job, holder));
-					}
-					// Write Dynamic Fields
-					for (String field : requiredFields) {
-						row.createCell(dataCol++).setCellValue(extractStudentField(holder.user, field, job, holder));
-					}
-				}
-				for (int i = 0; i < col; i++)
-					sheet.autoSizeColumn(i);
-				ByteArrayOutputStream out = new ByteArrayOutputStream();
-				workbook.write(out);
-				return out.toByteArray();
-			}
-		}
-	}
+//	private byte[] generateExportFile(Job job, List<ExportDataHolder> dataList, String format, String title,
+//			boolean isEligibleExport) throws Exception {
+//		List<String> requiredFields = mapper.readValue(job.getRequiredFieldsJson(), new TypeReference<List<String>>() {
+//		});
+//		boolean isCsv = "csv".equalsIgnoreCase(format);
+//
+//		// Unified Header List
+//		List<String> staticHeaders = new ArrayList<>();
+//		staticHeaders.add("Current Status"); // Shows round status or "Not Applied"
+//		
+//		if (!isEligibleExport) {
+//	        staticHeaders.add("Application Source");
+//	    }
+//		
+//		if (isEligibleExport) {
+//			staticHeaders.add("Applied Status"); // Yes/No
+//			staticHeaders.add("Last Login");
+//		}
+//
+//		if (isCsv) {
+//			StringBuilder csv = new StringBuilder();
+//			// 1. Write Headers
+//			staticHeaders.forEach(h -> csv.append(h).append(","));
+//			requiredFields.forEach(f -> csv.append(toTitleCase(f)).append(","));
+//			csv.append("\n");
+//
+//			// 2. Write Data Rows
+//			for (ExportDataHolder holder : dataList) {
+//				// Write Static Fields
+//				csv.append("\"").append(extractStudentField(holder.user, "currentstatus", job, holder)).append("\",");
+//				if (isEligibleExport) {
+//					csv.append(holder.isApplied ? "Yes" : "No").append(",");
+//					csv.append("\"").append(extractStudentField(holder.user, "lastlogin", job, holder)).append("\",");
+//				}
+//				// Write Dynamic Fields
+//				for (String field : requiredFields) {
+//					String val = extractStudentField(holder.user, field, job, holder);
+//					csv.append("\"").append(val.replace("\"", "\"\"")).append("\",");
+//				}
+//				csv.append("\n");
+//			}
+//			return csv.toString().getBytes(StandardCharsets.UTF_8);
+//		} else {
+//			try (Workbook workbook = new XSSFWorkbook()) {
+//				Sheet sheet = workbook.createSheet(title);
+//				CellStyle headerStyle = workbook.createCellStyle();
+//				Font font = workbook.createFont();
+//				font.setBold(true);
+//				headerStyle.setFont(font);
+//
+//				Row headerRow = sheet.createRow(0);
+//				int col = 0;
+//				for (String h : staticHeaders) {
+//					Cell cell = headerRow.createCell(col++);
+//					cell.setCellValue(h);
+//					cell.setCellStyle(headerStyle);
+//				}
+//				for (String f : requiredFields) {
+//					Cell cell = headerRow.createCell(col++);
+//					cell.setCellValue(toTitleCase(f));
+//					cell.setCellStyle(headerStyle);
+//				}
+//
+//				int rowIdx = 1;
+//				for (ExportDataHolder holder : dataList) {
+//					Row row = sheet.createRow(rowIdx++);
+//					int dataCol = 0;
+//					// Write Static Fields
+//					row.createCell(dataCol++)
+//							.setCellValue(extractStudentField(holder.user, "currentstatus", job, holder));
+//					if (isEligibleExport) {
+//						row.createCell(dataCol++).setCellValue(holder.isApplied ? "Yes" : "No");
+//						row.createCell(dataCol++)
+//								.setCellValue(extractStudentField(holder.user, "lastlogin", job, holder));
+//					}
+//					// Write Dynamic Fields
+//					for (String field : requiredFields) {
+//						row.createCell(dataCol++).setCellValue(extractStudentField(holder.user, field, job, holder));
+//					}
+//				}
+//				for (int i = 0; i < col; i++)
+//					sheet.autoSizeColumn(i);
+//				ByteArrayOutputStream out = new ByteArrayOutputStream();
+//				workbook.write(out);
+//				return out.toByteArray();
+//			}
+//		}
+//	}
 	
 	
 
@@ -839,6 +1036,623 @@ public class ApplicantServiceImpl implements ApplicantService {
 	    }
 	    
 	    return timeline;
+	}
+	
+//	/**
+//	 * NEW METHOD: Get eligible students with custom fields for UI display
+//	 * 
+//	 * Similar to exportAllEligibleStudents but returns data structure for UI table
+//	 * instead of file download. Shows only the fields specified in requiredFieldsJson.
+//	 */
+//	@Override
+//	public Map<String, Object> getEligibleStudentsDisplay(String jobId) throws Exception {
+//	    Job job = jobManagementService.getJobEntity(jobId);
+//	    String collegeId = job.getCollege().getId();
+//	    
+//	    // Get all students in the college
+//	    List<User> collegeStudents = userRepo.findByCollegeId(collegeId);
+//	    
+//	    // Parse required fields from job
+//	    List<String> requiredFields = mapper.readValue(
+//	        job.getRequiredFieldsJson(), 
+//	        new TypeReference<List<String>>() {}
+//	    );
+//	    
+//	    // Build headers: static + dynamic
+//	    List<String> headers = new ArrayList<>();
+////	    headers.add("Roll Number");
+////	    headers.add("Full Name");
+//	    headers.add("Applied Status");
+//	    
+//	    // Add dynamic headers from requiredFields
+//	    requiredFields.forEach(f -> headers.add(toTitleCase(f)));
+//	    
+//	    // Build student data rows
+//	    List<Map<String, Object>> students = new ArrayList<>();
+//	    
+//	    for (User student : collegeStudents) {
+//	        StudentJobViewDTO status = jobSearchService.getStudentJobStatus(jobId, student.getId());
+//	        
+//	        // Only include eligible students
+//	        if (!status.isEligible()) continue;
+//	        
+//	        // Check if student has applied
+//	        boolean isApplied = appRepo.findByJobIdAndStudentId(jobId, student.getId()).isPresent();
+//	        
+//	        // Create holder for field extraction
+//	        ExportDataHolder holder = new ExportDataHolder(
+//	            student, 
+//	            true,  // isEligible 
+//	            isApplied, 
+//	            isApplied ? "Applied" : "Not Applied"
+//	        );
+//	        
+//	        // Build row data
+//	        Map<String, Object> row = new LinkedHashMap<>();
+//	        row.put("studentId", student.getId()); // For internal use
+////	        row.put("Roll Number", extractStudentField(student, "rollnumber", job, holder));
+////	        row.put("Full Name", student.getFullName());
+//	        row.put("Applied Status", isApplied ? "Applied" : "Not Applied");
+//	        
+//	        // Add dynamic field values
+//	        for (String field : requiredFields) {
+//	            row.put(toTitleCase(field), extractStudentField(student, field, job, holder));
+//	        }
+//	        
+//	        students.add(row);
+//	    }
+//	    
+//	    // Return structure matching dashboard format
+//	    Map<String, Object> result = new LinkedHashMap<>();
+//	    result.put("headers", headers);
+//	    result.put("students", students);
+//	    result.put("totalEligible", students.size());
+//	    
+//	    return result;
+//	}
+	
+	@Override
+	public Map<String, Object> getEligibleStudentsDisplay(String jobId) throws Exception {
+	    Job job = jobManagementService.getJobEntity(jobId);
+	    String collegeId = job.getCollege().getId();
+	    
+	    // Get all students in the college
+	    List<User> collegeStudents = userRepo.findByCollegeId(collegeId);
+	    
+	    // Parse required fields from job
+	    List<String> requiredFields = mapper.readValue(
+	        job.getRequiredFieldsJson(), 
+	        new TypeReference<List<String>>() {}
+	    );
+	    
+	    // 1. BUILD HEADERS: Force Identity fields first
+	    List<String> headers = new ArrayList<>();
+	    headers.add("Roll Number");
+	    headers.add("Full Name");
+	    headers.add("Applied Status");
+	    
+	    // Add dynamic headers (avoiding duplicates of Roll Number/Full Name)
+	    for (String field : requiredFields) {
+	        String titleCased = toTitleCase(field);
+	        if (!headers.contains(titleCased)) {
+	            headers.add(titleCased);
+	        }
+	    }
+	    
+	    // Build student data rows
+	    List<Map<String, Object>> students = new ArrayList<>();
+	    
+	    for (User student : collegeStudents) {
+	        StudentJobViewDTO status = jobSearchService.getStudentJobStatus(jobId, student.getId());
+	        
+	        // Only include eligible students
+	        if (!status.isEligible()) continue;
+	        
+	        // Check if student has applied
+	        boolean isApplied = appRepo.findByJobIdAndStudentId(jobId, student.getId()).isPresent();
+	        
+	        // Create holder for field extraction
+	        ExportDataHolder holder = new ExportDataHolder(
+	            student, 
+	            true,  // isEligible 
+	            isApplied, 
+	            isApplied ? "Applied" : "Not Applied"
+	        );
+	        
+	        // 2. BUILD ROW DATA: Map values strictly to the headers list
+	        Map<String, Object> row = new LinkedHashMap<>();
+	        row.put("studentId", student.getId()); // For internal/UI key use
+	        
+	        // Populate standard identity/status fields
+	        row.put("Roll Number", extractStudentField(student, "rollnumber", job, holder));
+	        row.put("Full Name", student.getFullName() != null ? student.getFullName() : "N/A");
+	        row.put("Applied Status", isApplied ? "Applied" : "Not Applied");
+	        
+	        // Populate dynamic fields
+	        for (String field : requiredFields) {
+	            String titleKey = toTitleCase(field);
+	            // Don't overwrite if it's already one of the primary keys we just set
+	            if (!titleKey.equals("Roll Number") && !titleKey.equals("Full Name") && !titleKey.equals("Applied Status")) {
+	                row.put(titleKey, extractStudentField(student, field, job, holder));
+	            }
+	        }
+	        
+	        students.add(row);
+	    }
+	    
+	    // Return structure matching dashboard format
+	    Map<String, Object> result = new LinkedHashMap<>();
+	    result.put("headers", headers);
+	    result.put("students", students);
+	    result.put("totalEligible", students.size());
+	    
+	    return result;
+	}
+	
+	
+	// ═══════════════════════════════════════════════════════════════════════════════
+	// COMPLETE BACKEND FIX - ApplicantServiceImpl.java
+	// Replace these THREE methods in your ApplicantServiceImpl.java file
+	// ═══════════════════════════════════════════════════════════════════════════════
+
+	/**
+	 * METHOD 1: getJobHiringStats - FIXED round counting logic
+	 */
+	@Override
+	public JobHiringStatsDTO getJobHiringStats(String jobId) throws Exception {
+	    Job job = jobRepo.findById(jobId)
+	        .orElseThrow(() -> new RuntimeException("Job not found"));
+	    
+	    List<Map<String, Object>> roundsList = mapper.readValue(
+	        job.getRoundsJson(), 
+	        new TypeReference<List<Map<String, Object>>>() {}
+	    );
+	    
+	    List<Application> allApps = appRepo.findByJobId(jobId);
+	    
+	    int maxRoundReached = allApps.stream()
+	        .map(Application::getCurrentRound)
+	        .filter(r -> r != null)
+	        .max(Integer::compareTo)
+	        .orElse(0);
+	    
+	    List<JobRoundProgressDTO> roundStats = new ArrayList<>();
+
+	    for (int i = 0; i < roundsList.size(); i++) {
+	        int roundNum = i + 1;
+	        String roundName = (String) roundsList.get(i).get("name");
+
+	        long passed = 0;
+	        long rejected = 0;
+	        
+	        for (Application app : allApps) {
+	            Integer appCurrentRound = app.getCurrentRound();
+	            String appStatus = app.getCurrentRoundStatus();
+	            
+	            if (appCurrentRound == null) continue;
+	            
+	            if (appCurrentRound > roundNum) {
+	                passed++;
+	            } else if (appCurrentRound == roundNum) {
+	                if (appStatus != null) {
+	                    if (appStatus.equalsIgnoreCase("Hired") || appStatus.contains("Cleared")) {
+	                        passed++;
+	                    } else if (appStatus.contains("Rejected")) {
+	                        rejected++;
+	                    }
+	                }
+	            }
+	        }
+
+	        String roundStatus = "Upcoming";
+	        if (maxRoundReached > roundNum) {
+	            roundStatus = "Completed";
+	        } else if (maxRoundReached == roundNum) {
+	            if (passed > 0 || rejected > 0) {
+	                roundStatus = "Completed";
+	            } else {
+	                roundStatus = "In Progress";
+	            }
+	        }
+
+	        roundStats.add(new JobRoundProgressDTO(roundNum, roundName, passed, rejected, 0, roundStatus));
+	    }
+
+	    return new JobHiringStatsDTO(jobId, job.getTitle(), roundsList.size(), roundStats);
+	}
+
+
+//	/**
+//	 * METHOD 2: getJobApplicantsDashboard - Already correct, keeping for reference
+//	 */
+//	@Override
+//	public JobApplicantsDashboardDTO getJobApplicantsDashboard(String jobId) throws Exception {
+//	    Job job = jobRepo.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found"));
+//	    List<Application> apps = appRepo.findByJobId(jobId);
+//	    List<Map<String, Object>> rounds = mapper.readValue(job.getRoundsJson(), new TypeReference<>() {});
+//
+//	    // Round summary
+//	    List<Map<String, Object>> roundSummaryList = new ArrayList<>();
+//	    for (int i = 0; i < rounds.size(); i++) {
+//	        int roundNum = i + 1;
+//	        String roundName = (String) rounds.get(i).get("name");
+//	        long countAtThisStage = apps.stream()
+//	                .filter(a -> a.getCurrentRound() != null && a.getCurrentRound() == roundNum)
+//	                .count();
+//
+//	        Map<String, Object> summary = new LinkedHashMap<>();
+//	        summary.put("roundNumber", roundNum);
+//	        summary.put("roundName", roundName);
+//	        summary.put("studentCount", countAtThisStage);
+//	        roundSummaryList.add(summary);
+//	    }
+//
+//	    // Headers
+//	    List<String> requiredFields = mapper.readValue(job.getRequiredFieldsJson(), new TypeReference<List<String>>() {});
+//	    List<String> uiHeaders = new ArrayList<>(List.of("Roll Number", "Full Name", "Current Status", "Application Source"));
+//	    requiredFields.forEach(f -> uiHeaders.add(toTitleCase(f)));
+//
+//	    long hired = 0, rejected = 0, pending = 0;
+//	    List<Map<String, Object>> studentList = new ArrayList<>();
+//
+//	    for (Application app : apps) {
+//	        String source = app.getAppliedBy() != null ? app.getAppliedBy().name() : "Self";
+//	        
+//	        ExportDataHolder holder = new ExportDataHolder(
+//	            app.getStudent(), 
+//	            true, 
+//	            app.getCurrentRoundStatus(), 
+//	            source
+//	        );
+//
+//	        String status = extractStudentField(app.getStudent(), "currentstatus", job, holder);
+//	        
+//	        if ("Hired".equalsIgnoreCase(status)) hired++;
+//	        else if (status.toLowerCase().contains("rejected")) rejected++;
+//	        else pending++;
+//
+//	        Map<String, Object> studentMap = new LinkedHashMap<>();
+//	        studentMap.put("studentId", app.getStudent().getId());
+//	        studentMap.put("Roll Number", extractStudentField(app.getStudent(), "rollnumber", job, holder));
+//	        studentMap.put("Full Name", app.getStudent().getFullName());
+//	        studentMap.put("Current Status", status);
+//	        studentMap.put("Application Source", source);
+//
+//	        for (String field : requiredFields) {
+//	            studentMap.put(toTitleCase(field), extractStudentField(app.getStudent(), field, job, holder));
+//	        }
+//	        studentList.add(studentMap);
+//	    }
+//
+//	    Map<String, Long> globalStats = Map.of("Hired", hired, "Rejected", rejected, "Pending", pending);
+//
+//	    return new JobApplicantsDashboardDTO(
+//	        job.getTitle(), 
+//	        (long)apps.size(), 
+//	        globalStats, 
+//	        roundSummaryList, 
+//	        uiHeaders, 
+//	        studentList
+//	    );
+//	}
+	
+	@Override
+	public JobApplicantsDashboardDTO getJobApplicantsDashboard(String jobId) throws Exception {
+	    Job job = jobRepo.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found"));
+	    List<Application> apps = appRepo.findByJobId(jobId);
+	    List<Map<String, Object>> rounds = mapper.readValue(job.getRoundsJson(), new TypeReference<>() {});
+
+	    // 1. Round summary logic
+	    List<Map<String, Object>> roundSummaryList = new ArrayList<>();
+	    for (int i = 0; i < rounds.size(); i++) {
+	        int roundNum = i + 1;
+	        String roundName = (String) rounds.get(i).get("name");
+	        long countAtThisStage = apps.stream()
+	                .filter(a -> a.getCurrentRound() != null && a.getCurrentRound() == roundNum)
+	                .count();
+
+	        Map<String, Object> summary = new LinkedHashMap<>();
+	        summary.put("roundNumber", roundNum);
+	        summary.put("roundName", roundName);
+	        summary.put("studentCount", countAtThisStage);
+	        roundSummaryList.add(summary);
+	    }
+
+	    // 2. Define UI Headers (Hardcoded identities + dynamic fields)
+	    List<String> requiredFields = mapper.readValue(job.getRequiredFieldsJson(), new TypeReference<List<String>>() {});
+	    List<String> uiHeaders = new ArrayList<>(List.of("Roll Number", "Full Name", "Current Status", "Application Source"));
+	    
+	    for (String f : requiredFields) {
+	        String title = toTitleCase(f);
+	        if (!uiHeaders.contains(title)) uiHeaders.add(title);
+	    }
+
+	    long hired = 0, rejected = 0, pending = 0;
+	    List<Map<String, Object>> studentList = new ArrayList<>();
+
+	    for (Application app : apps) {
+	        String source = app.getAppliedBy() != null ? app.getAppliedBy().name() : "Self";
+	        
+	        ExportDataHolder holder = new ExportDataHolder(
+	            app.getStudent(), 
+	            true, 
+	            app.getCurrentRoundStatus(), 
+	            source
+	        );
+
+	        String status = extractStudentField(app.getStudent(), "currentstatus", job, holder);
+	        
+	        if ("Hired".equalsIgnoreCase(status)) hired++;
+	        else if (status.toLowerCase().contains("rejected")) rejected++;
+	        else pending++;
+
+	        // 3. Build student map strictly following uiHeaders
+	        Map<String, Object> studentMap = new LinkedHashMap<>();
+	        studentMap.put("studentId", app.getStudent().getId());
+	        
+	        for (String header : uiHeaders) {
+	            Object value = "N/A";
+	            if (header.equals("Roll Number")) {
+	                value = extractStudentField(app.getStudent(), "rollnumber", job, holder);
+	            } else if (header.equals("Full Name")) {
+	                value = app.getStudent().getFullName() != null ? app.getStudent().getFullName() : "N/A";
+	            } else if (header.equals("Current Status")) {
+	                value = status;
+	            } else if (header.equals("Application Source")) {
+	                value = source;
+	            } else {
+	                value = extractStudentField(app.getStudent(), header, job, holder);
+	            }
+	            studentMap.put(header, value);
+	        }
+	        studentList.add(studentMap);
+	    }
+
+	    Map<String, Long> globalStats = Map.of("Hired", hired, "Rejected", rejected, "Pending", pending);
+
+	    return new JobApplicantsDashboardDTO(
+	        job.getTitle(), 
+	        (long)apps.size(), 
+	        globalStats, 
+	        roundSummaryList, 
+	        uiHeaders, 
+	        studentList
+	    );
+	}
+
+
+//	/**
+//	 * METHOD 3: generateExportFile - FIXED to include Roll Number and Full Name
+//	 */
+//	private byte[] generateExportFile(Job job, List<ExportDataHolder> dataList, String format, String title,
+//	        boolean isEligibleExport) throws Exception {
+//	    List<String> requiredFields = mapper.readValue(job.getRequiredFieldsJson(), new TypeReference<List<String>>() {});
+//	    boolean isCsv = "csv".equalsIgnoreCase(format);
+//
+//	    // Build complete header list
+//	    List<String> allHeaders = new ArrayList<>();
+////	    allHeaders.add("Roll Number");
+////	    allHeaders.add("Full Name");
+//	    allHeaders.add("Current Status");
+//	    
+//	    if (!isEligibleExport) {
+//	        allHeaders.add("Application Source");
+//	    }
+//	    
+//	    if (isEligibleExport) {
+//	        allHeaders.add("Applied Status");
+//	        allHeaders.add("Last Login");
+//	    }
+//	    
+//	    for (String field : requiredFields) {
+//	        String titleCased = toTitleCase(field);
+//	        if (!allHeaders.contains(titleCased)) {
+//	            allHeaders.add(titleCased);
+//	        }
+//	    }
+//
+//	    if (isCsv) {
+//	        StringBuilder csv = new StringBuilder();
+//	        allHeaders.forEach(h -> csv.append(h).append(","));
+//	        csv.append("\n");
+//
+//	        for (ExportDataHolder holder : dataList) {
+////	            csv.append("\"").append(extractStudentField(holder.user, "rollnumber", job, holder)).append("\",");
+////	            csv.append("\"").append(holder.user.getFullName() != null ? holder.user.getFullName() : "N/A").append("\",");
+//	            csv.append("\"").append(extractStudentField(holder.user, "currentstatus", job, holder)).append("\",");
+//	            
+//	            if (!isEligibleExport) {
+//	                String source = holder.appliedBy != null ? holder.appliedBy : "Self";
+//	                csv.append("\"").append(source).append("\",");
+//	            }
+//	            
+//	            if (isEligibleExport) {
+//	                csv.append(holder.isApplied ? "Yes" : "No").append(",");
+//	                csv.append("\"").append(extractStudentField(holder.user, "lastlogin", job, holder)).append("\",");
+//	            }
+//	            
+//	            for (String field : requiredFields) {
+//	                String val = extractStudentField(holder.user, field, job, holder);
+//	                csv.append("\"").append(val.replace("\"", "\"\"")).append("\",");
+//	            }
+//	            csv.append("\n");
+//	        }
+//	        return csv.toString().getBytes(StandardCharsets.UTF_8);
+//	    } else {
+//	        try (Workbook workbook = new XSSFWorkbook()) {
+//	            Sheet sheet = workbook.createSheet(title);
+//	            CellStyle headerStyle = workbook.createCellStyle();
+//	            Font font = workbook.createFont();
+//	            font.setBold(true);
+//	            headerStyle.setFont(font);
+//
+//	            Row headerRow = sheet.createRow(0);
+//	            for (int col = 0; col < allHeaders.size(); col++) {
+//	                Cell cell = headerRow.createCell(col);
+//	                cell.setCellValue(allHeaders.get(col));
+//	                cell.setCellStyle(headerStyle);
+//	            }
+//
+//	            int rowIdx = 1;
+//	            for (ExportDataHolder holder : dataList) {
+//	                Row row = sheet.createRow(rowIdx++);
+//	                int col = 0;
+//	                
+////	                row.createCell(col++).setCellValue(extractStudentField(holder.user, "rollnumber", job, holder));
+////	                row.createCell(col++).setCellValue(holder.user.getFullName() != null ? holder.user.getFullName() : "N/A");
+//	                row.createCell(col++).setCellValue(extractStudentField(holder.user, "currentstatus", job, holder));
+//	                
+//	                if (!isEligibleExport) {
+//	                    String source = holder.appliedBy != null ? holder.appliedBy : "Self";
+//	                    row.createCell(col++).setCellValue(source);
+//	                }
+//	                
+//	                if (isEligibleExport) {
+//	                    row.createCell(col++).setCellValue(holder.isApplied ? "Yes" : "No");
+//	                    row.createCell(col++).setCellValue(extractStudentField(holder.user, "lastlogin", job, holder));
+//	                }
+//	                
+//	                for (String field : requiredFields) {
+//	                    row.createCell(col++).setCellValue(extractStudentField(holder.user, field, job, holder));
+//	                }
+//	            }
+//	            
+//	            for (int i = 0; i < allHeaders.size(); i++) {
+//	                sheet.autoSizeColumn(i);
+//	            }
+//	            
+//	            ByteArrayOutputStream out = new ByteArrayOutputStream();
+//	            workbook.write(out);
+//	            return out.toByteArray();
+//	        }
+//	    }
+//	}
+	
+	/**
+	 * UPDATED METHOD 3: generateExportFile 
+	 * Ensures Roll Number and Full Name are ALWAYS present.
+	 */
+	private byte[] generateExportFile(Job job, List<ExportDataHolder> dataList, String format, String title,
+	        boolean isEligibleExport) throws Exception {
+	    
+	    // 1. Load required fields from JSON
+	    List<String> requiredFields = new ArrayList<>();
+	    if (job.getRequiredFieldsJson() != null) {
+	        requiredFields = mapper.readValue(job.getRequiredFieldsJson(), new TypeReference<List<String>>() {});
+	    }
+	    
+	    boolean isCsv = "csv".equalsIgnoreCase(format);
+
+	    // 2. Build complete header list
+	    List<String> allHeaders = new ArrayList<>();
+	    
+	    // Always start with Status info
+	    allHeaders.add("Current Status");
+	    
+	    if (!isEligibleExport) {
+	        allHeaders.add("Application Source");
+	    } else {
+	        allHeaders.add("Applied Status");
+	        allHeaders.add("Last Login");
+	    }
+
+	    // 3. MANDATORY HEADERS: Ensure Roll Number and Full Name are always there
+	    // We add them here if they aren't already the first things in the list
+	    if (!allHeaders.contains("Roll Number")) allHeaders.add("Roll Number");
+	    if (!allHeaders.contains("Full Name")) allHeaders.add("Full Name");
+
+	    // 4. Add the rest of the dynamic required fields
+	    for (String field : requiredFields) {
+	        String titleCased = toTitleCase(field);
+	        // Avoid adding Roll Number or Full Name again if toTitleCase matches
+	        if (!allHeaders.contains(titleCased)) {
+	            allHeaders.add(titleCased);
+	        }
+	    }
+
+	    if (isCsv) {
+	        StringBuilder csv = new StringBuilder();
+	        allHeaders.forEach(h -> csv.append(h).append(","));
+	        csv.append("\n");
+
+	        for (ExportDataHolder holder : dataList) {
+	            List<String> rowData = new ArrayList<>();
+	            
+	            // Map data to the headers defined above
+	            for (String header : allHeaders) {
+	                String value = "N/A";
+	                
+	                if (header.equals("Current Status")) {
+	                    value = extractStudentField(holder.user, "currentstatus", job, holder);
+	                } else if (header.equals("Application Source")) {
+	                    value = holder.appliedBy != null ? holder.appliedBy : "Self";
+	                } else if (header.equals("Applied Status")) {
+	                    value = holder.isApplied ? "Yes" : "No";
+	                } else if (header.equals("Last Login")) {
+	                    value = extractStudentField(holder.user, "lastlogin", job, holder);
+	                } else if (header.equals("Roll Number")) {
+	                    value = extractStudentField(holder.user, "rollnumber", job, holder);
+	                } else if (header.equals("Full Name")) {
+	                    value = (holder.user != null && holder.user.getFullName() != null) ? holder.user.getFullName() : "N/A";
+	                } else {
+	                    // It's a dynamic field from requiredFields
+	                    value = extractStudentField(holder.user, header, job, holder);
+	                }
+	                
+	                rowData.add("\"" + (value == null ? "" : value.replace("\"", "\"\"")) + "\"");
+	            }
+	            csv.append(String.join(",", rowData)).append("\n");
+	        }
+	        return csv.toString().getBytes(StandardCharsets.UTF_8);
+	        
+	    } else {
+	        // Excel Logic
+	        try (Workbook workbook = new XSSFWorkbook()) {
+	            Sheet sheet = workbook.createSheet(title);
+	            
+	            // Header Style
+	            CellStyle headerStyle = workbook.createCellStyle();
+	            Font font = workbook.createFont();
+	            font.setBold(true);
+	            headerStyle.setFont(font);
+
+	            // Create Header Row
+	            Row headerRow = sheet.createRow(0);
+	            for (int col = 0; col < allHeaders.size(); col++) {
+	                Cell cell = headerRow.createCell(col);
+	                cell.setCellValue(allHeaders.get(col));
+	                cell.setCellStyle(headerStyle);
+	            }
+
+	            // Create Data Rows
+	            int rowIdx = 1;
+	            for (ExportDataHolder holder : dataList) {
+	                Row row = sheet.createRow(rowIdx++);
+	                for (int col = 0; col < allHeaders.size(); col++) {
+	                    String header = allHeaders.get(col);
+	                    String value = "N/A";
+	                    
+	                    if (header.equals("Current Status")) value = extractStudentField(holder.user, "currentstatus", job, holder);
+	                    else if (header.equals("Application Source")) value = holder.appliedBy != null ? holder.appliedBy : "Self";
+	                    else if (header.equals("Applied Status")) value = holder.isApplied ? "Yes" : "No";
+	                    else if (header.equals("Last Login")) value = extractStudentField(holder.user, "lastlogin", job, holder);
+	                    else if (header.equals("Roll Number")) value = extractStudentField(holder.user, "rollnumber", job, holder);
+	                    else if (header.equals("Full Name")) value = (holder.user != null && holder.user.getFullName() != null) ? holder.user.getFullName() : "N/A";
+	                    else value = extractStudentField(holder.user, header, job, holder);
+	                    
+	                    row.createCell(col).setCellValue(value);
+	                }
+	            }
+	            
+	            for (int i = 0; i < allHeaders.size(); i++) {
+	                sheet.autoSizeColumn(i);
+	            }
+	            
+	            ByteArrayOutputStream out = new ByteArrayOutputStream();
+	            workbook.write(out);
+	            return out.toByteArray();
+	        }
+	    }
 	}
 	
 

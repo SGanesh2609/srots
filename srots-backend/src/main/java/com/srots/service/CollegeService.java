@@ -10,6 +10,7 @@ import com.srots.dto.collegedto.AboutSectionDTO;
 import com.srots.dto.collegedto.BranchDTO;
 import com.srots.dto.collegedto.CollegeRequest;
 import com.srots.dto.collegedto.CollegeResponse;
+import com.srots.dto.collegedto.CollegeStatsDTO;
 import com.srots.dto.collegedto.SocialMediaDTO;
 
 public interface CollegeService {
@@ -43,4 +44,5 @@ public interface CollegeService {
     public void deactivate(String id);
     
     public Page<CollegeResponse> getColleges(String query, boolean includeInactive, Pageable pageable);
+    public CollegeStatsDTO getCollegeStats(String collegeId);
 }

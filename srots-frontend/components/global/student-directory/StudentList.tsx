@@ -1,73 +1,29 @@
-
-// import React from 'react';
-// import { Student, Branch } from '../../../types';
-// import { StudentFilters } from './StudentFilters';
-// import { StudentTable } from './StudentTable';
-
-// interface StudentListProps {
-//     students: Student[];
-//     searchQuery: string;
-//     setSearchQuery: (query: string) => void;
-//     yearFilter: string;
-//     setYearFilter: (year: string) => void;
-//     branchFilter: string;
-//     setBranchFilter: (branch: string) => void;
-//     collegeBranches: Branch[];
-//     canManage: boolean;
-//     isSrotsAdmin: boolean;
-//     onEdit: (e: React.MouseEvent, student: Student) => void;
-//     onDelete: (e: React.MouseEvent, id: string) => void;
-//     onToggleRestriction: (e: React.MouseEvent, id: string) => void;
-//     onDownloadReport: () => void;
-//     onAdd: () => void;
-//     onBulkUpload: (e: React.ChangeEvent<HTMLInputElement>) => void; // Maintained for signature compatibility, though logic moved
-//     onDownloadSample: () => void;
-//     collegeId?: string; // Added prop
-//     onRefresh?: () => void; // Added prop
-// }
-
-// export const StudentList: React.FC<StudentListProps> = ({
-//     students, searchQuery, setSearchQuery, yearFilter, setYearFilter, branchFilter, setBranchFilter,
-//     collegeBranches, canManage, isSrotsAdmin, onEdit, onDelete, onToggleRestriction,
-//     onDownloadReport, onAdd, onDownloadSample, collegeId, onRefresh
-// }) => {
-//     return (
-//         <>
-//             <StudentFilters 
-//                 searchQuery={searchQuery}
-//                 setSearchQuery={setSearchQuery}
-//                 yearFilter={yearFilter}
-//                 setYearFilter={setYearFilter}
-//                 branchFilter={branchFilter}
-//                 setBranchFilter={setBranchFilter}
-//                 collegeBranches={collegeBranches}
-//                 canManage={canManage}
-//                 onDownloadReport={onDownloadReport}
-//                 onAdd={onAdd}
-//                 onDownloadSample={onDownloadSample}
-//                 collegeId={collegeId || ''}
-//                 onRefresh={onRefresh || (() => {})}
-//             />
-
-//             <StudentTable 
-//                 students={students}
-//                 canManage={canManage}
-//                 isSrotsAdmin={isSrotsAdmin}
-//                 onEdit={onEdit}
-//                 onDelete={onDelete}
-//                 onToggleRestriction={onToggleRestriction}
-//             />
-//         </>
-//     );
-// };
-
-
 // import React from 'react';
 // import { Student, Branch } from '../../../types';
 // import { StudentFilters } from './StudentFilters';
 // import { StudentTable } from './StudentTable';
 // import { PaginationState } from '../StudentDirectory';
+// import { AccountFilter } from '../StudentDirectory';
 // import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+
+// /**
+//  * StudentList
+//  * Path: src/components/global/student-directory/StudentList.tsx
+//  *
+//  * ─────────────────────────────────────────────────────────────────────────────
+//  * CHANGES IN THIS VERSION
+//  * ─────────────────────────────────────────────────────────────────────────────
+//  *
+//  * 1. Added `isCphView` prop — forwarded to StudentFilters (hides tabs + buttons)
+//  *    and StudentTable (hides Edit/Delete, shows View Details).
+//  *
+//  * 2. Added `accountFilter` + `setAccountFilter` props — forwarded to StudentFilters
+//  *    to render the All/Soft Deleted/Hard Deleted tab pills.
+//  *
+//  * 3. Added `onViewDetails` prop — forwarded to StudentTable for CPH "View Details"
+//  *    button handler.
+//  * ─────────────────────────────────────────────────────────────────────────────
+//  */
 
 // interface StudentListProps {
 //   students: Student[];
@@ -81,7 +37,11 @@
 //   collegeBranches: Branch[];
 //   canManage: boolean;
 //   isSrotsAdmin: boolean;
+//   isCphView?: boolean;
+//   accountFilter: AccountFilter;
+//   setAccountFilter: (f: AccountFilter) => void;
 //   onEdit: (e: React.MouseEvent, student: Student) => void;
+//   onViewDetails: (e: React.MouseEvent, student: Student) => void;
 //   onDelete: (e: React.MouseEvent, id: string) => void;
 //   onToggleRestriction: (e: React.MouseEvent, id: string) => void;
 //   onDownloadReport: () => void;
@@ -99,9 +59,11 @@
 
 // export const StudentList: React.FC<StudentListProps> = ({
 //   students, isLoading, searchQuery, setSearchQuery, yearFilter, setYearFilter, branchFilter, setBranchFilter,
-//   collegeBranches, canManage, isSrotsAdmin, onEdit, onDelete, onToggleRestriction,
+//   collegeBranches, canManage, isSrotsAdmin, isCphView = false,
+//   accountFilter, setAccountFilter,
+//   onEdit, onViewDetails, onDelete, onToggleRestriction,
 //   onDownloadReport, onAdd, onDownloadSample, collegeId, onRefresh,
-//   reportFormat, setReportFormat, pagination, onPageChange, onPageSizeChange
+//   reportFormat, setReportFormat, pagination, onPageChange, onPageSizeChange,
 // }) => {
 //   const { page, size, total, totalPages } = pagination;
 //   const startRecord = total === 0 ? 0 : page * size + 1;
@@ -118,6 +80,9 @@
 //         setBranchFilter={setBranchFilter}
 //         collegeBranches={collegeBranches}
 //         canManage={canManage}
+//         isCphView={isCphView}
+//         accountFilter={accountFilter}
+//         setAccountFilter={setAccountFilter}
 //         onDownloadReport={onDownloadReport}
 //         onAdd={onAdd}
 //         onDownloadSample={onDownloadSample}
@@ -132,7 +97,9 @@
 //         isLoading={isLoading}
 //         canManage={canManage}
 //         isSrotsAdmin={isSrotsAdmin}
+//         isCphView={isCphView}
 //         onEdit={onEdit}
+//         onViewDetails={onViewDetails}
 //         onDelete={onDelete}
 //         onToggleRestriction={onToggleRestriction}
 //       />
@@ -158,25 +125,16 @@
 //         </div>
 
 //         <div className="flex items-center gap-1">
-//           <PaginationButton
-//             onClick={() => onPageChange(0)}
-//             disabled={page === 0}
-//             title="First page"
-//           >
+//           <PaginationButton onClick={() => onPageChange(0)} disabled={page === 0} title="First page">
 //             <ChevronsLeft size={16} />
 //           </PaginationButton>
-//           <PaginationButton
-//             onClick={() => onPageChange(page - 1)}
-//             disabled={page === 0}
-//             title="Previous page"
-//           >
+//           <PaginationButton onClick={() => onPageChange(page - 1)} disabled={page === 0} title="Previous page">
 //             <ChevronLeft size={16} />
 //           </PaginationButton>
 
-//           {/* Page number pills */}
 //           {getPageNumbers(page, totalPages).map((p, i) =>
 //             p === '...' ? (
-//               <span key={`ellipsis-${i}`} className="px-2 text-gray-400 text-sm">…</span>
+//               <span key={`ellipsis-${i}`} className="px-2 text-gray-400 text-sm">...</span>
 //             ) : (
 //               <button
 //                 key={p}
@@ -192,18 +150,10 @@
 //             )
 //           )}
 
-//           <PaginationButton
-//             onClick={() => onPageChange(page + 1)}
-//             disabled={page >= totalPages - 1}
-//             title="Next page"
-//           >
+//           <PaginationButton onClick={() => onPageChange(page + 1)} disabled={page >= totalPages - 1} title="Next page">
 //             <ChevronRight size={16} />
 //           </PaginationButton>
-//           <PaginationButton
-//             onClick={() => onPageChange(totalPages - 1)}
-//             disabled={page >= totalPages - 1}
-//             title="Last page"
-//           >
+//           <PaginationButton onClick={() => onPageChange(totalPages - 1)} disabled={page >= totalPages - 1} title="Last page">
 //             <ChevronsRight size={16} />
 //           </PaginationButton>
 //         </div>
@@ -253,19 +203,8 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-r
  * StudentList
  * Path: src/components/global/student-directory/StudentList.tsx
  *
- * ─────────────────────────────────────────────────────────────────────────────
- * CHANGES IN THIS VERSION
- * ─────────────────────────────────────────────────────────────────────────────
- *
- * 1. Added `isCphView` prop — forwarded to StudentFilters (hides tabs + buttons)
- *    and StudentTable (hides Edit/Delete, shows View Details).
- *
- * 2. Added `accountFilter` + `setAccountFilter` props — forwarded to StudentFilters
- *    to render the All/Soft Deleted/Hard Deleted tab pills.
- *
- * 3. Added `onViewDetails` prop — forwarded to StudentTable for CPH "View Details"
- *    button handler.
- * ─────────────────────────────────────────────────────────────────────────────
+ * ADDED: onResendCredentials prop — threaded from GlobalStudentDirectory
+ * straight down to StudentTable so the Send icon button in each row works.
  */
 
 interface StudentListProps {
@@ -287,6 +226,8 @@ interface StudentListProps {
   onViewDetails: (e: React.MouseEvent, student: Student) => void;
   onDelete: (e: React.MouseEvent, id: string) => void;
   onToggleRestriction: (e: React.MouseEvent, id: string) => void;
+  /** Opens the resend-credentials confirmation modal for a student row */
+  onResendCredentials: (e: React.MouseEvent, student: Student) => void;
   onDownloadReport: () => void;
   onAdd: () => void;
   onBulkUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -301,16 +242,19 @@ interface StudentListProps {
 }
 
 export const StudentList: React.FC<StudentListProps> = ({
-  students, isLoading, searchQuery, setSearchQuery, yearFilter, setYearFilter, branchFilter, setBranchFilter,
+  students, isLoading,
+  searchQuery, setSearchQuery,
+  yearFilter, setYearFilter,
+  branchFilter, setBranchFilter,
   collegeBranches, canManage, isSrotsAdmin, isCphView = false,
   accountFilter, setAccountFilter,
-  onEdit, onViewDetails, onDelete, onToggleRestriction,
+  onEdit, onViewDetails, onDelete, onToggleRestriction, onResendCredentials,
   onDownloadReport, onAdd, onDownloadSample, collegeId, onRefresh,
   reportFormat, setReportFormat, pagination, onPageChange, onPageSizeChange,
 }) => {
   const { page, size, total, totalPages } = pagination;
   const startRecord = total === 0 ? 0 : page * size + 1;
-  const endRecord = Math.min((page + 1) * size, total);
+  const endRecord   = Math.min((page + 1) * size, total);
 
   return (
     <div className="space-y-4">
@@ -345,13 +289,16 @@ export const StudentList: React.FC<StudentListProps> = ({
         onViewDetails={onViewDetails}
         onDelete={onDelete}
         onToggleRestriction={onToggleRestriction}
+        onResendCredentials={onResendCredentials}
       />
 
       {/* Pagination Controls */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-1 py-2">
         <div className="flex items-center gap-3 text-sm text-gray-500">
           <span>
-            {total === 0 ? 'No records' : `Showing ${startRecord}–${endRecord} of ${total} students`}
+            {total === 0
+              ? 'No records'
+              : `Showing ${startRecord}–${endRecord} of ${total} students`}
           </span>
           <div className="flex items-center gap-2">
             <label className="text-xs font-medium text-gray-500">Per page:</label>
@@ -404,6 +351,8 @@ export const StudentList: React.FC<StudentListProps> = ({
     </div>
   );
 };
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const PaginationButton: React.FC<{
   onClick: () => void;

@@ -19,10 +19,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.srots.filter.JwtFilter;
 
+
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
-    
+
     @Autowired
     private JwtFilter jwtFilter;
 
@@ -30,49 +31,53 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            // UPDATED: Tell Security to use the CORS configuration defined in WebConfig
-            .cors(Customizer.withDefaults()) 
+            .cors(Customizer.withDefaults())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**", "/login/**", "/api/v1/files/**").permitAll()
-                // Ensure Preflight OPTIONS requests are always allowed
+
+                // ── Public endpoints (no JWT required) ───────────────────────
+                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/login/**").permitAll()
+                .requestMatchers("/api/v1/files/**").permitAll()
+
+                // Public premium payment submit.
+                // Students who arrive here after a 402 login response have NO JWT.
+                // This sub-path accepts userId from the form body instead of
+                // @AuthenticationPrincipal. See PremiumPaymentController.submitPaymentPublic()
+                .requestMatchers("/api/v1/premium-payments/public/**").permitAll()
+
+                // Always allow CORS preflight
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+
+                // ── Everything else requires a valid JWT ─────────────────────
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exception -> exception
                 .accessDeniedHandler((request, response, accessDeniedException) -> {
-                    System.out.println("Access Denied for: " + request.getRequestURI());
+                    System.out.println("[Security] 403 Access Denied: " + request.getRequestURI());
                     response.setStatus(403);
+                    response.setContentType("application/json");
+                    response.getWriter().write(
+                        "{\"error\":\"Access denied\",\"path\":\"" + request.getRequestURI() + "\"}");
+                })
+                .authenticationEntryPoint((request, response, authException) -> {
+                    System.out.println("[Security] 401 Unauthorized: " + request.getRequestURI());
+                    response.setStatus(401);
+                    response.setContentType("application/json");
+                    response.getWriter().write(
+                        "{\"error\":\"Authentication required\",\"path\":\"" + request.getRequestURI() + "\"}");
                 })
             )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-        
+
         return http.build();
     }
-
-//    @Bean
-//    public UrlBasedCorsConfigurationSource corsConfigurationSource() {
-//        CorsConfiguration config = new CorsConfiguration();
-//        config.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
-//        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-//        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
-//        config.setAllowCredentials(true);
-//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-//        source.registerCorsConfiguration("/**", config);
-//        return source;
-//    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-    
-//    @Bean
-//    public PasswordEncoder passwordEncoder() {
-//        // TEMPORARY: Use NoOp for testing to bypass BCrypt issues
-//        return NoOpPasswordEncoder.getInstance();
-//    }
 
     @Bean
     public UserDetailsService userDetailsService() {
@@ -82,7 +87,7 @@ public class SecurityConfig {
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService()); 
+        provider.setUserDetailsService(userDetailsService());
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }

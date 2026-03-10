@@ -225,4 +225,6 @@ public interface JobRepository extends JpaRepository<Job, String> {
     );
 
 	long countByCollegeIdAndStatus(String id, JobStatus active);
+
+	long countByCollegeId(String collegeId);
 }

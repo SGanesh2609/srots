@@ -1,125 +1,8 @@
-
-// import React from 'react';
-// import { College } from '../../../../types';
-// import { Building, Download, Search, Plus, Trash2, Edit2 } from 'lucide-react';
-// import { CollegeService } from '../../../../services/collegeService';
-
-// /**
-//  * Component Name: CollegeList
-//  * Directory: components/srots-portal/srots-admin/cms/CollegeList.tsx
-//  * 
-//  * Functionality:
-//  * - Displays a grid of registered colleges for Srots Admins.
-//  * - **Features**: Search input (calls parent), Add/Edit/Delete actions.
-//  * - **Updates**: Removed local filtering. Search input now triggers parent callback to query Backend.
-//  * 
-//  * Used In: CMSManagement
-//  */
-
-// interface CollegeListProps {
-//     colleges: College[];
-//     searchQuery: string;
-//     onSearchChange: (query: string) => void;
-//     onSelect: (id: string) => void;
-//     onEdit: (college: College) => void;
-//     onDelete: (id: string) => void;
-//     onAdd: () => void;
-// }
-
-// export const CollegeList: React.FC<CollegeListProps> = ({ 
-//     colleges, searchQuery, onSearchChange, onSelect, onEdit, onDelete, onAdd 
-// }) => {
-
-//     const handleDownloadList = (type: 'students' | 'cp_admin') => {
-//         try {
-//             CollegeService.exportMasterList(type);
-//         } catch (e: any) {
-//             alert(e.message);
-//         }
-//     };
-
-//     return (
-//         <div className="space-y-6 animate-in fade-in">
-//             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-//                 <div><h2 className="text-2xl font-bold text-gray-800">CMS - Colleges</h2><p className="text-gray-500">Manage registered colleges and their accounts.</p></div>
-//                 <button onClick={onAdd} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-sm"><Plus size={16} /> Onboard College</button>
-//             </div>
-            
-//             <div className="flex flex-col md:flex-row gap-4 mb-6">
-//                 <div className="relative w-full md:flex-1">
-//                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-//                     <input 
-//                         type="text" 
-//                         placeholder="Search by college name or code..." 
-//                         className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-900" 
-//                         value={searchQuery} 
-//                         onChange={(e) => onSearchChange(e.target.value)} 
-//                     />
-//                 </div>
-//                 <div className="flex gap-2 w-full md:w-auto">
-//                     <button onClick={() => handleDownloadList('students')} className="flex-1 md:flex-none flex justify-center items-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 text-gray-700 shadow-sm font-bold text-sm">
-//                         <Download size={16} /> Master Students
-//                     </button>
-//                     <button onClick={() => handleDownloadList('cp_admin')} className="flex-1 md:flex-none flex justify-center items-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 text-gray-700 shadow-sm font-bold text-sm">
-//                         <Download size={16} /> Master CP Admins
-//                     </button>
-//                 </div>
-//             </div>
-            
-//             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-//                 {colleges.map((college) => (
-//                     <div key={college.id} onClick={() => onSelect(college.id)} className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-md transition-all cursor-pointer hover:border-blue-300 group relative">
-//                         <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 z-10 transition-opacity">
-//                             <button 
-//                                 onClick={(e) => { e.stopPropagation(); onEdit(college); }}
-//                                 className="p-2 text-blue-600 hover:bg-blue-50 bg-white rounded-full shadow-sm border border-gray-100 transition-all hover:scale-105"
-//                                 title="Edit College"
-//                             >
-//                                 <Edit2 size={18} />
-//                             </button>
-//                             <button 
-//                                 onClick={(e) => { e.stopPropagation(); onDelete(college.id); }}
-//                                 className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 bg-white rounded-full shadow-sm border border-gray-100 transition-all hover:scale-105"
-//                                 title="Delete College"
-//                             >
-//                                 <Trash2 size={18} />
-//                             </button>
-//                         </div>
-//                         <div className="flex items-center gap-4 mb-4">
-//                             <img src={college.logoUrl} alt={college.name} className="w-16 h-16 rounded-lg object-cover bg-gray-50 border" />
-//                             <div>
-//                                 <h3 className="font-bold text-lg text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors" title={college.name}>{college.name}</h3>
-//                                 <div className="flex items-center gap-2 mt-1">
-//                                     <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-bold">{college.code}</span>
-//                                     {college.type && <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full border">{college.type}</span>}
-//                                 </div>
-//                             </div>
-//                         </div>
-//                         <div className="space-y-2 text-sm text-gray-600">
-//                             <p className="flex items-center gap-2 line-clamp-1"><Building size={16} className="shrink-0 text-gray-400" /> {college.address}</p>
-//                             <div className="flex justify-between mt-4 pt-4 border-t">
-//                                 <div className="text-center"><span className="block font-bold text-gray-900">{college.studentCount}</span><span className="text-xs text-gray-500">Students</span></div>
-//                                 <div className="text-center"><span className="block font-bold text-gray-900">{college.cphCount}</span><span className="text-xs text-gray-500">CP Admins</span></div>
-//                                 <div className="text-center"><span className="block font-bold text-green-600">{college.activeJobs}</span><span className="text-xs text-gray-500">Active Jobs</span></div>
-//                             </div>
-//                         </div>
-//                     </div>
-//                 ))}
-//                 {colleges.length === 0 && (
-//                     <div className="col-span-full py-12 text-center text-gray-400 bg-gray-50 rounded-xl border border-dashed">
-//                         <Building size={48} className="mx-auto mb-4 opacity-20" />
-//                         <p>No colleges found matching "{searchQuery}".</p>
-//                     </div>
-//                 )}
-//             </div>
-//         </div>
-//     );
-// };
-
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { College } from '../../../../types';
-import { Plus, Search, Download, Edit2, Trash2, Building, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Search, Download, Edit2, Trash2, Building, ToggleLeft, ToggleRight, ChevronDown } from 'lucide-react';
 import { CollegeService } from '../../../../services/collegeService';
+import { CollegeLogo } from '../../../common/CollegeLogo';
 import TablePagination from '@mui/material/TablePagination';
 
 interface CollegeListProps {
@@ -140,36 +23,89 @@ interface CollegeListProps {
     onChangeRowsPerPage: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export const CollegeList: React.FC<CollegeListProps> = ({ 
+// ── Delete Dropdown ────────────────────────────────────────────────────────────
+const DeleteDropdown: React.FC<{
+    onSoftDelete: () => void;
+    onHardDelete: () => void;
+}> = ({ onSoftDelete, onHardDelete }) => {
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+        };
+        if (open) document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [open]);
+
+    return (
+        <div ref={ref} className="relative" onClick={e => e.stopPropagation()}>
+            <button
+                onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+                className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 bg-white rounded-full shadow-sm border border-gray-100 transition-all hover:scale-105 flex items-center gap-0.5"
+                title="Delete College"
+            >
+                <Trash2 size={16} />
+                <ChevronDown size={10} />
+            </button>
+            {open && (
+                <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden">
+                    <button
+                        onClick={e => { e.stopPropagation(); setOpen(false); onSoftDelete(); }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-amber-700 hover:bg-amber-50 flex items-center gap-2 font-medium"
+                    >
+                        <Trash2 size={14} className="text-amber-500" />
+                        Soft Delete
+                    </button>
+                    <div className="h-px bg-gray-100 mx-2" />
+                    <button
+                        onClick={e => { e.stopPropagation(); setOpen(false); onHardDelete(); }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-red-700 hover:bg-red-50 flex items-center gap-2 font-medium"
+                    >
+                        <Trash2 size={14} className="text-red-500" />
+                        Hard Delete
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ── Main Component ────────────────────────────────────────────────────────────
+export const CollegeList: React.FC<CollegeListProps> = ({
     colleges, searchQuery, onSearchChange, onSelect, onEdit, onDelete, onAdd, onToggleActive,
     includeInactive, onToggleInactive,
-    page, rowsPerPage, total, onChangePage, onChangeRowsPerPage
+    page, rowsPerPage, total, onChangePage, onChangeRowsPerPage,
 }) => {
-
     const handleDownloadList = (type: 'students' | 'cp_admin') => {
-        try {
-            CollegeService.exportMasterList(type);
-        } catch (e: any) {
-            alert(e.message);
-        }
+        try { CollegeService.exportMasterList(type); }
+        catch (e: any) { alert(e.message); }
     };
 
     return (
         <div className="space-y-6 animate-in fade-in">
+            {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div><h2 className="text-2xl font-bold text-gray-800">CMS - Colleges</h2><p className="text-gray-500">Manage registered colleges and their accounts.</p></div>
-                <button onClick={onAdd} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-sm"><Plus size={16} /> Onboard College</button>
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-800">CMS - Colleges</h2>
+                    <p className="text-gray-500">Manage registered colleges and their accounts.</p>
+                </div>
+                <button onClick={onAdd} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-sm">
+                    <Plus size={16} /> Onboard College
+                </button>
             </div>
-            
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
+
+            {/* Search + Downloads */}
+            <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative w-full md:flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    <input 
-                        type="text" 
-                        placeholder="Search by college name or code..." 
-                        className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-900" 
-                        value={searchQuery} 
-                        onChange={(e) => onSearchChange(e.target.value)} 
+                    <input
+                        type="text"
+                        placeholder="Search by college name or code..."
+                        className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-900"
+                        value={searchQuery}
+                        onChange={e => onSearchChange(e.target.value)}
                     />
                 </div>
                 <div className="flex gap-2 w-full md:w-auto">
@@ -182,90 +118,108 @@ export const CollegeList: React.FC<CollegeListProps> = ({
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 mb-4">
-                <input 
-                    type="checkbox" 
-                    id="includeInactive" 
-                    checked={includeInactive} 
-                    onChange={(e) => onToggleInactive(e.target.checked)} 
+            {/* Include Inactive toggle */}
+            <div className="flex items-center gap-2">
+                <input
+                    type="checkbox"
+                    id="includeInactive"
+                    checked={includeInactive}
+                    onChange={e => onToggleInactive(e.target.checked)}
                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
-                <label htmlFor="includeInactive" className="text-sm text-gray-700 font-medium">Include Inactive Colleges</label>
+                <label htmlFor="includeInactive" className="text-sm text-gray-700 font-medium">
+                    Include Inactive Colleges
+                </label>
             </div>
-            
+
+            {/* College Cards */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {colleges.map((college) => (
-                    <div key={college.id} onClick={() => onSelect(college.id)} className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-md transition-all cursor-pointer hover:border-blue-300 group relative">
+                {colleges.map(college => (
+                    <div
+                        key={college.id}
+                        onClick={() => onSelect(college.id)}
+                        className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-md transition-all cursor-pointer hover:border-blue-300 group relative"
+                    >
+                        {/* Hover action buttons */}
                         <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 z-10 transition-opacity">
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); onEdit(college); }}
+                            <button
+                                onClick={e => { e.stopPropagation(); onEdit(college); }}
                                 className="p-2 text-blue-600 hover:bg-blue-50 bg-white rounded-full shadow-sm border border-gray-100 transition-all hover:scale-105"
                                 title="Edit College"
                             >
-                                <Edit2 size={18} />
+                                <Edit2 size={16} />
                             </button>
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); onToggleActive(college.id, !college.active); }}
-                                className={`p-2 ${college.active ? 'text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'} bg-white rounded-full shadow-sm border border-gray-100 transition-all hover:scale-105`}
-                                title={college.active ? "Deactivate College" : "Activate College"}
+                            <button
+                                onClick={e => { e.stopPropagation(); onToggleActive(college.id, !college.active); }}
+                                className={`p-2 ${college.active ? 'text-orange-500 hover:bg-orange-50' : 'text-green-500 hover:bg-green-50'} bg-white rounded-full shadow-sm border border-gray-100 transition-all hover:scale-105`}
+                                title={college.active ? 'Deactivate' : 'Activate'}
                             >
-                                {college.active ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+                                {college.active ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
                             </button>
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); onDelete(college.id, false); }}
-                                className="p-2 text-orange-500 hover:text-orange-600 hover:bg-orange-50 bg-white rounded-full shadow-sm border border-gray-100 transition-all hover:scale-105"
-                                title="Soft Delete College"
-                            >
-                                <Trash2 size={18} />
-                            </button>
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); onDelete(college.id, true); }}
-                                className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 bg-white rounded-full shadow-sm border border-gray-100 transition-all hover:scale-105"
-                                title="Permanent Delete College"
-                            >
-                                <Trash2 size={18} />
-                            </button>
+                            <DeleteDropdown
+                                onSoftDelete={() => onDelete(college.id, false)}
+                                onHardDelete={() => onDelete(college.id, true)}
+                            />
                         </div>
+
+                        {/* Logo + Name */}
                         <div className="flex items-center gap-4 mb-4">
-                            <img src={college.logoUrl} alt={college.name} className="w-16 h-16 rounded-lg object-cover bg-gray-50 border" />
-                            <div>
-                                <h3 className="font-bold text-lg text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors" title={college.name}>{college.name}</h3>
-                                <div className="flex items-center gap-2 mt-1">
+                            <CollegeLogo src={college.logoUrl} name={college.name} size="lg" />
+                            <div className="min-w-0">
+                                <h3 className="font-bold text-lg text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors pr-20" title={college.name}>
+                                    {college.name}
+                                </h3>
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
                                     <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-bold">{college.code}</span>
                                     {college.type && <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full border">{college.type}</span>}
                                     {!college.active && <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">Inactive</span>}
                                 </div>
                             </div>
                         </div>
+
+                        {/* Address + Stats */}
                         <div className="space-y-2 text-sm text-gray-600">
-                            <p className="flex items-center gap-2 line-clamp-1"><Building size={16} className="shrink-0 text-gray-400" /> {college.address}</p>
+                            <p className="flex items-center gap-2 line-clamp-1">
+                                <Building size={16} className="shrink-0 text-gray-400" />
+                                {college.address || 'No address on file'}
+                            </p>
                             <div className="flex justify-between mt-4 pt-4 border-t">
-                                <div className="text-center"><span className="block font-bold text-gray-900">{college.studentCount}</span><span className="text-xs text-gray-500">Students</span></div>
-                                <div className="text-center"><span className="block font-bold text-gray-900">{college.cphCount}</span><span className="text-xs text-gray-500">CP Admins</span></div>
-                                <div className="text-center"><span className="block font-bold text-green-600">{college.activeJobs}</span><span className="text-xs text-gray-500">Active Jobs</span></div>
+                                <div className="text-center">
+                                    <span className="block font-bold text-gray-900">{college.studentCount ?? 0}</span>
+                                    <span className="text-xs text-gray-500">Students</span>
+                                </div>
+                                <div className="text-center">
+                                    <span className="block font-bold text-gray-900">{college.cphCount ?? 0}</span>
+                                    <span className="text-xs text-gray-500">CP Admins</span>
+                                </div>
+                                <div className="text-center">
+                                    <span className="block font-bold text-green-600">{college.activeJobs ?? 0}</span>
+                                    <span className="text-xs text-gray-500">Active Jobs</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 ))}
+
                 {colleges.length === 0 && (
                     <div className="col-span-full py-12 text-center text-gray-400 bg-gray-50 rounded-xl border border-dashed">
                         <Building size={48} className="mx-auto mb-4 opacity-20" />
-                        <p>No colleges found matching "{searchQuery}".</p>
+                        <p>No colleges found{searchQuery ? ` matching "${searchQuery}"` : ''}.</p>
                     </div>
                 )}
             </div>
+
+            {/* Pagination */}
             {total > 0 && (
-                <div className="flex justify-between items-center mt-6">
-                    <TablePagination
-                        component="div"
-                        count={total}
-                        page={page}
-                        onPageChange={onChangePage}
-                        rowsPerPage={rowsPerPage}
-                        onRowsPerPageChange={onChangeRowsPerPage}
-                        rowsPerPageOptions={[10, 25, 50]}
-                    />
-                </div>
+                <TablePagination
+                    component="div"
+                    count={total}
+                    page={page}
+                    onPageChange={onChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={onChangeRowsPerPage}
+                    rowsPerPageOptions={[10, 25, 50]}
+                />
             )}
         </div>
     );

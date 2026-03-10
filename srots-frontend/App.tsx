@@ -24,22 +24,34 @@ import {
   PremiumMonthsKey,
 } from './services/premiumService';
 
-// ─── Replace these two constants with your actual UPI details ─────────────────
-const UPI_QR_IMAGE_PATH = '/upi-scanner.png'; // path to your QR image in /public
-const UPI_ID            = 'yourname@upi';     // your actual UPI ID
+const UPI_QR_IMAGE_PATH = '/PaymentScanner.jpeg';
+const UPI_ID            = '63095225692@ybl';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PremiumPaymentPage
-// Shown when student's premium is EXPIRED or REJECTED.
-// Has full payment form: plan selector + pricing table + QR + UTR + screenshot.
+//
+// CHANGES FROM ORIGINAL (2 lines):
+//   1. Added `userId` prop.
+//   2. handleSubmit calls PremiumService.submitPaymentPublic(userId, ...) instead
+//      of PremiumService.submitPayment(...).
+//
+// WHY:
+//   The student reaches this page after a 402 login response — no JWT was issued.
+//   localStorage has no SROTS_AUTH_TOKEN. The old submitPayment() called
+//   POST /submit which requires a JWT → 403 Forbidden.
+//
+//   submitPaymentPublic() calls POST /public/submit (permitAll in SecurityConfig).
+//   It sends userId as a multipart field so the backend can identify the student
+//   without an Authorization header.
 // ─────────────────────────────────────────────────────────────────────────────
 const PremiumPaymentPage: React.FC<{
   accessState:      PremiumAccessState;
   message:          string;
   rejectionReason?: string | null;
   username:         string;
+  userId:           string;   // ← NEW
   onLogout:         () => void;
-}> = ({ accessState, message, rejectionReason, username, onLogout }) => {
+}> = ({ accessState, message, rejectionReason, username, userId, onLogout }) => {
 
   const [selectedPlanKey,   setSelectedPlanKey]   = useState<PremiumMonthsKey | null>(null);
   const [utrNumber,         setUtrNumber]         = useState('');
@@ -67,10 +79,13 @@ const PremiumPaymentPage: React.FC<{
     if (!utrNumber.trim())                 return setFormError('Please enter the UTR / Transaction ID.');
     if (!usernameField.trim())             return setFormError('Please confirm your username.');
     if (!screenshot)                       return setFormError('Please upload the payment screenshot.');
+    if (!userId)                           return setFormError('Session error: missing user ID. Please go back and log in again.');
 
     setSubmitting(true);
     try {
-      await PremiumService.submitPayment(
+      // ── Use submitPaymentPublic → POST /public/submit (no JWT required) ───
+      await PremiumService.submitPaymentPublic(
+        userId,               // ← from 402 response body, passed as prop from App.tsx
         utrNumber.trim(),
         selectedPlanKey,
         selectedPlan.amount,
@@ -79,13 +94,15 @@ const PremiumPaymentPage: React.FC<{
       );
       setSubmitted(true);
     } catch (err: any) {
-      setFormError(err.response?.data?.message || err.message || 'Submission failed. Please try again.');
+      setFormError(
+        err.response?.data?.message || err.message || 'Submission failed. Please try again.'
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  // ── Success screen after submission ──────────────────────────────────────
+  // ── Success screen ────────────────────────────────────────────────────────
   if (submitted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
@@ -114,7 +131,6 @@ const PremiumPaymentPage: React.FC<{
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
 
-        {/* Page header */}
         <div className="text-center mb-7">
           <div className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-full text-sm font-bold mb-4">
             <Diamond size={14} /> SROTS Premium
@@ -123,7 +139,6 @@ const PremiumPaymentPage: React.FC<{
           <p className="text-gray-500 mt-1.5 text-sm">Complete payment below to regain access to SROTS.</p>
         </div>
 
-        {/* Status banner */}
         {accessState === 'REJECTED' ? (
           <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl mb-6">
             <XCircle className="text-red-500 shrink-0 mt-0.5" size={20} />
@@ -147,10 +162,8 @@ const PremiumPaymentPage: React.FC<{
 
         <div className="grid md:grid-cols-2 gap-6">
 
-          {/* ── LEFT: Plan selector + QR ── */}
+          {/* LEFT: Plan selector + QR */}
           <div className="space-y-5">
-
-            {/* Plan selection */}
             <div className="bg-white rounded-2xl shadow-sm border p-6">
               <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <Star size={18} className="text-yellow-500" /> Choose Your Plan
@@ -185,8 +198,6 @@ const PremiumPaymentPage: React.FC<{
                   );
                 })}
               </div>
-
-              {/* Pricing table */}
               <div className="mt-4 overflow-hidden rounded-lg border border-gray-100">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50">
@@ -207,7 +218,6 @@ const PremiumPaymentPage: React.FC<{
               </div>
             </div>
 
-            {/* QR scanner */}
             <div className="bg-white rounded-2xl shadow-sm border p-6">
               <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <CreditCard size={18} className="text-blue-500" /> Scan & Pay
@@ -231,13 +241,12 @@ const PremiumPaymentPage: React.FC<{
             </div>
           </div>
 
-          {/* ── RIGHT: Payment details form ── */}
+          {/* RIGHT: Payment details form */}
           <div className="bg-white rounded-2xl shadow-sm border p-6 space-y-5">
             <h3 className="font-bold text-gray-900 flex items-center gap-2">
               <CheckCircle size={18} className="text-green-500" /> Payment Details
             </h3>
 
-            {/* UTR */}
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1.5">
                 UTR / Transaction ID <span className="text-red-500">*</span>
@@ -248,7 +257,6 @@ const PremiumPaymentPage: React.FC<{
               <p className="text-xs text-gray-400 mt-1">Found in your UPI app under transaction history.</p>
             </div>
 
-            {/* Username */}
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1.5">
                 Your SROTS Username <span className="text-red-500">*</span>
@@ -257,7 +265,6 @@ const PremiumPaymentPage: React.FC<{
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-shadow" />
             </div>
 
-            {/* Amount (read-only, driven by selected plan) */}
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1.5">Amount (₹)</label>
               <input type="text" readOnly
@@ -265,7 +272,6 @@ const PremiumPaymentPage: React.FC<{
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-gray-500 text-sm cursor-not-allowed" />
             </div>
 
-            {/* Screenshot upload */}
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1.5">
                 Payment Screenshot <span className="text-red-500">*</span>
@@ -290,14 +296,12 @@ const PremiumPaymentPage: React.FC<{
               )}
             </div>
 
-            {/* Form error */}
             {formError && (
               <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
                 <XCircle size={16} className="shrink-0" /> {formError}
               </div>
             )}
 
-            {/* Submit */}
             <button onClick={handleSubmit}
               disabled={submitting || !selectedPlanKey}
               className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-black text-sm transition-colors flex items-center justify-center gap-2">
@@ -324,9 +328,7 @@ const PremiumPaymentPage: React.FC<{
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PremiumPendingPage
-// Shown when student has a payment that is PENDING_VERIFICATION.
-// No form — they just have to wait.
+// PremiumPendingPage — unchanged from original
 // ─────────────────────────────────────────────────────────────────────────────
 const PremiumPendingPage: React.FC<{
   message:  string;
@@ -352,7 +354,15 @@ const PremiumPendingPage: React.FC<{
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// App — main component
+// App
+//
+// CHANGES FROM ORIGINAL (3 additions, all clearly marked ← NEW):
+//   1. Added `premiumUserId` state (string).
+//   2. In handleLogin: store `err.premiumStatus.userId` (from 402 body) into it.
+//   3. In handleLogout: clear premiumUserId.
+//   4. Pass `userId={premiumUserId}` prop to PremiumPaymentPage.
+//
+// Everything else is identical to the original.
 // ─────────────────────────────────────────────────────────────────────────────
 const App: React.FC = () => {
   const dispatch    = useAppDispatch();
@@ -361,7 +371,6 @@ const App: React.FC = () => {
   const { user: currentUser, loading: authLoading, error: authError } =
       useAppSelector(state => state.auth);
 
-  // ── Login form state (unchanged from original) ────────────────────────────
   const [username,           setUsername]           = useState('');
   const [password,           setPassword]           = useState('');
   const [showPassword,       setShowPassword]       = useState(false);
@@ -370,11 +379,10 @@ const App: React.FC = () => {
   const [isForgotSubmitting, setIsForgotSubmitting] = useState(false);
   const [forgotSuccess,      setForgotSuccess]      = useState(false);
 
-  // ── Premium gate state — set when backend returns HTTP 402 ────────────────
   const [premiumStatus,   setPremiumStatus]   = useState<PremiumAccessStatus | null>(null);
   const [premiumUsername, setPremiumUsername] = useState('');
+  const [premiumUserId,   setPremiumUserId]   = useState('');  // ← NEW
 
-  // ── Force logout if token is missing ────────────────────────────────────
   useEffect(() => {
     const token = localStorage.getItem('SROTS_AUTH_TOKEN');
     if (!token && currentUser) {
@@ -388,34 +396,26 @@ const App: React.FC = () => {
     }
   }, [currentUser, authLoading, dispatch, navigate]);
 
-  // ── Login handler — catches PremiumAccessError before Redux ────────────
-  // We call AuthService.authenticateUser directly first so we can inspect the
-  // 402 response and show the premium gate. If it succeeds (or throws any other
-  // error), we fall through to the normal Redux dispatch which handles token
-  // storage and state updates.
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username || !password) return;
 
-    // Clear any previous premium gate
     setPremiumStatus(null);
     setPremiumUsername('');
+    setPremiumUserId('');  // ← NEW: clear on each login attempt
 
     try {
-      // AuthService.authenticateUser should throw PremiumAccessError for HTTP 402.
-      // See authService.ts: if (error.response?.status === 402) throw new PremiumAccessError(...)
       await AuthService.authenticateUser(username, password);
-      // If we reach here, login succeeded — let Redux dispatch handle token/state
       dispatch(login({ username, password }) as any);
     } catch (err: any) {
       if (err instanceof PremiumAccessError) {
-        // 402: student premium not active → show the correct gate screen
         setPremiumStatus(err.premiumStatus);
         setPremiumUsername(username);
+        // ← NEW: AuthController now includes userId in the 402 body.
+        // err.premiumStatus.userId is typed as optional string on PremiumAccessStatus.
+        setPremiumUserId(err.premiumStatus.userId ?? '');
         return;
       }
-      // All other errors (wrong password, account locked, etc.) →
-      // let Redux dispatch handle them so authError banner appears as normal
       dispatch(login({ username, password }) as any);
     }
   };
@@ -423,6 +423,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setPremiumStatus(null);
     setPremiumUsername('');
+    setPremiumUserId('');  // ← NEW: clear on logout
     dispatch(logout());
     navigate('/login', { replace: true });
   };
@@ -441,7 +442,6 @@ const App: React.FC = () => {
     }
   };
 
-  // ── Quick login (keeps static credentials — no typing needed) ────────────
   const quickLogin = (u: string, p: string) => {
     setUsername(u);
     setPassword(p);
@@ -461,12 +461,12 @@ const App: React.FC = () => {
 
   const ProtectedRoute = ({ children, allowedRoles }: { children: JSX.Element; allowedRoles?: Role[] }) => {
     const token = localStorage.getItem('SROTS_AUTH_TOKEN');
-    if (!currentUser || !token)                                       return <Navigate to="/login" replace />;
-    if (allowedRoles && !allowedRoles.includes(currentUser.role))    return <Navigate to="/unauthorized" replace />;
+    if (!currentUser || !token)                                    return <Navigate to="/login" replace />;
+    if (allowedRoles && !allowedRoles.includes(currentUser.role)) return <Navigate to="/unauthorized" replace />;
     return children;
   };
 
-  // ── Premium gate — shown BEFORE the login page when 402 received ─────────
+  // ── Premium gate ──────────────────────────────────────────────────────────
   if (!currentUser && premiumStatus) {
     if (premiumStatus.accessState === 'PENDING_VERIFICATION') {
       return (
@@ -475,7 +475,6 @@ const App: React.FC = () => {
         </ErrorBoundary>
       );
     }
-    // EXPIRED or REJECTED → show full payment form
     return (
       <ErrorBoundary>
         <PremiumPaymentPage
@@ -483,13 +482,14 @@ const App: React.FC = () => {
           message={premiumStatus.message}
           rejectionReason={premiumStatus.rejectionReason}
           username={premiumUsername}
+          userId={premiumUserId}      // ← NEW prop
           onLogout={handleLogout}
         />
       </ErrorBoundary>
     );
   }
 
-  // ── Login page (no currentUser) ───────────────────────────────────────────
+  // ── Login page ────────────────────────────────────────────────────────────
   if (!currentUser) {
     return (
       <ErrorBoundary>
@@ -555,7 +555,6 @@ const App: React.FC = () => {
             </form>
           </div>
 
-          {/* ── Quick login buttons (static credentials preserved exactly) ── */}
           <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-5 gap-3">
             <button onClick={() => quickLogin('srots_admin', 'Srots_admin@8847')}
               className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-2xl shadow-lg border border-blue-500 flex flex-col items-center gap-2 transition-all active:scale-95">
@@ -584,7 +583,6 @@ const App: React.FC = () => {
             </button>
           </div>
 
-          {/* Forgot Password Modal (unchanged) */}
           <Modal isOpen={showForgotModal} onClose={() => setShowForgotModal(false)} title="Account Recovery" maxWidth="max-w-sm">
             <div className="p-8">
               {forgotSuccess ? (
@@ -635,7 +633,7 @@ const App: React.FC = () => {
     );
   }
 
-  // ── Logged-in: protected routes (unchanged from original) ────────────────
+  // ── Logged-in routes — identical to original ──────────────────────────────
   return (
     <ErrorBoundary>
       <Routes>

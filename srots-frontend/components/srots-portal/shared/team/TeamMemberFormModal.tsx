@@ -145,7 +145,7 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({ isOpen
       if (initialData) {
         setIsEdit(true);
         setDevForm({
-          username: initialData.username || initialData.userId || '',
+          username: initialData.username || initialData.id || '',
           fullName: initialData.fullName || '',
           email: initialData.email || '',
           phone: initialData.phone || '',

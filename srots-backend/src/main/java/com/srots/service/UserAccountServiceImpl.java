@@ -1792,11 +1792,11 @@ public class UserAccountServiceImpl implements UserAccountService {
         profile.setCourse(spDto.getCourse() != null ? spDto.getCourse() : "B.Tech");
         profile.setPlacementCycle(spDto.getPlacementCycle());
 
-        if (profile.getPremiumStartDate() == null) {
-            LocalDate now = LocalDate.now();
-            profile.setPremiumStartDate(now);
-            profile.setPremiumEndDate(now.plusMonths(18));
-        }
+//        if (profile.getPremiumStartDate() == null) {
+//            LocalDate now = LocalDate.now();
+//            profile.setPremiumStartDate(now);
+//            profile.setPremiumEndDate(now.plusMonths(18));
+//        }
 
         if (spDto.getGender() != null)
             profile.setGender(StudentProfile.Gender.fromString(spDto.getGender()));

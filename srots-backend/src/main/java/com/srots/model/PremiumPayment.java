@@ -9,12 +9,7 @@ import org.hibernate.annotations.UuidGenerator;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * Stores student premium subscription payment submissions.
- * A student submits UTR, screenshot, and months desired.
- * SROTS Admin/Dev verifies or rejects the payment.
- * On verification, premiumStartDate and premiumEndDate in StudentProfile are updated.
- */
+
 @Entity
 @Table(
     name = "premium_payment_data",

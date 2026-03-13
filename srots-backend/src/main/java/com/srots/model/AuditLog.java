@@ -6,7 +6,12 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "audit_logs")
+@Table(name = "audit_logs", indexes = {
+    @Index(name = "idx_audit_performed_by", columnList = "performed_by"),
+    @Index(name = "idx_audit_action",       columnList = "action"),
+    @Index(name = "idx_audit_timestamp",    columnList = "timestamp"),
+    @Index(name = "idx_audit_target_id",    columnList = "target_id")
+})
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class AuditLog {
     @Id
@@ -24,22 +29,6 @@ public class AuditLog {
     @CreationTimestamp
     private LocalDateTime timestamp;
 
-	public AuditLog() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-
-	public AuditLog(Long id, String action, String targetId, String targetName, String performedBy, String details,
-			LocalDateTime timestamp) {
-		super();
-		this.id = id;
-		this.action = action;
-		this.targetId = targetId;
-		this.targetName = targetName;
-		this.performedBy = performedBy;
-		this.details = details;
-		this.timestamp = timestamp;
-	}
 
 	public Long getId() {
 		return id;

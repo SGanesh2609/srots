@@ -396,13 +396,13 @@ export const StudentFilters: React.FC<StudentFiltersProps> = ({
 
       {/* ── Account Status Filter Tabs — hidden for CPH ──────────────────────── */}
       {!isCphView && (
-        <div className="flex items-center gap-1.5 bg-white px-4 py-3 rounded-xl border shadow-sm">
-          <span className="text-xs font-semibold text-gray-500 mr-1 shrink-0">Show:</span>
+        <div className="flex items-center gap-1 bg-white px-3 py-2 rounded-lg border shadow-sm">
+          <span className="text-[10px] font-semibold text-gray-500 mr-1 shrink-0">Show:</span>
           {ACCOUNT_FILTER_TABS.map(tab => (
             <button
               key={tab.value}
               onClick={() => setAccountFilter(tab.value)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-all
+              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-all
                 ${accountFilter === tab.value ? tab.activeColor : tab.color}`}
             >
               {tab.label}
@@ -412,110 +412,102 @@ export const StudentFilters: React.FC<StudentFiltersProps> = ({
       )}
 
       {/* ── Search + Branch/Batch Filters + Actions ───────────────────────────── */}
-      <div className="flex flex-col lg:flex-row gap-3 bg-white p-4 rounded-xl border shadow-sm">
-        <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto flex-1">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-            <input
-              placeholder="Search by name, roll number, email..."
-              className="border rounded-lg pl-9 pr-4 py-2.5 w-full outline-none focus:ring-2 focus:ring-indigo-100 bg-white text-gray-900 text-sm"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2 w-full md:w-auto">
+      <div className="flex flex-wrap gap-2 bg-white p-2.5 rounded-lg border shadow-sm items-center">
+        <div className="relative flex-1 min-w-[140px]">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={13} />
+          <input
+            placeholder="Search by name, roll number, email..."
+            className="border rounded-lg pl-7 pr-3 py-1.5 w-full outline-none focus:ring-1 focus:ring-indigo-100 bg-white text-gray-900 text-xs"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <select
+          className="border rounded-lg px-2 py-1.5 text-xs bg-white text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-100"
+          value={yearFilter}
+          onChange={e => setYearFilter(e.target.value)}
+        >
+          <option value="All">All Batches</option>
+          {filterYears.map(year => (
+            <option key={year} value={year.toString()}>{year}</option>
+          ))}
+        </select>
+        <select
+          className="border rounded-lg px-2 py-1.5 text-xs bg-white text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-100"
+          value={branchFilter}
+          onChange={e => setBranchFilter(e.target.value)}
+        >
+          <option value="All">All Branches</option>
+          {collegeBranches.map(b => <option key={b.code} value={b.code}>{b.code}</option>)}
+        </select>
+
+        {/* Report button with format selector — shown for everyone */}
+        <div className="flex items-stretch border border-green-200 rounded-lg overflow-hidden shadow-sm">
+          <button
+            onClick={onDownloadReport}
+            className="px-2.5 py-1.5 bg-green-50 text-green-700 flex items-center gap-1.5 font-bold text-xs hover:bg-green-100 transition-colors whitespace-nowrap"
+          >
+            <FileSpreadsheet size={13} />
+            Report
+          </button>
+          <div className="w-px bg-green-200" />
+          <div className="relative flex items-center">
             <select
-              className="border rounded-lg px-3 py-2 text-sm flex-1 md:flex-none md:w-36 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-              value={yearFilter}
-              onChange={e => setYearFilter(e.target.value)}
+              value={reportFormat}
+              onChange={e => setReportFormat(e.target.value as 'excel' | 'csv')}
+              className="appearance-none bg-green-50 text-green-700 font-bold text-xs px-1.5 py-1.5 pr-5 focus:outline-none cursor-pointer hover:bg-green-100 transition-colors"
             >
-              <option value="All">All Batches</option>
-              {filterYears.map(year => (
-                <option key={year} value={year.toString()}>{year}</option>
-              ))}
+              <option value="excel">Excel</option>
+              <option value="csv">CSV</option>
             </select>
-            <select
-              className="border rounded-lg px-3 py-2 text-sm flex-1 md:flex-none md:w-40 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-              value={branchFilter}
-              onChange={e => setBranchFilter(e.target.value)}
-            >
-              <option value="All">All Branches</option>
-              {collegeBranches.map(b => <option key={b.code} value={b.code}>{b.code}</option>)}
-            </select>
+            <ChevronDown size={11} className="absolute right-0.5 text-green-600 pointer-events-none" />
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex flex-wrap gap-2 w-full lg:w-auto justify-start lg:justify-end items-center">
-
-          {/* Report button with format selector — shown for everyone */}
-          <div className="flex items-stretch border border-green-200 rounded-lg overflow-hidden shadow-sm">
+        {/* Manage buttons — hidden for CPH */}
+        {canManage && !isCphView && (
+          <>
             <button
-              onClick={onDownloadReport}
-              className="px-4 py-2 bg-green-50 text-green-700 flex items-center gap-2 font-bold text-sm hover:bg-green-100 transition-colors whitespace-nowrap"
+              onClick={onAdd}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-xs font-bold whitespace-nowrap transition-colors"
             >
-              <FileSpreadsheet size={16} />
-              Report
+              <UserPlus size={13} /> Add Student
             </button>
-            <div className="w-px bg-green-200" />
-            <div className="relative flex items-center">
-              <select
-                value={reportFormat}
-                onChange={e => setReportFormat(e.target.value as 'excel' | 'csv')}
-                className="appearance-none bg-green-50 text-green-700 font-bold text-sm px-2 py-2 pr-6 focus:outline-none cursor-pointer hover:bg-green-100 transition-colors"
-              >
-                <option value="excel">Excel</option>
-                <option value="csv">CSV</option>
-              </select>
-              <ChevronDown size={12} className="absolute right-1 text-green-600 pointer-events-none" />
-            </div>
-          </div>
 
-          {/* Manage buttons — hidden for CPH */}
-          {canManage && !isCphView && (
-            <>
-              <button
-                onClick={onAdd}
-                className="flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 shadow-md text-sm font-bold whitespace-nowrap transition-colors"
-              >
-                <UserPlus size={16} /> Add Student
-              </button>
+            <label className={`flex items-center gap-1.5 px-2.5 py-1.5 bg-white border rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap transition-colors ${isUploading ? 'opacity-60 cursor-not-allowed text-gray-400' : 'text-gray-700 hover:bg-gray-50'}`}>
+              {isUploading ? (
+                <>
+                  <svg className="animate-spin w-3 h-3 text-indigo-600" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <UploadCloud size={13} /> Bulk Upload
+                </>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept=".xlsx,.xls,.csv"
+                disabled={isUploading}
+                onChange={handleBulkUpload}
+              />
+            </label>
 
-              <label className={`flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-sm font-bold cursor-pointer shadow-sm whitespace-nowrap transition-colors ${isUploading ? 'opacity-60 cursor-not-allowed text-gray-400' : 'text-gray-700 hover:bg-gray-50'}`}>
-                {isUploading ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <UploadCloud size={16} /> Bulk Upload
-                  </>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="hidden"
-                  accept=".xlsx,.xls,.csv"
-                  disabled={isUploading}
-                  onChange={handleBulkUpload}
-                />
-              </label>
-
-              <button
-                onClick={onDownloadSample}
-                className="px-3 py-2 bg-gray-50 border rounded-lg hover:bg-gray-100 text-gray-600 text-xs font-bold transition-colors flex items-center gap-1.5"
-                title="Download template"
-              >
-                <FileText size={15} />
-                <span className="hidden sm:inline">Template</span>
-              </button>
-            </>
-          )}
-        </div>
+            <button
+              onClick={onDownloadSample}
+              className="px-2 py-1.5 bg-gray-50 border rounded-lg hover:bg-gray-100 text-gray-600 text-xs font-bold transition-colors flex items-center gap-1"
+              title="Download template"
+            >
+              <FileText size={13} />
+              <span className="hidden sm:inline">Template</span>
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

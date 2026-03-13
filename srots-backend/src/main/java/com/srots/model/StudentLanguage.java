@@ -17,17 +17,7 @@ public class StudentLanguage {
     private String name;
     @Enumerated(EnumType.STRING) private LangProficiency proficiency = LangProficiency.Elementary;
     public enum LangProficiency { Fundamental, Elementary, Limited_Working, Professional_Working, Native }
-	public StudentLanguage() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-	public StudentLanguage(String id, User student, String name, LangProficiency proficiency) {
-		super();
-		this.id = id;
-		this.student = student;
-		this.name = name;
-		this.proficiency = proficiency;
-	}
+
 	public String getId() {
 		return id;
 	}

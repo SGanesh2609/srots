@@ -13,18 +13,7 @@ public class CollegeSummaryDTO {
     private String code;
     private String type;
     private String logoUrl;
-	public CollegeSummaryDTO() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-	public CollegeSummaryDTO(String id, String name, String code, String type, String logoUrl) {
-		super();
-		this.id = id;
-		this.name = name;
-		this.code = code;
-		this.type = type;
-		this.logoUrl = logoUrl;
-	}
+
 	public String getId() {
 		return id;
 	}

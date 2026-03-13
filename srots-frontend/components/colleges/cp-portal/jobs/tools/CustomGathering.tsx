@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { User } from '../../../../../types';
 import { Download, Users, CheckCircle, AlertCircle, RefreshCw, Database, Loader2, Search } from 'lucide-react';
 import { JobService } from '../../../../../services/jobService';
+import { useToast } from '../../../../common/Toast';
 
 export const CustomGathering: React.FC<{ user: User }> = ({ user }) => {
+  const toast = useToast();
   const [availableFields, setAvailableFields] = useState<Record<string, string[]>>({});
   const [selectedFields, setSelectedFields] = useState<string[]>(['fullName', 'rollNumber', 'branch', 'personalEmail', 'phone']);
   const [rollNumbersInput, setRollNumbersInput] = useState('');
@@ -24,7 +26,7 @@ export const CustomGathering: React.FC<{ user: User }> = ({ user }) => {
               setAvailableFields(fields);
           } catch (err) {
               console.error('❌ Failed to load fields:', err);
-              alert('Failed to load fields');
+              toast.error('Failed to load fields');
           }
       };
       fetchFields();
@@ -38,24 +40,21 @@ export const CustomGathering: React.FC<{ user: User }> = ({ user }) => {
 
   const handleGatherData = async () => {
       if (!rollNumbersInput.trim()) { 
-          alert("Enter roll numbers"); 
+          toast.warning("Enter roll numbers");
           return; 
       }
       if (selectedFields.length === 0) { 
-          alert("Select fields"); 
+          toast.warning("Select fields");
           return; 
       }
 
       setIsProcessing(true);
       try {
-          console.log('🔄 Gathering data...');
           const result = await JobService.generateCustomGatheringReport(
-              user.collegeId || '', 
-              rollNumbersInput, 
+              user.collegeId || '',
+              rollNumbersInput,
               selectedFields
           );
-
-          console.log('✅ Data gathered:', result);
           setGatheredData(result.data);
           setStats({ 
               found: (result.data?.length || 1) - 1,
@@ -65,7 +64,7 @@ export const CustomGathering: React.FC<{ user: User }> = ({ user }) => {
           });
       } catch (err: any) {
           console.error('❌ Gathering failed:', err);
-          alert(`Failed: ${err.message}`);
+          toast.error(`Failed: ${err.message}`);
       } finally {
           setIsProcessing(false);
       }
@@ -220,18 +219,15 @@ export const CustomGathering: React.FC<{ user: User }> = ({ user }) => {
                           <button 
                               onClick={async (e) => {
                                   e.preventDefault();
-                                  console.log('🔽 Excel download clicked');
                                   if (!gatheredData) {
-                                      alert("No data");
+                                      toast.warning("No data");
                                       return;
                                   }
                                   try {
-                                      console.log('📤 Calling download service...');
                                       await JobService.downloadGatheredDataReport(gatheredData, 'excel');
-                                      console.log('✅ Download complete');
                                   } catch (err: any) {
                                       console.error('❌ Download failed:', err);
-                                      alert(`Failed: ${err.message}`);
+                                      toast.error(`Failed: ${err.message}`);
                                   }
                               }}
                               className="flex-1 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 shadow-md flex items-center justify-center gap-2 active:scale-95 transition"
@@ -243,18 +239,15 @@ export const CustomGathering: React.FC<{ user: User }> = ({ user }) => {
                           <button 
                               onClick={async (e) => {
                                   e.preventDefault();
-                                  console.log('🔽 CSV download clicked');
                                   if (!gatheredData) {
-                                      alert("No data");
+                                      toast.warning("No data");
                                       return;
                                   }
                                   try {
-                                      console.log('📤 Calling download service...');
                                       await JobService.downloadGatheredDataReport(gatheredData, 'csv');
-                                      console.log('✅ Download complete');
                                   } catch (err: any) {
                                       console.error('❌ Download failed:', err);
-                                      alert(`Failed: ${err.message}`);
+                                      toast.error(`Failed: ${err.message}`);
                                   }
                               }}
                               className="flex-1 py-3 bg-white border-2 border-green-600 text-green-700 rounded-lg font-bold hover:bg-green-50 flex items-center justify-center gap-2 active:scale-95 transition"
@@ -267,12 +260,10 @@ export const CustomGathering: React.FC<{ user: User }> = ({ user }) => {
                       <button 
                           onClick={(e) => {
                               e.preventDefault();
-                              console.log('🔄 Resetting gathering...');
                               setGatheredData(null);
                               setStats(null);
                               setRollNumbersInput('');
                               setSearchField('');
-                              console.log('✅ Reset complete');
                           }}
                           className="w-full py-3 text-gray-500 font-bold hover:bg-gray-100 rounded-lg flex items-center justify-center gap-2 active:scale-95 transition"
                       >

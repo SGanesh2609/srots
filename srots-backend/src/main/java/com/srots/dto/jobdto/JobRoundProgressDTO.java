@@ -2,9 +2,11 @@ package com.srots.dto.jobdto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
+@NoArgsConstructor
+//@AllArgsConstructor
 public class JobRoundProgressDTO {
     private int roundNumber;
     private String roundName;
@@ -12,10 +14,9 @@ public class JobRoundProgressDTO {
     private long rejectedCount;
     private long pendingCount; // Still in this round, not yet processed
     private String status; // e.g., "Completed", "In Progress", "Upcoming"
-	public JobRoundProgressDTO() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
+    
+    
+
 	public JobRoundProgressDTO(int roundNumber, String roundName, long passedCount, long rejectedCount,
 			long pendingCount, String status) {
 		super();

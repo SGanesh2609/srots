@@ -9,9 +9,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -22,7 +21,11 @@ import lombok.Setter;
 
 
 @Entity
-@Table(name = "free_courses")
+@Table(name = "free_courses", indexes = {
+    @Index(name = "idx_fc_technology", columnList = "technology"),
+    @Index(name = "idx_fc_status",     columnList = "status"),
+    @Index(name = "idx_fc_platform",   columnList = "platform")
+})
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class FreeCourse {
     @Id 
@@ -67,41 +70,6 @@ public class FreeCourse {
     @CreationTimestamp 
     private LocalDateTime createdAt;
 
-	public FreeCourse() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-
-	public FreeCourse(String id, String name, String technology, String description, String link,
-			CoursePlatform platform, User postedBy, String postedByName, LocalDateTime createdAt) {
-		super();
-		this.id = id;
-		this.name = name;
-		this.technology = technology;
-		this.description = description;
-		this.link = link;
-		this.platform = platform;
-		this.postedBy = postedBy;
-		this.postedByName = postedByName;
-		this.createdAt = createdAt;
-	}
-	
-	
-
-	public FreeCourse(String id, String name, String technology, String description, String link,
-			CoursePlatform platform, User postedBy, String postedByName, CourseStatus status, LocalDateTime createdAt) {
-		super();
-		this.id = id;
-		this.name = name;
-		this.technology = technology;
-		this.description = description;
-		this.link = link;
-		this.platform = platform;
-		this.postedBy = postedBy;
-		this.postedByName = postedByName;
-		this.status = status;
-		this.createdAt = createdAt;
-	}
 
 	public String getId() {
 		return id;

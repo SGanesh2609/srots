@@ -2,13 +2,20 @@ package com.srots.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.srots.config.CacheConfig;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.srots.dto.CompanyRequest;
@@ -33,6 +40,7 @@ public class CompanyServiceImpl implements CompanyService {
     @Autowired private FileService fileService;
 
     @Override
+    @Cacheable(value = CacheConfig.COMPANY_LIST, key = "#query + '_' + #collegeId + '_' + #linkedOnly", condition = "#query == null || #query.isBlank()")
     @Transactional(readOnly = true)
     public List<CompanyResponse> getCompanies(String query, String collegeId, boolean linkedOnly) {
         List<GlobalCompany> companies;
@@ -43,8 +51,10 @@ public class CompanyServiceImpl implements CompanyService {
 
         if (linkedOnly && collegeId != null && !collegeId.trim().isEmpty()) {
             System.out.println("→ Fetching SUBSCRIBED only for college: " + collegeId);
+            final String q = (query != null && !query.trim().isEmpty()) ? query.trim().toLowerCase() : null;
             companies = subRepo.findByIdCollegeId(collegeId.trim()).stream()
                     .map(CollegeCompanySubscription::getCompany)
+                    .filter(c -> q == null || (c.getName() != null && c.getName().toLowerCase().contains(q)))
                     .collect(Collectors.toList());
         } else if (query != null && !query.trim().isEmpty()) {
             companies = companyRepo.findByNameContainingIgnoreCase(query.trim());
@@ -82,6 +92,45 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<CompanyResponse> getCompaniesPaged(String query, String collegeId, boolean linkedOnly, Pageable pageable) {
+        Page<GlobalCompany> page;
+
+        if (linkedOnly && collegeId != null && !collegeId.isBlank()) {
+            // Linked-only: fetch all subscriptions then optionally filter by query, then paginate in-memory
+            String q = (query != null && !query.isBlank()) ? query.trim().toLowerCase() : null;
+            List<GlobalCompany> linked = subRepo.findByIdCollegeId(collegeId.trim()).stream()
+                    .map(CollegeCompanySubscription::getCompany)
+                    .filter(c -> q == null || (c.getName() != null && c.getName().toLowerCase().contains(q)))
+                    .collect(Collectors.toList());
+            // Simple in-memory pagination
+            int total = linked.size();
+            int start = (int) pageable.getOffset();
+            int end   = Math.min(start + pageable.getPageSize(), total);
+            List<GlobalCompany> slice = start >= total ? List.of() : linked.subList(start, end);
+            page = new org.springframework.data.domain.PageImpl<>(slice, pageable, total);
+        } else if (query != null && !query.isBlank()) {
+            page = companyRepo.findByNameContainingIgnoreCase(query.trim(), pageable);
+        } else {
+            page = companyRepo.findAll(pageable);
+        }
+
+        // Collect subscription ids for enrichment in one query
+        final String cleanCollege = (collegeId != null && !collegeId.isBlank()) ? collegeId.trim() : null;
+        Set<String> subscribedIds = cleanCollege != null
+                ? subRepo.findByIdCollegeId(cleanCollege).stream()
+                        .map(s -> s.getCompany().getId())
+                        .collect(Collectors.toSet())
+                : Set.of();
+
+        return page.map(company -> {
+            CompanyResponse res = convertToResponse(company);
+            res.setSubscribed(subscribedIds.contains(company.getId()));
+            return res;
+        });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public CompanyResponse getCompanyById(String id) {
         GlobalCompany company = companyRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found with ID: " + id));
@@ -96,6 +145,7 @@ public class CompanyServiceImpl implements CompanyService {
         return convertToResponse(company);
     }
 
+    @CacheEvict(value = CacheConfig.COMPANY_LIST, allEntries = true)
     @Transactional
     public CompanyResponse createCompany(CompanyRequest dto) {
         if (companyRepo.existsByNameIgnoreCase(dto.getName())) {
@@ -107,6 +157,7 @@ public class CompanyServiceImpl implements CompanyService {
         return convertToResponse(companyRepo.save(company));
     }
 
+    @CacheEvict(value = CacheConfig.COMPANY_LIST, allEntries = true)
     @Transactional
     public CompanyResponse updateCompany(String id, CompanyRequest dto) {
         GlobalCompany company = companyRepo.findById(id)
@@ -121,6 +172,7 @@ public class CompanyServiceImpl implements CompanyService {
         return convertToResponse(companyRepo.save(company));
     }
 
+    @CacheEvict(value = CacheConfig.COMPANY_LIST, allEntries = true)
     @Transactional
     public void deleteCompany(String id) {
         GlobalCompany company = companyRepo.findById(id)
@@ -133,6 +185,7 @@ public class CompanyServiceImpl implements CompanyService {
         companyRepo.delete(company);
     }
 
+    @CacheEvict(value = CacheConfig.COMPANY_LIST, allEntries = true)
     @Transactional
     public void subscribe(SubscribeRequest dto) {
         SubscriptionId subId = new SubscriptionId(dto.getCollegeId(), dto.getCompanyId());
@@ -146,6 +199,7 @@ public class CompanyServiceImpl implements CompanyService {
         subRepo.save(new CollegeCompanySubscription(subId, college, company, null));
     }
 
+    @CacheEvict(value = CacheConfig.COMPANY_LIST, allEntries = true)
     @Transactional
     public void unsubscribe(String collegeId, String companyId) {
         SubscriptionId id = new SubscriptionId(collegeId, companyId);

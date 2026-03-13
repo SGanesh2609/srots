@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.validation.Valid;
+
 import com.srots.dto.EventDTO;
 import com.srots.dto.NoticeDTO;
 import com.srots.dto.UploadResponse;
@@ -66,7 +68,7 @@ public class CalendarController {
 
     @PostMapping("/events")
     @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV') or (hasAnyRole('CPH', 'STAFF') and principal.collegeId == #dto.collegeId)")
-    public ResponseEntity<EventDTO> createEvent(@RequestBody EventDTO dto) {
+    public ResponseEntity<EventDTO> createEvent(@Valid @RequestBody EventDTO dto) {
         return ResponseEntity.ok(calendarService.createEvent(dto));
     }
 
@@ -75,7 +77,7 @@ public class CalendarController {
     @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV') or " +
         "(hasRole('CPH') and principal.collegeId == #dto.collegeId) or " +
         "(hasRole('STAFF') and principal.collegeId == #dto.collegeId and @calendarService.isEventOwnerByUsername(#id, principal.username))")
-    public ResponseEntity<EventDTO> updateEvent(@PathVariable String id, @RequestBody EventDTO dto) {
+    public ResponseEntity<EventDTO> updateEvent(@PathVariable String id, @Valid @RequestBody EventDTO dto) {
         dto.setId(id); 
         return ResponseEntity.ok(calendarService.updateEvent(dto));
     }
@@ -121,7 +123,7 @@ public class CalendarController {
 
     @PostMapping("/notices")
     @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV') or (hasAnyRole('CPH', 'STAFF') and principal.collegeId == #dto.collegeId)")
-    public ResponseEntity<NoticeDTO> createNotice(@RequestBody NoticeDTO dto) {
+    public ResponseEntity<NoticeDTO> createNotice(@Valid @RequestBody NoticeDTO dto) {
         return ResponseEntity.ok(calendarService.createNotice(dto));
     }
 
@@ -140,7 +142,7 @@ public class CalendarController {
     @PreAuthorize("hasAnyRole('ADMIN','SROTS_DEV','CPH','STAFF')")
     public ResponseEntity<NoticeDTO> updateNotice(
         @PathVariable String id, 
-        @RequestBody NoticeDTO dto, 
+        @Valid @RequestBody NoticeDTO dto,
         Principal principal
     ) {
         dto.setId(id); // Ensure ID consistency

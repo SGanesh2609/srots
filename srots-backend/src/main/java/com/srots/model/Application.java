@@ -2,11 +2,19 @@ package com.srots.model;
 
 import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLRestriction;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "applications")
+@Table(name = "applications", indexes = {
+    @Index(name = "idx_app_student_id", columnList = "student_id"),
+    @Index(name = "idx_app_job_id",     columnList = "job_id"),
+    @Index(name = "idx_app_status",     columnList = "status"),
+    @Index(name = "idx_app_applied_at", columnList = "applied_at"),
+    @Index(name = "idx_app_is_deleted", columnList = "is_deleted")
+})
+@SQLRestriction("is_deleted = false")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -47,12 +55,13 @@ public class Application {
 	
 	private LocalDateTime placedAt;
 
-	
+    // ── Soft-delete support ────────────────────────────────────────────────────
+    @Column(nullable = false)
+    private Boolean isDeleted = false;
 
-	public Application() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
+    private LocalDateTime deletedAt;
+
+    private String deletedBy;
 
 	public String getId() {
 		return id;
@@ -112,6 +121,13 @@ public class Application {
 	public void setAppliedBy(AppliedBy appliedBy) {
 		this.appliedBy = appliedBy;
 	}
+
+	public Boolean getIsDeleted() { return isDeleted; }
+	public void setIsDeleted(Boolean isDeleted) { this.isDeleted = isDeleted; }
+	public LocalDateTime getDeletedAt() { return deletedAt; }
+	public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
+	public String getDeletedBy() { return deletedBy; }
+	public void setDeletedBy(String deletedBy) { this.deletedBy = deletedBy; }
 
 		// --- MANUAL BUILDER (Fixes the "builder() is undefined" error) ---
 		public static ApplicationBuilder builder() {

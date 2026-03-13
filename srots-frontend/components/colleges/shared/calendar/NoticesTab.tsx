@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Notice, User } from '../../../../types';
-import { UploadCloud, Trash2, FileText, Download, Eye, Calendar, X, Edit2, AlertCircle } from 'lucide-react';
+import { UploadCloud, Trash2, FileText, Download, Eye, Calendar, X, Edit2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Modal } from '../../../common/Modal';
 import { CalendarService } from '../../../../services/calendarService';
+
+const PAGE_SIZE = 9; // 3-column grid × 3 rows
 
 // /**
 //  * Component Name: NoticesTab
@@ -27,6 +29,10 @@ interface NoticesTabProps {
 export const NoticesTab: React.FC<NoticesTabProps> = ({ notices, canEdit, onAddNotice, onEditNotice, onDeleteNotice, user }) => {
     const [previewNotice, setPreviewNotice] = useState<Notice | null>(null);
     const [previewError, setPreviewError] = useState(false);
+    const [page, setPage] = useState(0);
+
+    const totalPages = Math.ceil(notices.length / PAGE_SIZE);
+    const pageNotices = notices.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
     const handleViewFile = (notice: Notice) => {
         setPreviewNotice(notice);
@@ -52,7 +58,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ notices, canEdit, onAddN
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {notices.map(notice => (
+                {pageNotices.map(notice => (
                     <div key={notice.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative group flex flex-col h-full">
                         {CalendarService.canManageNotice(notice, user) && (
                             <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
@@ -120,7 +126,50 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ notices, canEdit, onAddN
                         </div>
                     </div>
                 ))}
+
+                {notices.length === 0 && (
+                    <div className="col-span-3 text-center py-16 text-gray-400 italic">
+                        No notices published yet.
+                    </div>
+                )}
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-2">
+                    <p className="text-xs text-gray-500">
+                        Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, notices.length)} of {notices.length}
+                    </p>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setPage(p => Math.max(0, p - 1))}
+                            disabled={page === 0}
+                            className="p-1.5 rounded-lg border text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                            <ChevronLeft size={16} />
+                        </button>
+                        {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                            const pg = totalPages <= 7 ? i : page <= 3 ? i : page >= totalPages - 4 ? totalPages - 7 + i : page - 3 + i;
+                            return (
+                                <button
+                                    key={pg}
+                                    onClick={() => setPage(pg)}
+                                    className={`w-8 h-8 rounded-lg text-xs font-bold border transition-colors ${page === pg ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                    {pg + 1}
+                                </button>
+                            );
+                        })}
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                            disabled={page === totalPages - 1}
+                            className="p-1.5 rounded-lg border text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Document Preview Modal */}
             {previewNotice && (

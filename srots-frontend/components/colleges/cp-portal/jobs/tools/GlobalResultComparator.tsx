@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { FileSearch, FileCheck, Wand2, Download, RefreshCw, Loader2, AlertCircle, CheckCircle2, ListFilter } from 'lucide-react';
 import { JobService } from '../../../../../services/jobService';
+import { useToast } from '../../../../common/Toast';
 
 export const GlobalResultComparator: React.FC = () => {
+    const toast = useToast();
     const [masterFile, setMasterFile] = useState<File | null>(null);
     const [resultFile, setResultFile] = useState<File | null>(null);
     const [masterHeaders, setMasterHeaders] = useState<string[]>([]);
@@ -27,7 +29,7 @@ export const GlobalResultComparator: React.FC = () => {
                     if (headers.length > 0) setCompareField(headers[0]);
                 } catch (err: any) {
                     console.error("❌ Header fetch failed:", err);
-                    alert(`Failed to read headers: ${err.message}`);
+                    toast.error(`Failed to read headers: ${err.message}`);
                     setMasterFile(null);
                 }
             } else {
@@ -40,21 +42,18 @@ export const GlobalResultComparator: React.FC = () => {
 
     const handleCompare = async () => {
         if (!masterFile || !resultFile) {
-            alert("Upload both files");
+            toast.warning("Upload both files");
             return;
         }
 
         setIsProcessing(true);
         try {
-            console.log('🔄 Starting comparison...');
             const result = await JobService.compareResultFiles(masterFile, resultFile, compareField);
-            
+
             if (result.error) {
-                alert(`Error: ${result.error}`);
+                toast.error(`Error: ${result.error}`);
                 return;
             }
-            
-            console.log('✅ Comparison complete:', result);
             setComparisonResult({
                 passed: result.passed || 0,
                 failed: result.failed || 0,
@@ -66,7 +65,7 @@ export const GlobalResultComparator: React.FC = () => {
             setIsComparisonReady(true);
         } catch (err: any) {
             console.error('❌ Comparison failed:', err);
-            alert(`Failed: ${err.message}`);
+            toast.error(`Failed: ${err.message}`);
         } finally {
             setIsProcessing(false);
         }
@@ -182,18 +181,15 @@ export const GlobalResultComparator: React.FC = () => {
                             <button 
                                 onClick={async (e) => {
                                     e.preventDefault();
-                                    console.log('🔽 Excel download clicked');
                                     if (!comparisonResult?.exportData) {
-                                        alert("No data");
+                                        toast.warning("No data");
                                         return;
                                     }
                                     try {
-                                        console.log('📤 Calling download service...');
                                         await JobService.downloadComparisonReport(comparisonResult.exportData, 'excel');
-                                        console.log('✅ Download complete');
                                     } catch (err: any) {
                                         console.error('❌ Download failed:', err);
-                                        alert(`Failed: ${err.message}`);
+                                        toast.error(`Failed: ${err.message}`);
                                     }
                                 }}
                                 className="flex-1 py-4 bg-green-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-green-700 shadow-lg active:scale-95 transition"
@@ -205,18 +201,15 @@ export const GlobalResultComparator: React.FC = () => {
                             <button 
                                 onClick={async (e) => {
                                     e.preventDefault();
-                                    console.log('🔽 CSV download clicked');
                                     if (!comparisonResult?.exportData) {
-                                        alert("No data");
+                                        toast.warning("No data");
                                         return;
                                     }
                                     try {
-                                        console.log('📤 Calling download service...');
                                         await JobService.downloadComparisonReport(comparisonResult.exportData, 'csv');
-                                        console.log('✅ Download complete');
                                     } catch (err: any) {
                                         console.error('❌ Download failed:', err);
-                                        alert(`Failed: ${err.message}`);
+                                        toast.error(`Failed: ${err.message}`);
                                     }
                                 }}
                                 className="flex-1 py-4 bg-white border-2 border-green-600 text-green-700 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-green-50 active:scale-95 transition"
@@ -229,7 +222,6 @@ export const GlobalResultComparator: React.FC = () => {
                         <button 
                             onClick={(e) => {
                                 e.preventDefault();
-                                console.log('🔄 Resetting comparator...');
                                 setMasterFile(null);
                                 setResultFile(null);
                                 setIsComparisonReady(false);
@@ -240,7 +232,6 @@ export const GlobalResultComparator: React.FC = () => {
                                 const r = document.getElementById('resultFile') as HTMLInputElement;
                                 if (m) m.value = '';
                                 if (r) r.value = '';
-                                console.log('✅ Reset complete');
                             }}
                             className="w-full py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-gray-200 active:scale-95 transition"
                         >

@@ -40,19 +40,16 @@ export const AdminAnalytics: React.FC = () => {
     // ── Loading skeleton ───────────────────────────────────────────────────
     if (loading) {
         return (
-            <div className="space-y-8 p-1">
-                <div className="space-y-2">
-                    <Skeleton className="h-8 w-64" />
-                    <Skeleton className="h-4 w-48" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="space-y-4 p-1">
+                <Skeleton className="h-4 w-40" />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {[1, 2, 3, 4].map(i => (
-                        <Skeleton key={i} className="h-32 w-full rounded-xl" />
+                        <Skeleton key={i} className="h-20 w-full rounded-xl" />
                     ))}
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <Skeleton className="h-[400px] w-full rounded-2xl" />
-                    <Skeleton className="h-[400px] w-full rounded-2xl" />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <Skeleton className="h-[280px] w-full rounded-xl" />
+                    <Skeleton className="h-[280px] w-full rounded-xl" />
                 </div>
             </div>
         );
@@ -105,20 +102,13 @@ export const AdminAnalytics: React.FC = () => {
     }));
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-4 animate-in fade-in duration-500">
 
             {/* Header */}
-            <div>
-                <h2 className="text-3xl font-black text-gray-900 tracking-tight">
-                    Global Insights
-                </h2>
-                <p className="text-gray-500 font-medium">
-                    Platform-wide overview across all educational institutes.
-                </p>
-            </div>
+            <h2 className="text-sm font-bold text-gray-700">Global Analytics</h2>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
                     { label: 'Total Colleges',  value: stats.totalColleges,    color: 'blue',   icon: Building   },
                     { label: 'Active Students', value: stats.activeStudents,   color: 'indigo', icon: Users      },
@@ -127,16 +117,16 @@ export const AdminAnalytics: React.FC = () => {
                 ].map((stat, idx) => (
                     <div
                         key={idx}
-                        className="bg-white p-7 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all group overflow-hidden relative"
+                        className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all group overflow-hidden relative"
                     >
                         <div
-                            className={`absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 bg-${stat.color}-50 rounded-full opacity-20 group-hover:scale-150 transition-transform duration-500`}
+                            className={`absolute top-0 right-0 w-16 h-16 -mr-5 -mt-5 bg-${stat.color}-50 rounded-full opacity-20 group-hover:scale-150 transition-transform duration-500`}
                         />
-                        <h3 className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
-                            <stat.icon size={12} className={`text-${stat.color}-500`} />
+                        <h3 className="text-gray-400 text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2">
+                            <stat.icon size={11} className={`text-${stat.color}-500`} />
                             {stat.label}
                         </h3>
-                        <p className={`text-3xl font-black text-gray-900 group-hover:text-${stat.color}-600 transition-colors`}>
+                        <p className={`text-xl font-black text-gray-900 group-hover:text-${stat.color}-600 transition-colors`}>
                             {(stat.value || 0).toLocaleString()}
                         </p>
                     </div>
@@ -147,26 +137,21 @@ export const AdminAnalytics: React.FC = () => {
             <AnalyticsChartsRow placementData={placementData} branchData={branchData} />
 
             {/* Leaderboard */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
-                    <div>
-                        <h3 className="text-xl font-black text-gray-900">Institute Leaderboard</h3>
-                        <p className="text-xs text-gray-500 mt-1 uppercase font-bold tracking-widest">
-                            Top Placement Performance
-                        </p>
-                    </div>
-                    <span className="text-[10px] font-black text-blue-700 bg-blue-100 px-3 py-1.5 rounded-full uppercase tracking-[0.15em]">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                    <h3 className="text-xs font-bold text-gray-700">Institute Leaderboard</h3>
+                    <span className="text-[9px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full uppercase tracking-wider">
                         Verified Data
                     </span>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="bg-white text-gray-400 font-black uppercase text-[10px] tracking-widest">
-                                <th className="px-8 py-5">Educational Institute</th>
-                                <th className="px-8 py-5">Placement Success</th>
-                                <th className="px-8 py-5">Job Volume</th>
-                                <th className="px-8 py-5 text-right">Growth Index</th>
+                            <tr className="bg-white text-gray-400 font-bold uppercase text-[9px] tracking-widest">
+                                <th className="px-4 py-3">Institute</th>
+                                <th className="px-4 py-3">Placement</th>
+                                <th className="px-4 py-3">Jobs</th>
+                                <th className="px-4 py-3 text-right">Growth</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -176,33 +161,33 @@ export const AdminAnalytics: React.FC = () => {
                                         key={idx}
                                         className="hover:bg-blue-50/30 transition-all group cursor-default"
                                     >
-                                        <td className="px-8 py-6 font-bold text-gray-900 flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 font-black text-xs group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                        <td className="px-4 py-2.5 font-bold text-gray-900 text-xs flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-[10px] group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0">
                                                 {idx + 1}
                                             </div>
                                             {item.name}
                                         </td>
-                                        <td className="px-8 py-6">
-                                            <div className="flex items-center gap-4 w-48">
-                                                <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner p-0.5">
+                                        <td className="px-4 py-2.5">
+                                            <div className="flex items-center gap-2 w-36">
+                                                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                                                     <div
-                                                        className="h-full bg-gradient-to-r from-blue-400 to-indigo-600 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                                                        className="h-full bg-gradient-to-r from-blue-400 to-indigo-600 rounded-full transition-all duration-1000"
                                                         style={{ width: item.placement }}
                                                     />
                                                 </div>
-                                                <span className="font-mono font-black text-blue-700 text-xs">
+                                                <span className="font-mono font-bold text-blue-700 text-[10px]">
                                                     {item.placement}
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6">
-                                            <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold group-hover:bg-white group-hover:shadow-sm transition-all tracking-tight">
-                                                {item.jobs} Listed Positions
+                                        <td className="px-4 py-2.5">
+                                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-[10px] font-bold">
+                                                {item.jobs} positions
                                             </span>
                                         </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <div className="inline-flex items-center gap-1 text-green-500 font-black text-xs">
-                                                <TrendingUp size={12} />
+                                        <td className="px-4 py-2.5 text-right">
+                                            <div className="inline-flex items-center gap-0.5 text-green-500 font-bold text-[10px]">
+                                                <TrendingUp size={11} />
                                                 {Math.floor(Math.random() * 8 + 2)}%
                                             </div>
                                         </td>
@@ -212,7 +197,7 @@ export const AdminAnalytics: React.FC = () => {
                                 <tr>
                                     <td
                                         colSpan={4}
-                                        className="px-8 py-12 text-center text-gray-400 font-medium italic"
+                                        className="px-4 py-8 text-center text-gray-400 text-xs font-medium italic"
                                     >
                                         No leaderboard data available.
                                     </td>

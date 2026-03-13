@@ -204,37 +204,37 @@ export const ManagingStudentAccounts: React.FC<ManagingStudentAccountsProps> = (
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+        <div className="space-y-3 animate-in fade-in slide-in-from-right-4">
             <AccountStats stats={accountStats} />
 
-            <div className="bg-white rounded-xl shadow-sm border p-6">
-                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Info size={20} className="text-blue-600" /> Account Lifecycle & Policies</h3>
-                <div className="prose prose-sm text-gray-600 bg-blue-50/50 p-6 rounded-lg border border-blue-100 max-w-none">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                        <ul className="space-y-3 list-none p-0 m-0">
-                            <li className="flex gap-3"><span className="font-bold text-blue-800 w-32 shrink-0">Account Creation:</span> <span>All student accounts are created with <strong className="text-green-700">18 Months</strong> of Premium Access.</span></li>
-                            <li className="flex gap-3"><span className="font-bold text-blue-800 w-32 shrink-0">Expiry Warning:</span> <span>Accounts appear in the "Expiring" list exactly 30 days before their end date.</span></li>
+            <div className="bg-white rounded-xl shadow-sm border p-3">
+                <h3 className="text-xs font-bold text-gray-700 mb-2 flex items-center gap-1.5"><Info size={13} className="text-blue-600" /> Account Lifecycle & Policies</h3>
+                <div className="text-gray-600 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+                        <ul className="space-y-1.5 list-none p-0 m-0">
+                            <li className="flex gap-2 text-xs"><span className="font-bold text-blue-800 w-28 shrink-0">Account Creation:</span> <span>All student accounts are created with <strong className="text-green-700">18 Months</strong> of Premium Access.</span></li>
+                            <li className="flex gap-2 text-xs"><span className="font-bold text-blue-800 w-28 shrink-0">Expiry Warning:</span> <span>Accounts appear in the "Expiring" list exactly 30 days before their end date.</span></li>
                         </ul>
-                        <ul className="space-y-3 list-none p-0 m-0">
-                            <li className="flex gap-3"><span className="font-bold text-blue-800 w-32 shrink-0">Grace Period:</span> <span>Once expired, accounts enter a <strong>90-Day Grace Period</strong>. Access is restricted.</span></li>
-                            <li className="flex gap-3"><span className="font-bold text-blue-800 w-32 shrink-0">Auto-Deletion:</span> <span>Data is permanently deleted after the grace period if no renewal is processed.</span></li>
+                        <ul className="space-y-1.5 list-none p-0 m-0">
+                            <li className="flex gap-2 text-xs"><span className="font-bold text-blue-800 w-28 shrink-0">Grace Period:</span> <span>Once expired, accounts enter a <strong>90-Day Grace Period</strong>. Access is restricted.</span></li>
+                            <li className="flex gap-2 text-xs"><span className="font-bold text-blue-800 w-28 shrink-0">Auto-Deletion:</span> <span>Data is permanently deleted after the grace period if no renewal is processed.</span></li>
                         </ul>
                     </div>
                 </div>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border p-6">
-                <h3 className="font-bold mb-4 flex items-center gap-2 text-gray-800"><RefreshCw size={20} className="text-blue-600" /> Bulk Account Operations</h3>
-                <div className="flex flex-wrap gap-4">
-                    <button onClick={handleExportExpiringList} className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 bg-white shadow-sm font-bold text-sm text-gray-700 transition-colors">
-                        <Download size={16} /> Export Student List (Expiring &lt; 30 Days)
+            <div className="bg-white rounded-xl shadow-sm border p-3">
+                <h3 className="text-xs font-bold mb-2 flex items-center gap-1.5 text-gray-700"><RefreshCw size={13} className="text-blue-600" /> Bulk Account Operations</h3>
+                <div className="flex flex-wrap gap-2">
+                    <button onClick={handleExportExpiringList} className="flex items-center gap-1.5 px-2.5 py-1.5 border rounded-lg hover:bg-gray-50 bg-white shadow-sm font-bold text-xs text-gray-700 transition-colors">
+                        <Download size={13} /> Export Expiring List
                     </button>
                     {isSrotsAdmin && (
-                        <button onClick={handleBulkRenewalUpload} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm font-bold text-sm transition-colors">
-                            <CheckCircle size={16} /> Renewal Account (Upload Excel)
+                        <button onClick={handleBulkRenewalUpload} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm font-bold text-xs transition-colors">
+                            <CheckCircle size={13} /> Renewal (Upload Excel)
                         </button>
                     )}
-                    <button onClick={handleBulkDeletionUpload} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-sm font-bold text-sm transition-colors">
-                        <Trash2 size={16} /> Delete Students (Upload Excel)
+                    <button onClick={handleBulkDeletionUpload} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-sm font-bold text-xs transition-colors">
+                        <Trash2 size={13} /> Delete (Upload Excel)
                     </button>
                 </div>
             </div>

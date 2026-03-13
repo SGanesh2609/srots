@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-@AllArgsConstructor
+//@AllArgsConstructor
 public class JobApplicantsDashboardDTO {
     private String jobTitle;
     private long totalApplicants;
@@ -15,12 +15,8 @@ public class JobApplicantsDashboardDTO {
     private List<Map<String, Object>> roundSummary;
     private List<String> headers;    // The column names (Full Name, CGPA, etc.)
     private List<Map<String, Object>> students; // The actual row data
-	public JobApplicantsDashboardDTO() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-	
-	
+
+
 	
 	public JobApplicantsDashboardDTO(String jobTitle, long totalApplicants, Map<String, Long> stats,
 			List<Map<String, Object>> roundSummary, List<String> headers, List<Map<String, Object>> students) {
@@ -32,9 +28,6 @@ public class JobApplicantsDashboardDTO {
 		this.headers = headers;
 		this.students = students;
 	}
-
-
-
 	public String getJobTitle() {
 		return jobTitle;
 	}

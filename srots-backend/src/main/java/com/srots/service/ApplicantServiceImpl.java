@@ -67,6 +67,7 @@ public class ApplicantServiceImpl implements ApplicantService {
 	@Autowired private JobManagementService jobManagementService;
 	@Autowired private JobSearchService jobSearchService;
 	@Autowired private JobMapper jobMapper;
+	@Autowired private NotificationService notificationService;
 
 	// --- 1. ACCESS CONTROL & ENTITY HELPERS ---
 
@@ -81,85 +82,6 @@ public class ApplicantServiceImpl implements ApplicantService {
 		return Map.of("userId", userId, "role", role);
 	}
 
-	
-	//--Dashboard and Management
-	
-//	@Override
-//	public JobApplicantsDashboardDTO getJobApplicantsDashboard(String jobId) throws Exception {
-//	    Job job = jobRepo.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found"));
-//	    List<Application> apps = appRepo.findByJobId(jobId);
-//	    List<Map<String, Object>> rounds = mapper.readValue(job.getRoundsJson(), new TypeReference<>() {});
-//
-//	    // 1. Calculate Round-wise Summary (remains same)
-//	    List<Map<String, Object>> roundSummaryList = new ArrayList<>();
-//	    for (int i = 0; i < rounds.size(); i++) {
-//	        int roundNum = i + 1;
-//	        String roundName = (String) rounds.get(i).get("name");
-//	        long countAtThisStage = apps.stream()
-//	                .filter(a -> a.getCurrentRound() != null && a.getCurrentRound() == roundNum)
-//	                .count();
-//
-//	        Map<String, Object> summary = new LinkedHashMap<>();
-//	        summary.put("roundNumber", roundNum);
-//	        summary.put("roundName", roundName);
-//	        summary.put("studentCount", countAtThisStage);
-//	        roundSummaryList.add(summary);
-//	    }
-//
-//	    // 2. Prepare Headers - Added "Application Source" here
-//	    List<String> requiredFields = mapper.readValue(job.getRequiredFieldsJson(), new TypeReference<List<String>>() {});
-//	    List<String> uiHeaders = new ArrayList<>(List.of("Roll Number", "Full Name", "Current Status", "Application Source"));
-//	    requiredFields.forEach(f -> uiHeaders.add(toTitleCase(f)));
-//
-//	    long hired = 0, rejected = 0, pending = 0;
-//	    List<Map<String, Object>> studentList = new ArrayList<>();
-//
-//	    for (Application app : apps) {
-//	        // FIX: Pass 4 arguments to ExportDataHolder to match the new constructor
-//	        String source = app.getAppliedBy() != null ? app.getAppliedBy().name() : "Self";
-//	        
-//	        ExportDataHolder holder = new ExportDataHolder(
-//	            app.getStudent(), 
-//	            true, 
-//	            app.getCurrentRoundStatus(), 
-//	            source
-//	        );
-//
-//	        String status = extractStudentField(app.getStudent(), "currentstatus", job, holder);
-//	        
-//	        // Stats Calculation
-//	        if ("Hired".equalsIgnoreCase(status)) hired++;
-//	        else if (status.toLowerCase().contains("rejected")) rejected++;
-//	        else pending++;
-//
-//	        Map<String, Object> studentMap = new LinkedHashMap<>();
-//	        studentMap.put("studentId", app.getStudent().getId());
-//	        studentMap.put("Roll Number", extractStudentField(app.getStudent(), "rollnumber", job, holder));
-//	        studentMap.put("Full Name", app.getStudent().getFullName());
-//	        studentMap.put("Current Status", status);
-//	        
-//	        // Add Source to the Map for UI
-//	        studentMap.put("Application Source", source);
-//
-//	        for (String field : requiredFields) {
-//	            studentMap.put(toTitleCase(field), extractStudentField(app.getStudent(), field, job, holder));
-//	        }
-//	        studentList.add(studentMap);
-//	    }
-//
-//	    Map<String, Long> globalStats = Map.of("Hired", hired, "Rejected", rejected, "Pending", pending);
-//
-//	    return new JobApplicantsDashboardDTO(
-//	        job.getTitle(), 
-//	        (long)apps.size(), 
-//	        globalStats, 
-//	        roundSummaryList, 
-//	        uiHeaders, 
-//	        studentList
-//	    );
-//	}
-	
-	
 	
 	@Override
 	public List<User> getApplicants(String jobId) {
@@ -275,21 +197,26 @@ public class ApplicantServiceImpl implements ApplicantService {
 
 	                // Process Results
 	                app.setCurrentRound(roundIndex);
+	                String notifyStatus;
 	                if (resultText.equalsIgnoreCase("Passed") || resultText.equalsIgnoreCase("Qualified")) {
 	                    if (roundIndex == rounds.size()) {
 	                        app.setCurrentRoundStatus("Hired");
 	                        app.setStatus(Application.AppStatus.Hired);
+	                        notifyStatus = "Hired";
 	                    } else {
 	                        app.setCurrentRoundStatus(roundName + " Cleared");
 	                        app.setStatus(Application.AppStatus.Shortlisted);
+	                        notifyStatus = "Cleared";
 	                    }
 	                    passedCount++;
 	                } else {
 	                    app.setCurrentRoundStatus("Rejected in " + roundName);
 	                    app.setStatus(Application.AppStatus.Rejected);
+	                    notifyStatus = "Rejected";
 	                    rejectedCount++;
 	                }
 	                appRepo.save(app);
+	                notificationService.notifyRoundResult(app.getStudent(), job, roundName, notifyStatus);
 	            } else {
 	                errors.add("Row " + i + ": Roll " + rollNumber + " not found in DB.");
 	            }
@@ -307,133 +234,6 @@ public class ApplicantServiceImpl implements ApplicantService {
 	    return result;
 	}
 
-//	public JobHiringStatsDTO getJobHiringStats(String jobId) throws Exception {
-//	    Job job = jobRepo.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found"));
-//	    List<Map<String, Object>> roundsList = mapper.readValue(job.getRoundsJson(), new TypeReference<>() {});
-//	    List<JobRoundProgressDTO> roundStats = new ArrayList<>();
-//
-//	    for (int i = 0; i < roundsList.size(); i++) {
-//	        int roundNum = i + 1;
-//	        String roundName = (String) roundsList.get(i).get("name");
-//
-//	        long passed = appRepo.countByJobIdAndCurrentRoundAndCurrentRoundStatusContaining(jobId, roundNum, "Cleared");
-//	        if (roundNum == roundsList.size()) {
-//	            passed += appRepo.countByJobIdAndStatus(jobId, Application.AppStatus.Hired);
-//	        }
-//
-//	        long rejected = appRepo.countByJobIdAndCurrentRoundAndCurrentRoundStatusContaining(jobId, roundNum, "Rejected");
-//	        
-//	        // Logic for Round Status
-//	        String roundStatus = "Upcoming";
-//	        if (passed > 0 || rejected > 0) {
-//	            roundStatus = "In Progress";
-//	        }
-//	        
-//	        // If there's anyone in a round higher than this, this round is "Completed"
-//	        boolean hasHigherRound = appRepo.existsByJobIdAndCurrentRoundGreaterThan(jobId, roundNum);
-//	        if (hasHigherRound) {
-//	            roundStatus = "Completed";
-//	        }
-//
-//	        roundStats.add(new JobRoundProgressDTO(roundNum, roundName, passed, rejected, 0, roundStatus));
-//	    }
-//
-//	    return new JobHiringStatsDTO(jobId, job.getTitle(), roundsList.size(), roundStats);
-//	}
-	
-//	@Override
-//	public JobHiringStatsDTO getJobHiringStats(String jobId) throws Exception {
-//	    Job job = jobRepo.findById(jobId)
-//	        .orElseThrow(() -> new RuntimeException("Job not found"));
-//	    
-//	    List<Map<String, Object>> roundsList = mapper.readValue(
-//	        job.getRoundsJson(), 
-//	        new TypeReference<List<Map<String, Object>>>() {}
-//	    );
-//	    
-//	    // Get all applications for this job
-//	    List<Application> allApps = appRepo.findByJobId(jobId);
-//	    
-//	    // Find the maximum round any student has reached
-//	    int maxRoundReached = allApps.stream()
-//	        .map(Application::getCurrentRound)
-//	        .filter(r -> r != null)
-//	        .max(Integer::compareTo)
-//	        .orElse(0);
-//	    
-//	    List<JobRoundProgressDTO> roundStats = new ArrayList<>();
-//
-//	    for (int i = 0; i < roundsList.size(); i++) {
-//	        int roundNum = i + 1;
-//	        String roundName = (String) roundsList.get(i).get("name");
-//
-//	        // ═══════════════════════════════════════════════════════════════════
-//	        // FIXED: Count passed students correctly
-//	        // ═══════════════════════════════════════════════════════════════════
-//	        long passed = 0;
-//	        long rejected = 0;
-//	        
-//	        if (roundNum == roundsList.size()) {
-//	            // Last round: count "Hired" status as passed
-//	            passed = appRepo.countByJobIdAndStatus(jobId, Application.AppStatus.Hired);
-//	            
-//	            // Also count those who cleared this round but aren't marked Hired yet
-//	            long clearedInRound = appRepo.countByJobIdAndCurrentRoundAndCurrentRoundStatusContaining(
-//	                jobId, roundNum, "Cleared"
-//	            );
-//	            passed += clearedInRound;
-//	        } else {
-//	            // Not last round: count those who cleared this specific round
-//	            passed = appRepo.countByJobIdAndCurrentRoundAndCurrentRoundStatusContaining(
-//	                jobId, roundNum, "Cleared"
-//	            );
-//	        }
-//	        
-//	        // Count rejected in this round
-//	        rejected = appRepo.countByJobIdAndCurrentRoundAndCurrentRoundStatusContaining(
-//	            jobId, roundNum, "Rejected"
-//	        );
-//
-//	        // ═══════════════════════════════════════════════════════════════════
-//	        // FIXED: Calculate round status correctly
-//	        // ═══════════════════════════════════════════════════════════════════
-//	        String roundStatus = "Upcoming";
-//	        
-//	        if (maxRoundReached > roundNum) {
-//	            // Students have moved beyond this round → it's completed
-//	            roundStatus = "Completed";
-//	        } else if (maxRoundReached == roundNum) {
-//	            // Students are currently at this round
-//	            if (passed > 0 || rejected > 0) {
-//	                // Results have been uploaded for this round
-//	                roundStatus = "Completed";
-//	            } else {
-//	                // Students are here but no results yet
-//	                roundStatus = "In Progress";
-//	            }
-//	        } else {
-//	            // No one has reached this round yet
-//	            roundStatus = "Upcoming";
-//	        }
-//
-//	        roundStats.add(new JobRoundProgressDTO(
-//	            roundNum, 
-//	            roundName, 
-//	            passed, 
-//	            rejected, 
-//	            0,  // pending (calculated elsewhere if needed)
-//	            roundStatus
-//	        ));
-//	    }
-//
-//	    return new JobHiringStatsDTO(
-//	        jobId, 
-//	        job.getTitle(), 
-//	        roundsList.size(), 
-//	        roundStats
-//	    );
-//	}
-//
 	private String getCellValueAsString(Cell cell) {
 	    if (cell == null) return "";
 	    if (cell.getCellType() == CellType.NUMERIC) {
@@ -469,6 +269,11 @@ public class ApplicantServiceImpl implements ApplicantService {
 		app.setStatus(Application.AppStatus.valueOf(status));
 		app.setCurrentRoundStatus("Applied".equals(status) ? "Pending" : status);
 		appRepo.save(app);
+
+		if ("Applied".equals(status)) {
+			User student = userRepo.getReferenceById(studentId);
+			notificationService.notifyStudentApplied(student, job);
+		}
 	}
 	
 	// --- Exports (Excel/CSV) ---
@@ -495,6 +300,22 @@ public class ApplicantServiceImpl implements ApplicantService {
 	            .collect(Collectors.toList());
 
 	    return generateExportFile(job, dataList, format, "Applied_Applicants", false);
+	}
+
+	@Override
+	public byte[] exportNotInterestedStudents(String jobId, String format) throws Exception {
+	    Job job = jobManagementService.getJobEntity(jobId);
+	    List<Application> apps = appRepo.findByJobIdAndStatus(jobId, Application.AppStatus.Not_Interested);
+	    List<ExportDataHolder> dataList = apps.stream()
+	            .map(app -> new ExportDataHolder(
+	                app.getStudent(),
+	                true,
+	                "Not Interested",
+	                app.getAppliedBy() != null ? app.getAppliedBy().name() : "Self"
+	            ))
+	            .sorted((a, b) -> a.user.getFullName().compareToIgnoreCase(b.user.getFullName()))
+	            .collect(Collectors.toList());
+	    return generateExportFile(job, dataList, format, "Not_Interested_Students", false);
 	}
 
 	@Override
@@ -755,96 +576,6 @@ public class ApplicantServiceImpl implements ApplicantService {
 	        }).orElse(BigDecimal.ZERO);
 	}
 
-//	private byte[] generateExportFile(Job job, List<ExportDataHolder> dataList, String format, String title,
-//			boolean isEligibleExport) throws Exception {
-//		List<String> requiredFields = mapper.readValue(job.getRequiredFieldsJson(), new TypeReference<List<String>>() {
-//		});
-//		boolean isCsv = "csv".equalsIgnoreCase(format);
-//
-//		// Unified Header List
-//		List<String> staticHeaders = new ArrayList<>();
-//		staticHeaders.add("Current Status"); // Shows round status or "Not Applied"
-//		
-//		if (!isEligibleExport) {
-//	        staticHeaders.add("Application Source");
-//	    }
-//		
-//		if (isEligibleExport) {
-//			staticHeaders.add("Applied Status"); // Yes/No
-//			staticHeaders.add("Last Login");
-//		}
-//
-//		if (isCsv) {
-//			StringBuilder csv = new StringBuilder();
-//			// 1. Write Headers
-//			staticHeaders.forEach(h -> csv.append(h).append(","));
-//			requiredFields.forEach(f -> csv.append(toTitleCase(f)).append(","));
-//			csv.append("\n");
-//
-//			// 2. Write Data Rows
-//			for (ExportDataHolder holder : dataList) {
-//				// Write Static Fields
-//				csv.append("\"").append(extractStudentField(holder.user, "currentstatus", job, holder)).append("\",");
-//				if (isEligibleExport) {
-//					csv.append(holder.isApplied ? "Yes" : "No").append(",");
-//					csv.append("\"").append(extractStudentField(holder.user, "lastlogin", job, holder)).append("\",");
-//				}
-//				// Write Dynamic Fields
-//				for (String field : requiredFields) {
-//					String val = extractStudentField(holder.user, field, job, holder);
-//					csv.append("\"").append(val.replace("\"", "\"\"")).append("\",");
-//				}
-//				csv.append("\n");
-//			}
-//			return csv.toString().getBytes(StandardCharsets.UTF_8);
-//		} else {
-//			try (Workbook workbook = new XSSFWorkbook()) {
-//				Sheet sheet = workbook.createSheet(title);
-//				CellStyle headerStyle = workbook.createCellStyle();
-//				Font font = workbook.createFont();
-//				font.setBold(true);
-//				headerStyle.setFont(font);
-//
-//				Row headerRow = sheet.createRow(0);
-//				int col = 0;
-//				for (String h : staticHeaders) {
-//					Cell cell = headerRow.createCell(col++);
-//					cell.setCellValue(h);
-//					cell.setCellStyle(headerStyle);
-//				}
-//				for (String f : requiredFields) {
-//					Cell cell = headerRow.createCell(col++);
-//					cell.setCellValue(toTitleCase(f));
-//					cell.setCellStyle(headerStyle);
-//				}
-//
-//				int rowIdx = 1;
-//				for (ExportDataHolder holder : dataList) {
-//					Row row = sheet.createRow(rowIdx++);
-//					int dataCol = 0;
-//					// Write Static Fields
-//					row.createCell(dataCol++)
-//							.setCellValue(extractStudentField(holder.user, "currentstatus", job, holder));
-//					if (isEligibleExport) {
-//						row.createCell(dataCol++).setCellValue(holder.isApplied ? "Yes" : "No");
-//						row.createCell(dataCol++)
-//								.setCellValue(extractStudentField(holder.user, "lastlogin", job, holder));
-//					}
-//					// Write Dynamic Fields
-//					for (String field : requiredFields) {
-//						row.createCell(dataCol++).setCellValue(extractStudentField(holder.user, field, job, holder));
-//					}
-//				}
-//				for (int i = 0; i < col; i++)
-//					sheet.autoSizeColumn(i);
-//				ByteArrayOutputStream out = new ByteArrayOutputStream();
-//				workbook.write(out);
-//				return out.toByteArray();
-//			}
-//		}
-//	}
-	
-	
 
 	// Helper to Capitalize Header Names (e.g., "fullName" -> "Full Name")
 	private String toTitleCase(String input) {
@@ -886,82 +617,6 @@ public class ApplicantServiceImpl implements ApplicantService {
 	}
 	
 	// --- Student Tracking ---
-	
-	// --- Student Tracking ---
-	
-//		public List<ApplicationListDTO> getStudentApplications(String rollNumberOrId) {
-//			String studentId = studentProfileRepo.findByRollNumber(rollNumberOrId).map(sp -> sp.getUserId())
-//					.orElse(rollNumberOrId);
-//
-//			return appRepo.findByStudentId(studentId).stream().map(app -> {
-//		        Job job = app.getJob();
-//
-//		        // Check if the application is in Hired state
-//		        String displayStatus;
-//		        if (app.getStatus() == Application.AppStatus.Hired || "Hired".equalsIgnoreCase(app.getCurrentRoundStatus())) {
-//		            displayStatus = "🎉 Hired";
-//		        } else {
-//		            displayStatus = (app.getCurrentRoundStatus() != null) ? 
-//		                    app.getCurrentRoundStatus() : app.getStatus().name().replace("_", " ");
-//		        }
-//
-//		        ApplicationListDTO.JobSummary summary = new ApplicationListDTO.JobSummary(
-//		            job.getId(), job.getTitle(), job.getCompanyName(), 
-//		            job.getJobType().name(), job.getLocation()
-//		        );
-//
-//		        return new ApplicationListDTO(summary, displayStatus, app.getAppliedAt());
-//		    }).collect(Collectors.toList());
-//		}
-//
-//		@Override
-//		public List<TimelineDTO> getHiringTimeline(String jobId, String studentId) throws Exception {
-//		    Job job = jobManagementService.getJobEntity(jobId);
-//		    Application app = appRepo.findByJobIdAndStudentId(jobId, studentId)
-//		            .orElseThrow(() -> new RuntimeException("Application not found"));
-//		    
-//		    List<Map<String, Object>> rounds = mapper.readValue(job.getRoundsJson(), new TypeReference<>() {});
-//		    List<TimelineDTO> timeline = new ArrayList<>();
-//
-//		    // 1. Initial Milestone: Applied
-//		    timeline.add(new TimelineDTO("Applied", "Completed", app.getAppliedAt().toString()));
-//
-//		    int studentCurrentRoundNum = (app.getCurrentRound() != null) ? app.getCurrentRound() : 1;
-//		    String currentStatusStr = app.getCurrentRoundStatus(); 
-//		    boolean hasFailed = (app.getStatus() == Application.AppStatus.Rejected);
-//		    boolean isHired = (app.getStatus() == Application.AppStatus.Hired || "Hired".equalsIgnoreCase(currentStatusStr));
-//
-//		    // 2. Iterate through dynamic job rounds
-//		    for (int i = 0; i < rounds.size(); i++) {
-//		        int roundNum = i + 1;
-//		        Map<String, Object> round = rounds.get(i);
-//		        String name = (String) round.get("name");
-//		        String roundDate = (round.get("date") != null) ? round.get("date").toString() : "TBD";
-//		        String status;
-//
-//		        if (isHired) {
-//		            status = "Completed";
-//		        } else if (roundNum < studentCurrentRoundNum) {
-//		            status = "Completed";
-//		        } else if (roundNum == studentCurrentRoundNum) {
-//		            if (hasFailed) {
-//		                status = "Rejected";
-//		            } else if (currentStatusStr != null && currentStatusStr.contains("Cleared")) {
-//		                status = "Completed";
-//		            } else {
-//		                status = "In Progress";
-//		            }
-//		        } else {
-//		            // Future rounds
-//		            status = hasFailed ? "Process Terminated" : "Locked";
-//		        }
-//
-//		        timeline.add(new TimelineDTO(name, status, roundDate));
-//		    }
-//		    
-//		    return timeline;
-//		}
-	
 	
 	public List<ApplicationListDTO> getStudentApplications() {
 	    // Get the student's identity from the Auth Token
@@ -1262,79 +917,6 @@ public class ApplicantServiceImpl implements ApplicantService {
 	}
 
 
-//	/**
-//	 * METHOD 2: getJobApplicantsDashboard - Already correct, keeping for reference
-//	 */
-//	@Override
-//	public JobApplicantsDashboardDTO getJobApplicantsDashboard(String jobId) throws Exception {
-//	    Job job = jobRepo.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found"));
-//	    List<Application> apps = appRepo.findByJobId(jobId);
-//	    List<Map<String, Object>> rounds = mapper.readValue(job.getRoundsJson(), new TypeReference<>() {});
-//
-//	    // Round summary
-//	    List<Map<String, Object>> roundSummaryList = new ArrayList<>();
-//	    for (int i = 0; i < rounds.size(); i++) {
-//	        int roundNum = i + 1;
-//	        String roundName = (String) rounds.get(i).get("name");
-//	        long countAtThisStage = apps.stream()
-//	                .filter(a -> a.getCurrentRound() != null && a.getCurrentRound() == roundNum)
-//	                .count();
-//
-//	        Map<String, Object> summary = new LinkedHashMap<>();
-//	        summary.put("roundNumber", roundNum);
-//	        summary.put("roundName", roundName);
-//	        summary.put("studentCount", countAtThisStage);
-//	        roundSummaryList.add(summary);
-//	    }
-//
-//	    // Headers
-//	    List<String> requiredFields = mapper.readValue(job.getRequiredFieldsJson(), new TypeReference<List<String>>() {});
-//	    List<String> uiHeaders = new ArrayList<>(List.of("Roll Number", "Full Name", "Current Status", "Application Source"));
-//	    requiredFields.forEach(f -> uiHeaders.add(toTitleCase(f)));
-//
-//	    long hired = 0, rejected = 0, pending = 0;
-//	    List<Map<String, Object>> studentList = new ArrayList<>();
-//
-//	    for (Application app : apps) {
-//	        String source = app.getAppliedBy() != null ? app.getAppliedBy().name() : "Self";
-//	        
-//	        ExportDataHolder holder = new ExportDataHolder(
-//	            app.getStudent(), 
-//	            true, 
-//	            app.getCurrentRoundStatus(), 
-//	            source
-//	        );
-//
-//	        String status = extractStudentField(app.getStudent(), "currentstatus", job, holder);
-//	        
-//	        if ("Hired".equalsIgnoreCase(status)) hired++;
-//	        else if (status.toLowerCase().contains("rejected")) rejected++;
-//	        else pending++;
-//
-//	        Map<String, Object> studentMap = new LinkedHashMap<>();
-//	        studentMap.put("studentId", app.getStudent().getId());
-//	        studentMap.put("Roll Number", extractStudentField(app.getStudent(), "rollnumber", job, holder));
-//	        studentMap.put("Full Name", app.getStudent().getFullName());
-//	        studentMap.put("Current Status", status);
-//	        studentMap.put("Application Source", source);
-//
-//	        for (String field : requiredFields) {
-//	            studentMap.put(toTitleCase(field), extractStudentField(app.getStudent(), field, job, holder));
-//	        }
-//	        studentList.add(studentMap);
-//	    }
-//
-//	    Map<String, Long> globalStats = Map.of("Hired", hired, "Rejected", rejected, "Pending", pending);
-//
-//	    return new JobApplicantsDashboardDTO(
-//	        job.getTitle(), 
-//	        (long)apps.size(), 
-//	        globalStats, 
-//	        roundSummaryList, 
-//	        uiHeaders, 
-//	        studentList
-//	    );
-//	}
 	
 	@Override
 	public JobApplicantsDashboardDTO getJobApplicantsDashboard(String jobId) throws Exception {
@@ -1421,112 +1003,6 @@ public class ApplicantServiceImpl implements ApplicantService {
 	}
 
 
-//	/**
-//	 * METHOD 3: generateExportFile - FIXED to include Roll Number and Full Name
-//	 */
-//	private byte[] generateExportFile(Job job, List<ExportDataHolder> dataList, String format, String title,
-//	        boolean isEligibleExport) throws Exception {
-//	    List<String> requiredFields = mapper.readValue(job.getRequiredFieldsJson(), new TypeReference<List<String>>() {});
-//	    boolean isCsv = "csv".equalsIgnoreCase(format);
-//
-//	    // Build complete header list
-//	    List<String> allHeaders = new ArrayList<>();
-////	    allHeaders.add("Roll Number");
-////	    allHeaders.add("Full Name");
-//	    allHeaders.add("Current Status");
-//	    
-//	    if (!isEligibleExport) {
-//	        allHeaders.add("Application Source");
-//	    }
-//	    
-//	    if (isEligibleExport) {
-//	        allHeaders.add("Applied Status");
-//	        allHeaders.add("Last Login");
-//	    }
-//	    
-//	    for (String field : requiredFields) {
-//	        String titleCased = toTitleCase(field);
-//	        if (!allHeaders.contains(titleCased)) {
-//	            allHeaders.add(titleCased);
-//	        }
-//	    }
-//
-//	    if (isCsv) {
-//	        StringBuilder csv = new StringBuilder();
-//	        allHeaders.forEach(h -> csv.append(h).append(","));
-//	        csv.append("\n");
-//
-//	        for (ExportDataHolder holder : dataList) {
-////	            csv.append("\"").append(extractStudentField(holder.user, "rollnumber", job, holder)).append("\",");
-////	            csv.append("\"").append(holder.user.getFullName() != null ? holder.user.getFullName() : "N/A").append("\",");
-//	            csv.append("\"").append(extractStudentField(holder.user, "currentstatus", job, holder)).append("\",");
-//	            
-//	            if (!isEligibleExport) {
-//	                String source = holder.appliedBy != null ? holder.appliedBy : "Self";
-//	                csv.append("\"").append(source).append("\",");
-//	            }
-//	            
-//	            if (isEligibleExport) {
-//	                csv.append(holder.isApplied ? "Yes" : "No").append(",");
-//	                csv.append("\"").append(extractStudentField(holder.user, "lastlogin", job, holder)).append("\",");
-//	            }
-//	            
-//	            for (String field : requiredFields) {
-//	                String val = extractStudentField(holder.user, field, job, holder);
-//	                csv.append("\"").append(val.replace("\"", "\"\"")).append("\",");
-//	            }
-//	            csv.append("\n");
-//	        }
-//	        return csv.toString().getBytes(StandardCharsets.UTF_8);
-//	    } else {
-//	        try (Workbook workbook = new XSSFWorkbook()) {
-//	            Sheet sheet = workbook.createSheet(title);
-//	            CellStyle headerStyle = workbook.createCellStyle();
-//	            Font font = workbook.createFont();
-//	            font.setBold(true);
-//	            headerStyle.setFont(font);
-//
-//	            Row headerRow = sheet.createRow(0);
-//	            for (int col = 0; col < allHeaders.size(); col++) {
-//	                Cell cell = headerRow.createCell(col);
-//	                cell.setCellValue(allHeaders.get(col));
-//	                cell.setCellStyle(headerStyle);
-//	            }
-//
-//	            int rowIdx = 1;
-//	            for (ExportDataHolder holder : dataList) {
-//	                Row row = sheet.createRow(rowIdx++);
-//	                int col = 0;
-//	                
-////	                row.createCell(col++).setCellValue(extractStudentField(holder.user, "rollnumber", job, holder));
-////	                row.createCell(col++).setCellValue(holder.user.getFullName() != null ? holder.user.getFullName() : "N/A");
-//	                row.createCell(col++).setCellValue(extractStudentField(holder.user, "currentstatus", job, holder));
-//	                
-//	                if (!isEligibleExport) {
-//	                    String source = holder.appliedBy != null ? holder.appliedBy : "Self";
-//	                    row.createCell(col++).setCellValue(source);
-//	                }
-//	                
-//	                if (isEligibleExport) {
-//	                    row.createCell(col++).setCellValue(holder.isApplied ? "Yes" : "No");
-//	                    row.createCell(col++).setCellValue(extractStudentField(holder.user, "lastlogin", job, holder));
-//	                }
-//	                
-//	                for (String field : requiredFields) {
-//	                    row.createCell(col++).setCellValue(extractStudentField(holder.user, field, job, holder));
-//	                }
-//	            }
-//	            
-//	            for (int i = 0; i < allHeaders.size(); i++) {
-//	                sheet.autoSizeColumn(i);
-//	            }
-//	            
-//	            ByteArrayOutputStream out = new ByteArrayOutputStream();
-//	            workbook.write(out);
-//	            return out.toByteArray();
-//	        }
-//	    }
-//	}
 	
 	/**
 	 * UPDATED METHOD 3: generateExportFile 

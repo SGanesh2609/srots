@@ -4,6 +4,7 @@ package com.srots.model;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
@@ -13,10 +14,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "post_likes")
+@Table(name = "post_likes", indexes = {
+    @Index(name = "idx_postlike_user_id", columnList = "user_id")
+})
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
+//@AllArgsConstructor
 public class PostLike {
 
     @EmbeddedId
@@ -32,10 +35,8 @@ public class PostLike {
     @JoinColumn(name = "user_id")
     private User user;
 
-	public PostLike() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
+
+	
 
 	public PostLike(PostLikeId id, Post post, User user) {
 		super();

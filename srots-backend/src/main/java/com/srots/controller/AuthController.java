@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 import com.srots.dto.LoginRequest;
 import com.srots.dto.LoginResponse;
 import com.srots.dto.ResetPasswordRequest;
@@ -50,7 +52,7 @@ public class AuthController {
     // POST /api/v1/auth/login
     // ─────────────────────────────────────────────────────────────────────────
     @PostMapping("/login")
-    public ResponseEntity<?> authenticate(@RequestBody LoginRequest request,
+    public ResponseEntity<?> authenticate(@Valid @RequestBody LoginRequest request,
                                           HttpServletRequest httpRequest) {
 
         logger.info("[Auth] Login attempt | username={}", request.getUsername());
@@ -189,7 +191,7 @@ public class AuthController {
     // POST /api/v1/auth/reset-password
     // ─────────────────────────────────────────────────────────────────────────
     @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         logger.info("[Auth] Reset password | tokenPrefix={}",
                 request.getToken() != null
                         ? request.getToken().substring(0, Math.min(8, request.getToken().length())) + "..."

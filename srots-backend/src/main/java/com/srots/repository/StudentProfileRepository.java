@@ -69,6 +69,27 @@ public interface StudentProfileRepository extends JpaRepository<StudentProfile, 
     List<StudentProfile> findExpiredByCollegeId(
             @Param("collegeId") String collegeId,
             @Param("cutoff") LocalDate cutoff);
-    
-    
+
+    // ── Scheduler: global premium-expiry cleanup ──────────────────────────────
+
+    /**
+     * Returns ALL StudentProfile records where premiumEndDate < cutoff.
+     * Used by CleanupScheduler to find accounts whose premium expired > N days ago.
+     * e.g. cutoff = today.minusDays(90) → expired more than 90 days ago.
+     */
+    @Query("SELECT sp FROM StudentProfile sp WHERE sp.premiumEndDate IS NOT NULL AND sp.premiumEndDate < :cutoff")
+    List<StudentProfile> findPremiumExpiredBefore(@Param("cutoff") LocalDate cutoff);
+
+    // ── Scheduler: premium-expiry warning window ──────────────────────────────
+
+    /**
+     * Returns StudentProfile records where premiumEndDate is within the warning window.
+     * Used by the daily warning scheduler to notify students whose premium expired
+     * between warningStartDays and warningEndDays ago.
+     * e.g. warningStart=today-20days, warningEnd=today-10days → expired 10–20 days ago.
+     */
+    @Query("SELECT sp FROM StudentProfile sp JOIN FETCH sp.user u WHERE sp.premiumEndDate IS NOT NULL AND sp.premiumEndDate >= :warningStart AND sp.premiumEndDate < :warningEnd AND u.isDeleted = false")
+    List<StudentProfile> findPremiumExpiredBetween(
+            @Param("warningStart") LocalDate warningStart,
+            @Param("warningEnd") LocalDate warningEnd);
 }

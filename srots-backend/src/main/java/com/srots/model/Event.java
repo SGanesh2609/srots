@@ -7,7 +7,11 @@ import org.hibernate.type.SqlTypes;
 import java.time.*;
 
 @Entity
-@Table(name = "events")
+@Table(name = "events", indexes = {
+    @Index(name = "idx_event_college_id", columnList = "college_id"),
+    @Index(name = "idx_event_type",       columnList = "event_type"),
+    @Index(name = "idx_event_start_date", columnList = "start_date")
+})
 @Data @NoArgsConstructor @AllArgsConstructor
 public class Event {
     @Id 
@@ -50,30 +54,6 @@ public class Event {
 
     private LocalDateTime createdAt = LocalDateTime.now();
 
-	public Event() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-
-	public Event(String id, College college, User createdBy, String title, String description, EventType eventType,
-			LocalDate startDate, LocalDate endDate, LocalTime startTime, LocalTime endTime, String targetBranches,
-			String targetYears, String scheduleJson, LocalDateTime createdAt) {
-		super();
-		this.id = id;
-		this.college = college;
-		this.createdBy = createdBy;
-		this.title = title;
-		this.description = description;
-		this.eventType = eventType;
-		this.startDate = startDate;
-		this.endDate = endDate;
-		this.startTime = startTime;
-		this.endTime = endTime;
-		this.targetBranches = targetBranches;
-		this.targetYears = targetYears;
-		this.scheduleJson = scheduleJson;
-		this.createdAt = createdAt;
-	}
 
 	public String getId() {
 		return id;

@@ -5,9 +5,11 @@ import com.srots.model.PremiumPayment.PaymentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -61,4 +63,24 @@ public interface PremiumPaymentRepository extends JpaRepository<PremiumPayment, 
      * Check if a UTR number already exists (prevent duplicate submissions).
      */
     boolean existsByUtrNumber(String utrNumber);
+
+    // ── Hard Delete Support ────────────────────────────────────────────────────
+
+    /** Delete all payments submitted by a specific user (for student hard delete) */
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM PremiumPayment p WHERE p.user.id = :userId")
+    void deleteByUserId(@Param("userId") String userId);
+
+    /** Delete all payments for a college (for college hard delete) */
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM PremiumPayment p WHERE p.college.id = :collegeId")
+    void deleteByCollegeId(@Param("collegeId") String collegeId);
+
+    /** Nullify verifiedByAdmin reference when an admin/dev user is deleted */
+    @Modifying
+    @Transactional
+    @Query("UPDATE PremiumPayment p SET p.verifiedByAdmin = null WHERE p.verifiedByAdmin.id = :adminId")
+    void clearVerifiedByAdmin(@Param("adminId") String adminId);
 }

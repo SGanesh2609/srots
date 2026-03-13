@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { store } from './store/store';
 import App from './App';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { ToastProvider } from './components/common/Toast';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -17,7 +18,9 @@ root.render(
     <ErrorBoundary>
       <Provider store={store}>
         <BrowserRouter>
-          <App />
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </BrowserRouter>
       </Provider>
     </ErrorBoundary>

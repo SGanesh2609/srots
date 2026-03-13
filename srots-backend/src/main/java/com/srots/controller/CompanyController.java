@@ -4,12 +4,16 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.srots.dto.CompanyRequest;
+import jakarta.validation.Valid;
 import com.srots.dto.CompanyResponse;
 import com.srots.dto.SubscribeRequest;
 import com.srots.dto.UploadResponse;
@@ -23,13 +27,17 @@ public class CompanyController {
     @Autowired private CompanyService companyService;
     @Autowired private FileService fileService;
 
+    /** Paginated endpoint — used by all portals */
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF', 'STUDENT')")
-    public ResponseEntity<List<CompanyResponse>> getCompanies(
+    public ResponseEntity<Page<CompanyResponse>> getCompanies(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String collegeId,
-            @RequestParam(required = false, defaultValue = "false") boolean linkedOnly) {
-        return ResponseEntity.ok(companyService.getCompanies(query, collegeId, linkedOnly));
+            @RequestParam(required = false, defaultValue = "false") boolean linkedOnly,
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "12") int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by("name").ascending());
+        return ResponseEntity.ok(companyService.getCompaniesPaged(query, collegeId, linkedOnly, pageable));
     }
 
     @GetMapping("/{id}")
@@ -54,13 +62,13 @@ public class CompanyController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV')")
-    public ResponseEntity<CompanyResponse> create(@RequestBody CompanyRequest request) {
+    public ResponseEntity<CompanyResponse> create(@Valid @RequestBody CompanyRequest request) {
         return ResponseEntity.ok(companyService.createCompany(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV')")
-    public ResponseEntity<CompanyResponse> update(@PathVariable String id, @RequestBody CompanyRequest request) {
+    public ResponseEntity<CompanyResponse> update(@PathVariable String id, @Valid @RequestBody CompanyRequest request) {
         return ResponseEntity.ok(companyService.updateCompany(id, request));
     }
 
@@ -73,7 +81,7 @@ public class CompanyController {
 
     @PostMapping("/subscribe")
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH')")
-    public ResponseEntity<Map<String, Boolean>> subscribe(@RequestBody SubscribeRequest request) {
+    public ResponseEntity<Map<String, Boolean>> subscribe(@Valid @RequestBody SubscribeRequest request) {
         companyService.subscribe(request);
         return ResponseEntity.ok(Map.of("success", true));
     }

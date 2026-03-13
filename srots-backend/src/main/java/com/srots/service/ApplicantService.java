@@ -25,6 +25,7 @@ public interface ApplicantService {
     // --- Exports (Excel/CSV) ---
     byte[] exportApplicants(String jobId, String format) throws Exception;
     byte[] exportAllEligibleStudents(String jobId, String format) throws Exception;
+    byte[] exportNotInterestedStudents(String jobId, String format) throws Exception;
 
     // --- Student Tracking ---
 //    List<ApplicationListDTO> getStudentApplications(String studentId);

@@ -4,28 +4,6 @@ import java.time.LocalDate;
 
 import com.srots.model.StudentProfile;
 
-/**
- * StudentSelfUpdateRequest
- * Path: com.srots.dto.studentDTOs.StudentSelfUpdateRequest
- *
- * DTO for PATCH /api/v1/students/profile/self
- *
- * ─── FIXES ──────────────────────────────────────────────────────────────────
- *
- * 1. preferredContactMethod: was String → now StudentProfile.ContactMethod enum
- *    Jackson maps "Phone" | "Email" | "WhatsApp" → enum automatically.
- *    The service no longer needs to call ContactMethod.fromString() manually.
- *
- * 2. passportIssueDate / passportExpiryDate: was String → now LocalDate
- *    Jackson + jackson-datatype-jsr310 (bundled in Spring Boot) deserialises
- *    ISO-8601 strings ("2020-05-15") to LocalDate automatically.
- *    The entity fields are LocalDate, so this must match.
- *
- * 3. Added communicationEmail — matches new StudentProfile.communicationEmail
- *    column (migration: ALTER TABLE student_profiles ADD communication_email VARCHAR(255)).
- *
- * All fields are nullable — null = "not in request, don't overwrite."
- */
 public class StudentSelfUpdateRequest {
 
     // ─── ① Contact info ───────────────────────────────────────────────────────

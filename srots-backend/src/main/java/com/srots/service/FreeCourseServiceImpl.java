@@ -2,15 +2,16 @@ package com.srots.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -42,12 +43,25 @@ public class FreeCourseServiceImpl implements FreeCourseService {
     private static final long BATCH_DELAY_MS = 2000;
 
     @Override
-    @Cacheable(value = "courseCategories") 
     public List<String> getCategories() {
         List<String> categories = repo.findUniqueCategories();
         if (categories == null) categories = new ArrayList<>();
         if (!categories.contains("All")) categories.add(0, "All");
         return categories;
+    }
+
+    @Override
+    public Map<String, Long> getTechWithCounts() {
+        List<Object[]> rows = repo.findTechWithCounts(FreeCourse.CourseStatus.ACTIVE);
+        Map<String, Long> result = new LinkedHashMap<>();
+        for (Object[] row : rows) {
+            String tech = (String) row[0];
+            Long count = (Long) row[1];
+            if (tech != null && !tech.isBlank()) {
+                result.put(tech, count);
+            }
+        }
+        return result;
     }
 
     @Override
@@ -139,7 +153,6 @@ public class FreeCourseServiceImpl implements FreeCourseService {
      */
     @Override
     @Transactional
-    @CacheEvict(value = "courseCategories", allEntries = true) 
     public FreeCourseResponse createCourse(FreeCourseRequest dto) {
         validateLinkPlatform(dto.getLink(), dto.getPlatform());
 
@@ -174,7 +187,6 @@ public class FreeCourseServiceImpl implements FreeCourseService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "courseCategories", allEntries = true) // Added cache eviction for updates
     public FreeCourseResponse updateCourse(String id, FreeCourseRequest dto) {
         FreeCourse course = repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Course not found"));
         
@@ -234,7 +246,7 @@ public class FreeCourseServiceImpl implements FreeCourseService {
         res.setLink(entity.getLink());
         res.setPlatform(entity.getPlatform());
         res.setPostedBy(entity.getPostedByName());
-        res.setCreated_at(entity.getCreatedAt());
+        res.setCreatedAt(entity.getCreatedAt());
         res.setStatus(entity.getStatus()); 
         res.setLastVerifiedAt(entity.getLastVerifiedAt());
         return res;

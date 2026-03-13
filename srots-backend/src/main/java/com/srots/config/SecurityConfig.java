@@ -49,6 +49,10 @@ public class SecurityConfig {
                 // Always allow CORS preflight
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
 
+                // ── Actuator: health is public; metrics/prometheus require ADMIN or SROTS_DEV ──
+                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/actuator/**").hasAnyRole("ADMIN", "SROTS_DEV")
+
                 // ── Everything else requires a valid JWT ─────────────────────
                 .anyRequest().authenticated()
             )

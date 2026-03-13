@@ -9,8 +9,8 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface CompanyService {
-//    Page<CompanyResponse> getCompanies(String query, String collegeId, Pageable pageable);
-	public List<CompanyResponse> getCompanies(String query, String collegeId, boolean linkedOnly);
+    List<CompanyResponse> getCompanies(String query, String collegeId, boolean linkedOnly);
+    Page<CompanyResponse> getCompaniesPaged(String query, String collegeId, boolean linkedOnly, Pageable pageable);
     CompanyResponse getCompanyById(String id);
     CompanyResponse getCompanyByName(String name);
     CompanyResponse createCompany(CompanyRequest dto);

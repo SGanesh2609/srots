@@ -1,29 +1,210 @@
-<configuration>
-    <property name="LOG_PATH" value="${LOG_PATH:-logs}"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="30 seconds">
 
+    <!--
+    ══════════════════════════════════════════════════════════════════════════════
+    SROTS Enterprise Logging Configuration
+    ══════════════════════════════════════════════════════════════════════════════
+
+    Outputs:
+      1. CONSOLE     — Human-readable colored output (all environments)
+      2. JSON_FILE   — Structured JSON for Kibana/ELK  (logs/srots-app.log)
+      3. ERROR_FILE  — ERROR-level only JSON            (logs/srots-error.log)
+
+    MDC fields automatically included in every JSON log line:
+      correlationId  — unique per HTTP request (UUID)
+      userId         — authenticated user's database ID
+      username       — authenticated user's login name
+      userRole       — STUDENT | CPH | STAFF | ADMIN | SROTS_DEV
+      collegeId      — user's college UUID
+      clientIp       — requester IP (honours X-Forwarded-For)
+      httpMethod     — GET | POST | PUT | DELETE | PATCH
+      requestUri     — e.g. /api/v1/jobs
+      responseStatus — HTTP status code (set at end of request)
+      responseTimeMs — total request duration in milliseconds
+      schedulerJobName — set only during scheduled tasks
+
+    Log file path:
+      Override via LOG_PATH environment variable (default: ./logs)
+      e.g. LOG_PATH=/var/log/srots java -jar srots-backend.jar
+    ══════════════════════════════════════════════════════════════════════════════
+    -->
+
+    <!-- Read from application.properties -->
+    <springProperty scope="context" name="appName"
+                    source="spring.application.name"
+                    defaultValue="srots-backend"/>
+    <springProperty scope="context" name="activeProfile"
+                    source="spring.profiles.active"
+                    defaultValue="default"/>
+
+    <!-- Log directory (override with LOG_PATH env var) -->
+    <property name="LOG_PATH"  value="${LOG_PATH:-logs}"/>
+    <property name="LOG_FILE"  value="${LOG_PATH}/srots-app.log"/>
+    <property name="ERR_FILE"  value="${LOG_PATH}/srots-error.log"/>
+
+    <!-- File size and retention -->
+    <property name="MAX_FILE_SIZE"  value="100MB"/>
+    <property name="MAX_HISTORY"    value="30"/>
+    <property name="TOTAL_SIZE_CAP" value="5GB"/>
+
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- APPENDER 1: CONSOLE (human-readable)                                  -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{40} | cid=%X{correlationId:-—} user=%X{username:-anonymous} role=%X{userRole:-—} job=%X{schedulerJobName:-—} - %msg%n%ex</pattern>
         </encoder>
     </appender>
 
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_PATH}/srots-backend-java.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- daily rollover -->
-            <fileNamePattern>${LOG_PATH}/srots-backend-java.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>10MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
-            <maxHistory>30</maxHistory>
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- APPENDER 2: JSON FILE (for Kibana/ELK)                                -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/archived/srots-app.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+            <totalSizeCap>${TOTAL_SIZE_CAP}</totalSizeCap>
+            <cleanHistoryOnStart>false</cleanHistoryOnStart>
         </rollingPolicy>
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
+        <!--
+            LogstashEncoder outputs one JSON object per log line.
+            All MDC fields are automatically included as top-level JSON fields.
+            Kibana/Logstash ingests this file directly.
+        -->
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"app":"${appName}","environment":"${activeProfile}"}</customFields>
+            <includeCallerData>false</includeCallerData>
+            <shortenedLoggerNameLength>40</shortenedLoggerNameLength>
+            <fieldNames>
+                <timestamp>@timestamp</timestamp>
+                <version>@version</version>
+                <message>message</message>
+                <logger>logger</logger>
+                <thread>thread</thread>
+                <levelValue>[ignore]</levelValue>
+            </fieldNames>
         </encoder>
     </appender>
 
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- APPENDER 3: ERROR FILE (ERROR-only, separate for alerting)            -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <file>${ERR_FILE}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/archived/srots-error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"app":"${appName}","environment":"${activeProfile}"}</customFields>
+            <!-- Include caller data for errors — shows file:line number -->
+            <includeCallerData>true</includeCallerData>
+            <fieldNames>
+                <timestamp>@timestamp</timestamp>
+                <version>@version</version>
+                <message>message</message>
+                <logger>logger</logger>
+                <thread>thread</thread>
+                <levelValue>[ignore]</levelValue>
+            </fieldNames>
+        </encoder>
+    </appender>
+
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- ASYNC WRAPPERS — non-blocking writes, critical for throughput          -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <appender name="ASYNC_JSON_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="JSON_FILE"/>
+        <queueSize>2048</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+        <includeCallerData>false</includeCallerData>
+    </appender>
+
+    <appender name="ASYNC_ERROR_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="ERROR_FILE"/>
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+        <includeCallerData>true</includeCallerData>
+    </appender>
+
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- LOGGER LEVELS                                                          -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Application code: DEBUG — capture all business events -->
+    <logger name="com.srots" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_JSON_FILE"/>
+        <appender-ref ref="ASYNC_ERROR_FILE"/>
+    </logger>
+
+    <!-- Spring framework: WARN — reduces framework noise -->
+    <logger name="org.springframework" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_JSON_FILE"/>
+        <appender-ref ref="ASYNC_ERROR_FILE"/>
+    </logger>
+
+    <!-- Spring Security: INFO — capture auth events (login success/failure/403) -->
+    <logger name="org.springframework.security" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_JSON_FILE"/>
+        <appender-ref ref="ASYNC_ERROR_FILE"/>
+    </logger>
+
+    <!-- Hibernate SQL: WARN in production. Enable locally in application.properties -->
+    <logger name="org.hibernate.SQL"           level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_JSON_FILE"/>
+    </logger>
+    <logger name="org.hibernate.orm.jdbc.bind"  level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_JSON_FILE"/>
+    </logger>
+
+    <!-- HikariCP: WARN — suppress routine pool lifecycle messages -->
+    <logger name="com.zaxxer.hikari" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_JSON_FILE"/>
+        <appender-ref ref="ASYNC_ERROR_FILE"/>
+    </logger>
+
+    <!-- Apache POI (Excel parsing): WARN -->
+    <logger name="org.apache.poi" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_JSON_FILE"/>
+    </logger>
+
+    <!-- JavaMail / SMTP: WARN (was DEBUG in application.properties — too noisy for prod) -->
+    <logger name="org.springframework.mail" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_JSON_FILE"/>
+        <appender-ref ref="ASYNC_ERROR_FILE"/>
+    </logger>
+    <logger name="com.sun.mail" level="WARN" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_JSON_FILE"/>
+    </logger>
+
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- ROOT LOGGER                                                            -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
     <root level="INFO">
-        <appender-ref ref="CONSOLE" />
-        <appender-ref ref="FILE" />
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_JSON_FILE"/>
+        <appender-ref ref="ASYNC_ERROR_FILE"/>
     </root>
+
 </configuration>

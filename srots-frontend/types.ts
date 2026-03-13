@@ -1020,17 +1020,22 @@ export enum Role {
     STUDENT   = 'STUDENT',
 }
 
+/**
+ * Values match the backend @Enumerated(EnumType.STRING) constant names exactly.
+ * Human-readable display labels are in PLATFORM_LABELS in FreeCoursesSection.tsx.
+ */
 export enum CoursePlatform {
-    YOUTUBE  = 'YouTube',
-    COURSERA = 'Coursera',
-    UDEMY    = 'Udemy',
-    LINKEDIN = 'LinkedIn',
-    OTHER    = 'Other',
+    YOUTUBE  = 'YOUTUBE',
+    COURSERA = 'COURSERA',
+    UDEMY    = 'UDEMY',
+    LINKEDIN = 'LINKEDIN',
+    OTHER    = 'OTHER',
 }
 
 export enum CourseStatus {
     ACTIVE   = 'ACTIVE',
     INACTIVE = 'INACTIVE',
+    PENDING  = 'PENDING',
 }
 
 export type MarkFormat = 'Percentage' | 'CGPA' | 'Grade' | 'Marks';
@@ -1483,6 +1488,12 @@ export interface Job {
     allowedBranches?:  string[];
     eligibleBatches?:  number[];
 
+    // ── Extended job details ──────────────────────────────────────────────────
+    companyLogo?:            string;
+    serviceBond?:            string;
+    joiningDate?:            string;
+    vacancies?:              number;
+
     rounds?:                 any[];
     requiredStudentFields?:  string[];
     documents?:              { name: string; url: string }[];
@@ -1517,6 +1528,10 @@ export interface JobFormState {
     eeoStatement:    string;
     applicationDeadline: string;
     status:          string;
+    companyLogo?:    string;
+    serviceBond?:    string;
+    joiningDate?:    string;
+    vacancies?:      number;
 
     responsibilitiesJson:         string[];
     qualificationsJson:           string[];
@@ -1578,6 +1593,10 @@ export interface Post {
     commentsDisabled: boolean;
     createdAt:        string;
     comments:         PostComment[];
+    /** Soft-delete metadata — present only in admin/CPH responses */
+    isDeleted?:       boolean;
+    deletedAt?:       string;
+    deletedBy?:       string;
 }
 
 export interface PostComment {
@@ -1645,9 +1664,11 @@ export interface GlobalCompany {
     name:          string;
     website:       string;
     description:   string;
+    /** Logo URL or first letter — set by backend convertToResponse */
     logo?:         string;
     headquarters?: string;
-    isSubscribed?: boolean;
+    fullAddress?:  string;
+    isSubscribed:  boolean;
 }
 
 export interface FreeCourse {
@@ -1660,6 +1681,7 @@ export interface FreeCourse {
     postedBy:        string;
     status:          CourseStatus;
     lastVerifiedAt?: string;
+    createdAt?:      string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

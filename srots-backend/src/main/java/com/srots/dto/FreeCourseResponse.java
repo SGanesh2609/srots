@@ -16,7 +16,7 @@ public class FreeCourseResponse {
     private String link;
     private CoursePlatform platform; 
     private String postedBy;
-    private LocalDateTime created_at;
+    private LocalDateTime createdAt;
     private CourseStatus status;        // Added
     private LocalDateTime lastVerifiedAt; // Added
 	public FreeCourseResponse() {
@@ -24,9 +24,8 @@ public class FreeCourseResponse {
 		// TODO Auto-generated constructor stub
 	}
 	public FreeCourseResponse(String id, String name, String technology, String description, String link,
-			CoursePlatform platform, String postedBy, LocalDateTime created_at, CourseStatus status,
+			CoursePlatform platform, String postedBy, LocalDateTime createdAt, CourseStatus status,
 			LocalDateTime lastVerifiedAt) {
-		super();
 		this.id = id;
 		this.name = name;
 		this.technology = technology;
@@ -34,7 +33,7 @@ public class FreeCourseResponse {
 		this.link = link;
 		this.platform = platform;
 		this.postedBy = postedBy;
-		this.created_at = created_at;
+		this.createdAt = createdAt;
 		this.status = status;
 		this.lastVerifiedAt = lastVerifiedAt;
 	}
@@ -80,11 +79,11 @@ public class FreeCourseResponse {
 	public void setPostedBy(String postedBy) {
 		this.postedBy = postedBy;
 	}
-	public LocalDateTime getCreated_at() {
-		return created_at;
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
 	}
-	public void setCreated_at(LocalDateTime created_at) {
-		this.created_at = created_at;
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
 	}
 	public CourseStatus getStatus() {
 		return status;

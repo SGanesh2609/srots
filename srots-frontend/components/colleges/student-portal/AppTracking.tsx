@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Job, Student } from '../../../types';
+import { useSearchParams } from 'react-router-dom';
+import { Student } from '../../../types';
 import { JobService } from '../../../services/jobService';
-import { 
-  Calendar as CalendarIcon, CheckCircle, Clock, Lock, 
+import {
+  Calendar as CalendarIcon, CheckCircle, Clock, Lock,
   XCircle, ChevronRight, Briefcase, Building, ChevronLeft, Loader2
 } from 'lucide-react';
+
+const PAGE_SIZE = 10;
 
 /**
  * FIXED: AppTracking with correct JobService method calls
@@ -32,19 +35,27 @@ interface ApplicationData {
 }
 
 export const AppTracking: React.FC<AppTrackingProps> = ({ student }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [applications, setApplications] = useState<ApplicationData[]>([]);
-  const [trackerJobId, setTrackerJobId] = useState<string | null>(null);
+  const [trackerJobId, setTrackerJobId] = useState<string | null>(
+    searchParams.get('trackerJob')
+  );
+
+  const handleSelectTracker = (jobId: string | null) => {
+    setTrackerJobId(jobId);
+    setSearchParams(prev => { const p = new URLSearchParams(prev); if (jobId) p.set('trackerJob', jobId); else p.delete('trackerJob'); return p; }, { replace: true });
+  };
   const [loading, setLoading] = useState(true);
   const [timeline, setTimeline] = useState<any[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
+  const [appPage, setAppPage] = useState(0);
 
   // FIXED: Backend call without student ID - uses JWT token
   useEffect(() => {
       const fetchApps = async () => {
           try {
-              console.log('🔍 [AppTracking] Fetching student applications (no ID needed - from token)');
               const results = await JobService.getStudentApplications(); // FIXED: No parameters
-              console.log('✅ [AppTracking] Applications received:', results.length);
               
               if (Array.isArray(results)) {
                 setApplications(results.filter((a: any) => !!a.job));
@@ -67,9 +78,7 @@ export const AppTracking: React.FC<AppTrackingProps> = ({ student }) => {
           setTimelineLoading(true);
           const fetchTimeline = async () => {
               try {
-                  console.log('🔍 [AppTracking] Fetching timeline for job:', trackerJobId);
                   const data = await JobService.getStudentApplicationTimeline(trackerJobId); // FIXED: Only jobId
-                  console.log('✅ [AppTracking] Timeline received:', data);
                   setTimeline(Array.isArray(data) ? data : []);
               } catch (error) {
                   console.error("❌ [AppTracking] Failed to load timeline:", error);
@@ -86,7 +95,7 @@ export const AppTracking: React.FC<AppTrackingProps> = ({ student }) => {
   
   if (trackerJobId) {
       const app = applications.find(a => a.job?.id === trackerJobId);
-      if (!app) return <div className="p-4">Job not found. <button onClick={() => setTrackerJobId(null)}>Back</button></div>;
+      if (!app) return <div className="p-4">Job not found. <button onClick={() => handleSelectTracker(null)}>Back</button></div>;
       
       const { job, status, appliedDate } = app;
 
@@ -95,7 +104,7 @@ export const AppTracking: React.FC<AppTrackingProps> = ({ student }) => {
 
       return (
           <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in slide-in-from-right-4">
-              <button onClick={() => setTrackerJobId(null)} className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-bold mb-4">
+              <button onClick={() => handleSelectTracker(null)} className="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-bold mb-4">
                   <ChevronLeft size={20} /> Back to Applications
               </button>
               
@@ -170,21 +179,25 @@ export const AppTracking: React.FC<AppTrackingProps> = ({ student }) => {
 
   if (loading) return <div className="p-8 text-center text-gray-500"><Loader2 className="animate-spin inline mr-2" /> Loading applications...</div>;
 
+  const totalPages = Math.ceil(applications.length / PAGE_SIZE);
+  const pageApps = applications.slice(appPage * PAGE_SIZE, (appPage + 1) * PAGE_SIZE);
+
   return (
       <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
               <Briefcase size={24} className="text-blue-600"/> Application Status Tracker
           </h2>
           <div className="grid gap-4">
-              {applications.map(({ job, status }) => {
+              {pageApps.map(({ job, status }) => {
                   if (!job) return null;
                   return (
-                    <div 
-                        key={job.id} 
-                        onClick={() => setTrackerJobId(job.id)}
-                        className="bg-white p-6 rounded-xl border shadow-sm hover:shadow-md transition-all cursor-pointer group hover:border-blue-300 relative overflow-hidden"
+                    <button
+                        key={job.id}
+                        type="button"
+                        onClick={() => handleSelectTracker(job.id)}
+                        className="w-full text-left bg-white p-6 rounded-xl border shadow-sm hover:shadow-md transition-all cursor-pointer group hover:border-blue-300 relative overflow-hidden"
                     >
-                        <div className="absolute right-0 top-0 h-full w-1 bg-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div className="absolute right-0 top-0 h-full w-1 bg-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="flex justify-between items-center">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-700 font-bold text-lg">
@@ -204,7 +217,7 @@ export const AppTracking: React.FC<AppTrackingProps> = ({ student }) => {
                                 </p>
                             </div>
                         </div>
-                    </div>
+                    </button>
                   );
               })}
               {applications.length === 0 && (
@@ -214,6 +227,25 @@ export const AppTracking: React.FC<AppTrackingProps> = ({ student }) => {
                   </div>
               )}
           </div>
+
+          {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-2">
+                  <p className="text-xs text-gray-500">
+                      Showing {appPage * PAGE_SIZE + 1}–{Math.min((appPage + 1) * PAGE_SIZE, applications.length)} of {applications.length}
+                  </p>
+                  <div className="flex items-center gap-1">
+                      <button onClick={() => setAppPage(p => Math.max(0, p - 1))} disabled={appPage === 0} className="p-1.5 rounded-lg border text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+                          <ChevronLeft size={16} />
+                      </button>
+                      {Array.from({ length: totalPages }, (_, i) => (
+                          <button key={i} onClick={() => setAppPage(i)} className={`w-8 h-8 rounded-lg text-xs font-bold border ${appPage === i ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}>{i + 1}</button>
+                      ))}
+                      <button onClick={() => setAppPage(p => Math.min(totalPages - 1, p + 1))} disabled={appPage === totalPages - 1} className="p-1.5 rounded-lg border text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+                          <ChevronRight size={16} />
+                      </button>
+                  </div>
+              </div>
+          )}
       </div>
   );
 };

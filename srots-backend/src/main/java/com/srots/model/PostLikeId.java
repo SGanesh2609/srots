@@ -8,20 +8,18 @@ import lombok.*;
 @Embeddable
 @Data
 @NoArgsConstructor // Lombok generates the empty constructor
-@AllArgsConstructor // Lombok generates the (String, String) constructor
+//@AllArgsConstructor // Lombok generates the (String, String) constructor
 public class PostLikeId implements Serializable {
     private String postId;
     private String userId;
 
-    // Hibernate REQUIRES this explicit no-args constructor if Lombok fails
-    public PostLikeId() {} 
+//    public PostLikeId(String postId2, String userId2) {
+//		// TODO Auto-generated constructor stub
+//	}
+    
+    
 
-    public PostLikeId(String postId, String userId) {
-        this.postId = postId;
-        this.userId = userId;
-    }
-
-    // Embeddable IDs MUST override equals and hashCode
+	// Embeddable IDs MUST override equals and hashCode
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -30,7 +28,13 @@ public class PostLikeId implements Serializable {
         return Objects.equals(postId, that.postId) && Objects.equals(userId, that.userId);
     }
 
-    @Override
+    public PostLikeId(String postId, String userId) {
+	super();
+	this.postId = postId;
+	this.userId = userId;
+}
+
+	@Override
     public int hashCode() {
         return Objects.hash(postId, userId);
     }

@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useUrlParam } from '../../../../hooks/useUrlParam';
 import { PostService } from '../../../../services/postService';
-import { Post, User, Role } from '../../../../types';
+import { Post, User } from '../../../../types';
+import { useToast } from '../../../../components/common/Toast';
+import { useDebounce } from '../../../../hooks/useDebounce';
 import { Plus, PenTool, Sparkles, MessageCircle } from 'lucide-react';
 import { DeleteConfirmationModal } from '../../../../components/common/DeleteConfirmationModal';
 
@@ -14,50 +17,72 @@ interface PostsSectionProps {
 }
 
 export const PostsSection: React.FC<PostsSectionProps> = ({ user }) => {
+  const toast = useToast();
+  const abortRef = useRef<AbortController | null>(null);
+
   const [posts, setPosts] = useState<Post[]>([]);
-  const [viewTab, setViewTab] = useState<'all' | 'my'>('all');
+  const [viewTab, setViewTab] = useUrlParam('ptab', 'all');
+
+  const handleViewTab = (tab: 'all' | 'my') => setViewTab(tab);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 350);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // FIXED: Use canCreatePost instead of canModeratePost
   const canCreate = PostService.canCreatePost(user);
 
-  useEffect(() => {
-      refreshPosts();
-  }, [user.collegeId, searchQuery, viewTab]);
+  const refreshPosts = useCallback(async () => {
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    setIsLoading(true);
+    try {
+      const authorIdFilter = viewTab === 'my' ? user.id : undefined;
+      const results = await PostService.searchPosts(user.collegeId || '', user.id, debouncedSearch, authorIdFilter);
+      setPosts([...results]);
+    } catch (err: any) {
+      if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
+      toast.error('Failed to load posts. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user.collegeId, user.id, debouncedSearch, viewTab]);
 
-  const refreshPosts = async () => {
-      setIsLoading(true);
-      try {
-          const authorIdFilter = viewTab === 'my' ? user.id : undefined;
-          // FIXED: Pass currentUserId as second parameter
-          const results = await PostService.searchPosts(user.collegeId || '', user.id, searchQuery, authorIdFilter);
-          setPosts([...results]);
-      } finally {
-          setIsLoading(false);
-      }
-  };
+  useEffect(() => {
+    refreshPosts();
+    return () => { abortRef.current?.abort(); };
+  }, [refreshPosts]);
 
   const handleCreatePost = async (content: string, images: string[], docs: {name: string, url: string}[]) => {
+    try {
       await PostService.createPost(content, images, docs, user);
+      toast.success('Post published successfully.');
       refreshPosts();
       setShowCreateModal(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {
+      toast.error('Failed to publish post. Please try again.');
+    }
   };
 
   const handleRequestDelete = (postId: string) => {
-      setDeletePostId(postId);
+    setDeletePostId(postId);
   };
 
   const confirmDeletePost = async () => {
-      if (deletePostId) {
-          // FIXED: Pass userId and role
-          await PostService.deletePost(deletePostId, user.id, user.role);
-          refreshPosts();
-          setDeletePostId(null);
+    if (deletePostId) {
+      try {
+        await PostService.deletePost(deletePostId, user.id, user.role);
+        // Optimistic update: remove from local state immediately
+        setPosts(prev => prev.filter(p => p.id !== deletePostId));
+        toast.success('Post deleted.');
+      } catch {
+        toast.error('Failed to delete post. Please try again.');
+        refreshPosts(); // re-sync on failure
+      } finally {
+        setDeletePostId(null);
       }
+    }
   };
 
   return (
@@ -77,11 +102,11 @@ export const PostsSection: React.FC<PostsSectionProps> = ({ user }) => {
               )}
           </div>
 
-          <PostsFilter 
+          <PostsFilter
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
-              viewTab={viewTab}
-              setViewTab={setViewTab}
+              viewTab={viewTab as 'all' | 'my'}
+              setViewTab={handleViewTab}
               isAuthority={canCreate}
           />
 

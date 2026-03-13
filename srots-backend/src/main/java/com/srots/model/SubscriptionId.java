@@ -6,25 +6,18 @@ import jakarta.persistence.Embeddable;
 import lombok.*;
 
 @Embeddable
-@Getter 
+@Getter
 @Setter
 @NoArgsConstructor // Required by Hibernate
-@AllArgsConstructor
+// @AllArgsConstructor
 @EqualsAndHashCode // Explicitly added to satisfy Hibernate warnings
 public class SubscriptionId implements Serializable {
-    
-    @Column(name = "college_id", length = 36, columnDefinition = "VARCHAR(36)")
-    private String collegeId;
 
-    @Column(name = "company_id", length = 36, columnDefinition = "VARCHAR(36)")
-    private String companyId;
-    
-    
+	@Column(name = "college_id", length = 36, columnDefinition = "VARCHAR(36)")
+	private String collegeId;
 
-	public SubscriptionId() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
+	@Column(name = "company_id", length = 36, columnDefinition = "VARCHAR(36)")
+	private String companyId;
 
 	public SubscriptionId(String collegeId, String companyId) {
 		super();
@@ -47,7 +40,5 @@ public class SubscriptionId implements Serializable {
 	public void setCompanyId(String companyId) {
 		this.companyId = companyId;
 	}
-    
-    
-    
+
 }

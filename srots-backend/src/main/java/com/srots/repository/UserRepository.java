@@ -298,4 +298,14 @@ public interface UserRepository extends JpaRepository<User, String> {
     List<User> findByCollegeId(String collegeId);
 
 	boolean existsByUsername(String username);
+
+    // ── Scheduler: soft-deleted users past retention period ───────────────────
+
+    /**
+     * Returns users that are soft-deleted AND whose deletedAt timestamp is
+     * older than the given cutoff (i.e. soft-deleted more than N days ago).
+     * Used by CleanupScheduler to permanently delete stale soft-deleted accounts.
+     */
+    @Query("SELECT u FROM User u WHERE u.isDeleted = true AND u.deletedAt IS NOT NULL AND u.deletedAt < :cutoff")
+    List<User> findSoftDeletedBefore(@Param("cutoff") java.time.LocalDateTime cutoff);
 }

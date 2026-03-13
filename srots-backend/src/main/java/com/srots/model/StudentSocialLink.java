@@ -30,17 +30,7 @@ public class StudentSocialLink {
     @Enumerated(EnumType.STRING) private Platform platform;
     public enum Platform { LinkedIn, GitHub, Portfolio, YouTube, Other }
     @Column(columnDefinition = "TEXT") private String url;
-	public StudentSocialLink() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-	public StudentSocialLink(String id, User student, Platform platform, String url) {
-		super();
-		this.id = id;
-		this.student = student;
-		this.platform = platform;
-		this.url = url;
-	}
+
 	public String getId() {
 		return id;
 	}

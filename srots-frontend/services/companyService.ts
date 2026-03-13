@@ -4,27 +4,39 @@ import { GlobalCompany, FreeCourse, User, Role, CourseStatus, AddressFormData } 
 
 export const CompanyService = {
 // --- Hiring Partners (Companies) ---
-searchGlobalCompanies: async (query: string, collegeId?: string): Promise<GlobalCompany[]> => {
-  const params: any = { query };
+searchGlobalCompanies: async (
+  query: string,
+  collegeId?: string,
+  page = 0,
+  size = 12,
+): Promise<{ companies: GlobalCompany[]; totalPages: number; totalElements: number }> => {
+  const params: any = { page, size };
+  if (query?.trim()) params.query = query.trim();
   if (collegeId) params.collegeId = collegeId;
-  
   const response = await api.get('/companies', { params });
   const data = response.data;
-  
-  // Handle both List and {content: [...]} responses safely
-  if (Array.isArray(data)) return data;
-  if (data && Array.isArray(data.content)) return data.content;
-  return [];
+  return {
+    companies: data?.content ?? [],
+    totalPages: data?.totalPages ?? 1,
+    totalElements: data?.totalElements ?? 0,
+  };
 },
 
-searchCollegeCompanies: async (collegeId: string, query: string): Promise<GlobalCompany[]> => {
-  const params = { collegeId, query, linkedOnly: 'true' };
+searchCollegeCompanies: async (
+  collegeId: string,
+  query: string,
+  page = 0,
+  size = 12,
+): Promise<{ companies: GlobalCompany[]; totalPages: number; totalElements: number }> => {
+  const params: any = { collegeId, linkedOnly: 'true', page, size };
+  if (query?.trim()) params.query = query.trim();
   const response = await api.get('/companies', { params });
   const data = response.data;
-  
-  if (Array.isArray(data)) return data;
-  if (data && Array.isArray(data.content)) return data.content;
-  return [];
+  return {
+    companies: data?.content ?? [],
+    totalPages: data?.totalPages ?? 1,
+    totalElements: data?.totalElements ?? 0,
+  };
 },
 
   createGlobalCompany: async (data: any) => {
@@ -120,6 +132,12 @@ searchCollegeCompanies: async (collegeId: string, query: string): Promise<Global
 
   getCourseCategories: async (): Promise<string[]> => {
     const response = await api.get('/free-courses/categories');
+    return response.data;
+  },
+
+  /** Returns { technology: count } for active courses */
+  getCourseTechCounts: async (): Promise<Record<string, number>> => {
+    const response = await api.get('/free-courses/tech-counts');
     return response.data;
   },
 

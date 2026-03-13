@@ -5,16 +5,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
+//@AllArgsConstructor
 @NoArgsConstructor
 public class TimelineDTO {
     private String roundName;
     private String status; // Qualified, Not Selected, Pending, Wait for Update
     private String date;
-	public TimelineDTO() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
+    
+    
+
 	public TimelineDTO(String roundName, String status, String date) {
 		super();
 		this.roundName = roundName;

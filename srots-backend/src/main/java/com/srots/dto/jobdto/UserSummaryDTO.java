@@ -14,19 +14,7 @@ public class UserSummaryDTO {
     private String username;
     private String role;
     private String avatarUrl;
-	public UserSummaryDTO() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-	public UserSummaryDTO(String id, String fullName, String email, String username, String role, String avatarUrl) {
-		super();
-		this.id = id;
-		this.fullName = fullName;
-		this.email = email;
-		this.username = username;
-		this.role = role;
-		this.avatarUrl = avatarUrl;
-	}
+
 	public String getId() {
 		return id;
 	}

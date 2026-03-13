@@ -105,7 +105,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateUser }) 
   };
 
   return (
-      <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
            <input 
                type="file" 
                ref={fileInputRef} 
@@ -114,26 +114,26 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateUser }) 
                onChange={handleProfileImageUpload}
            />
 
-           <div className="bg-white rounded-xl shadow-sm border p-8 flex flex-col md:flex-row items-center gap-8">
+           <div className="bg-white rounded-xl shadow-sm border p-5 flex flex-col md:flex-row items-center gap-6">
                <div className="relative group cursor-pointer" onClick={() => !isUploading && fileInputRef.current?.click()}>
                    {isUploading ? (
-                       <div className="w-32 h-32 rounded-full border-4 border-gray-50 shadow-md flex items-center justify-center bg-gray-100">
-                           <Loader2 className="animate-spin text-blue-600" size={32}/>
+                       <div className="w-24 h-24 rounded-full border-4 border-gray-50 shadow-md flex items-center justify-center bg-gray-100">
+                           <Loader2 className="animate-spin text-blue-600" size={28}/>
                        </div>
                    ) : (
-                       <img 
-                          src={profileUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileUser.fullName)}&background=random`} 
-                          alt="Profile" 
-                          className="w-32 h-32 rounded-full border-4 border-gray-50 shadow-md object-cover"
+                       <img
+                          src={profileUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileUser.fullName)}&background=random`}
+                          alt="Profile"
+                          className="w-24 h-24 rounded-full border-4 border-gray-50 shadow-md object-cover"
                        />
                    )}
                    <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Camera className="text-white" size={24} />
+                      <Camera className="text-white" size={20} />
                    </div>
-                   <span className="absolute bottom-2 right-2 w-6 h-6 rounded-full border-2 border-white bg-blue-600 flex items-center justify-center text-white text-[10px] font-bold">✓</span>
+                   <span className="absolute bottom-1.5 right-1.5 w-5 h-5 rounded-full border-2 border-white bg-blue-600 flex items-center justify-center text-white text-[9px] font-bold">✓</span>
                </div>
                <div className="text-center md:text-left space-y-2">
-                   <h1 className="text-3xl font-bold text-gray-900">{profileUser.fullName}</h1>
+                   <h1 className="text-2xl font-bold text-gray-900">{profileUser.fullName}</h1>
                    <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                        <span className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 bg-blue-100 text-blue-700">
                            <Shield size={14} /> {profileUser.role === Role.ADMIN ? 'Srots Admin' : 'Srots Dev'}
@@ -147,8 +147,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateUser }) 
                </div>
            </div>
 
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <div className="bg-white rounded-xl shadow-sm border p-6">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl mx-auto w-full">
+               <div className="bg-white rounded-xl shadow-sm border p-5">
                    <div className="flex justify-between items-center mb-6">
                        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                            <Mail size={20} className="text-blue-600" /> Personal Details
@@ -319,8 +319,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateUser }) 
                    </div>
                </div>
 
-               <div className="bg-white rounded-xl shadow-sm border p-6">
-                   <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+               <div className="bg-white rounded-xl shadow-sm border p-5">
+                   <h3 className="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
                        <Shield size={20} className="text-blue-600" /> Account Overview
                    </h3>
                    <div className="space-y-4">

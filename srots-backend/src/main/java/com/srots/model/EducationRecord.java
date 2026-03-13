@@ -20,6 +20,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -29,9 +30,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "education_records")
-@Data 
-@NoArgsConstructor 
+@Table(name = "education_records", indexes = {
+    @Index(name = "idx_edu_student_id", columnList = "student_id"),
+    @Index(name = "idx_edu_level",      columnList = "level")
+})
+@Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class EducationRecord {
 
@@ -136,31 +140,6 @@ public class EducationRecord {
     private User student;
     
  
-	public EducationRecord() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-
-	
-
-	public EducationRecord(String id, EducationLevel level, String institution, String board, String yearOfPassing,
-			String scoreDisplay, ScoreType scoreType, BigDecimal percentageEquiv, String specialization,
-			Integer currentArrears, String semestersData, User student) {
-		super();
-		this.id = id;
-		this.level = level;
-		this.institution = institution;
-		this.board = board;
-		this.yearOfPassing = yearOfPassing;
-		this.scoreDisplay = scoreDisplay;
-		this.scoreType = scoreType;
-		this.percentageEquiv = percentageEquiv;
-		this.specialization = specialization;
-		this.currentArrears = currentArrears;
-		this.semestersData = semestersData;
-		this.student = student;
-	}
-
 
 
 	public String getId() {

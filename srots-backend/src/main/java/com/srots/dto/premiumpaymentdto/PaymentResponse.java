@@ -29,35 +29,7 @@ public class PaymentResponse {
     private String verifiedByAdminId;
     private String verifiedByAdminName;
     private String rejectionReason;
-	public PaymentResponse() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-	public PaymentResponse(String id, String userId, String userFullName, String username, String collegeId,
-			String collegeName, String utrNumber, String paymentScreenshotUrl, String premiumMonths,
-			String premiumMonthsLabel, int premiumMonthsCount, BigDecimal amount, String status,
-			LocalDateTime submittedAt, LocalDateTime verifiedAt, String verifiedByAdminId, String verifiedByAdminName,
-			String rejectionReason) {
-		super();
-		this.id = id;
-		this.userId = userId;
-		this.userFullName = userFullName;
-		this.username = username;
-		this.collegeId = collegeId;
-		this.collegeName = collegeName;
-		this.utrNumber = utrNumber;
-		this.paymentScreenshotUrl = paymentScreenshotUrl;
-		this.premiumMonths = premiumMonths;
-		this.premiumMonthsLabel = premiumMonthsLabel;
-		this.premiumMonthsCount = premiumMonthsCount;
-		this.amount = amount;
-		this.status = status;
-		this.submittedAt = submittedAt;
-		this.verifiedAt = verifiedAt;
-		this.verifiedByAdminId = verifiedByAdminId;
-		this.verifiedByAdminName = verifiedByAdminName;
-		this.rejectionReason = rejectionReason;
-	}
+
 	public String getId() {
 		return id;
 	}

@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Layout } from './components/colleges/shared/ui/Layout';
 import { AdminPortal } from './pages/srots-user/AdminPortal';
 import { CPUserPortal } from './pages/cp-user/CPUserPortal';
 import { StudentPortal } from './pages/student/StudentPortal';
-import { Role, User } from './types';
+import { Role, User, Student } from './types';
 import {
   Mail, Lock, Loader2, Eye, EyeOff, ShieldCheck,
   UserCheck, GraduationCap, Terminal, Zap, ArrowLeft, Send, CheckCircle,
   Clock, XCircle, AlertCircle, CreditCard, Star, Upload, Diamond,
 } from 'lucide-react';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { ToastProvider } from './components/common/Toast';
 import { useAppDispatch, useAppSelector } from './store/hooks';
-import { login, logout, updateUser } from './store/slices/authSlice';
+import { login, logout, updateUser, isTokenExpired } from './store/slices/authSlice';
 import { Modal } from './components/common/Modal';
 import { AuthService } from './services/authService';
 import {
@@ -26,6 +27,112 @@ import {
 
 const UPI_QR_IMAGE_PATH = '/PaymentScanner.jpeg';
 const UPI_ID            = '63095225692@ybl';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE-LEVEL ROUTING COMPONENTS
+//
+// These MUST live outside the App render function so React never sees a new
+// component type on re-render (which would unmount/remount the whole subtree
+// and cause state loss + visual flicker on every parent re-render).
+//
+// Each portal route component:
+//   • Reads `view` from useParams — survives browser refresh at any URL
+//   • Reads `user` from Redux — single source of truth
+//   • Dispatches updateUser directly — no prop-drilling through App
+//   • Receives only `onLogout` from App (needed to clear App's premium state)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * ProtectedRoute — guards a route by role.
+ * Reads auth state from Redux directly (stable, no App closure needed).
+ * On fail → redirects to /login with `state.from` so we can return after login.
+ */
+const ProtectedRoute: React.FC<{
+  children:     JSX.Element;
+  allowedRoles?: Role[];
+}> = ({ children, allowedRoles }) => {
+  const location  = useLocation();
+  const { user, isAuthenticated } = useAppSelector(s => s.auth);
+  const token = localStorage.getItem('SROTS_AUTH_TOKEN');
+
+  if (!user || !token || !isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />;
+  }
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+  return children;
+};
+
+/** Admin / SROTS-Dev portal route — reads :view param from URL */
+const AdminRoute: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
+  const { view = 'profile' }  = useParams<{ view: string }>();
+  const { user }              = useAppSelector(s => s.auth);
+  const dispatch              = useAppDispatch();
+  const navigate              = useNavigate();
+  if (!user) return null;
+  return (
+    <Layout user={user} currentView={view} onLogout={onLogout}
+      onNavigate={v => navigate(`/admin/${v}`)}>
+      <AdminPortal view={view} user={user}
+        onUpdateUser={u => dispatch(updateUser(u))} />
+    </Layout>
+  );
+};
+
+/** CP Head / Staff portal route — reads :view param from URL */
+const CPRoute: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
+  const { view = 'jobs' }     = useParams<{ view: string }>();
+  const { user }              = useAppSelector(s => s.auth);
+  const dispatch              = useAppDispatch();
+  const navigate              = useNavigate();
+  if (!user) return null;
+  return (
+    <Layout user={user} currentView={view} onLogout={onLogout}
+      onNavigate={v => navigate(`/cp/${v}`)}>
+      <CPUserPortal view={view} user={user}
+        onUpdateUser={u => dispatch(updateUser(u))} />
+    </Layout>
+  );
+};
+
+/** Student portal route — reads :view param from URL */
+const StudentRoute: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
+  const { view = 'jobs' }     = useParams<{ view: string }>();
+  const { user }              = useAppSelector(s => s.auth);
+  const dispatch              = useAppDispatch();
+  const navigate              = useNavigate();
+  if (!user) return null;
+  return (
+    <Layout user={user} currentView={view} onLogout={onLogout}
+      onNavigate={v => navigate(`/student/${v}`)}>
+      <StudentPortal view={view} student={user as Student}
+        onUpdateUser={u => dispatch(updateUser(u))} />
+    </Layout>
+  );
+};
+
+/** Unauthorized page — reusable, defined once */
+const UnauthorizedPage: React.FC<{ onGoBack: () => void }> = ({ onGoBack }) => (
+  <div className="min-h-screen flex flex-col items-center justify-center gap-6 text-center p-8 bg-gray-50">
+    <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
+      <span className="text-4xl">🚫</span>
+    </div>
+    <div>
+      <h1 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h1>
+      <p className="text-gray-500 text-sm max-w-sm">
+        You don't have permission to access this page.
+        Please contact your administrator if you believe this is a mistake.
+      </p>
+    </div>
+    <button
+      onClick={onGoBack}
+      className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 text-sm transition-colors"
+    >
+      Go to My Dashboard
+    </button>
+  </div>
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PremiumPaymentPage
@@ -383,18 +490,67 @@ const App: React.FC = () => {
   const [premiumUsername, setPremiumUsername] = useState('');
   const [premiumUserId,   setPremiumUserId]   = useState('');  // ← NEW
 
+  // ── Track previous user id to detect the null→user transition (just logged in).
+  // Store only the id (string), not the full User object — avoids spurious
+  // re-runs caused by Redux creating a new object reference on every state update.
+  const prevUserRef = useRef<string | null>(currentUser?.id ?? null);
+
+  // ── 1. Token/Redux mismatch guard ─────────────────────────────────────────
   useEffect(() => {
     const token = localStorage.getItem('SROTS_AUTH_TOKEN');
     if (!token && currentUser) {
-      console.warn('No token found but user in Redux → forcing logout');
+      // Redux has a user but token is gone (cleared externally) — force logout
+      console.warn('[Auth] Token missing but Redux has user → forcing logout');
       dispatch(logout());
       navigate('/login', { replace: true });
     }
-    if (token && !currentUser && !authLoading) {
-      console.warn('Token exists but no user in Redux → redirect to login');
-      navigate('/login', { replace: true });
+  }, [currentUser, dispatch, navigate]);
+
+  // ── 2. Listen for 401 session-expired events fired by api.ts ─────────────
+  useEffect(() => {
+    const handleSessionExpired = (e: Event) => {
+      const from = (e as CustomEvent<{ from: string }>).detail?.from || '/';
+      console.warn('[Auth] Session expired — redirecting to login. Will return to:', from);
+      dispatch(logout());
+      navigate('/login', { state: { from }, replace: true });
+    };
+    window.addEventListener('srots:auth:expired', handleSessionExpired);
+    return () => window.removeEventListener('srots:auth:expired', handleSessionExpired);
+  }, [dispatch, navigate]);
+
+  // ── 2b. Proactive JWT expiry check — catches sessions that expire mid-use ─
+  useEffect(() => {
+    const check = () => {
+      const token = localStorage.getItem('SROTS_AUTH_TOKEN');
+      if (token && isTokenExpired(token)) {
+        console.info('[App] JWT expired mid-session — logging out');
+        dispatch(logout());
+      }
+    };
+    check(); // immediate check on mount
+    const id = setInterval(check, 60_000); // then every 60 s
+    return () => clearInterval(id);
+  }, [dispatch]);
+
+  // ── 3. Redirect to intended URL after successful login ───────────────────
+  useEffect(() => {
+    const wasLoggedOut = !prevUserRef.current;
+    const isNowLoggedIn = !!currentUser;
+
+    if (wasLoggedOut && isNowLoggedIn) {
+      // User just logged in — go to where they were trying to reach, or default dashboard
+      const rawFrom = (location.state as any)?.from as string | undefined;
+      // Validate that `from` is an internal path to prevent open-redirect phishing
+      const isInternalPath = (p: string) =>
+        typeof p === 'string' && p.startsWith('/') && !p.startsWith('//') && !p.includes('://');
+      const destination = rawFrom && isInternalPath(rawFrom) && rawFrom !== '/login' && rawFrom !== '/'
+        ? rawFrom
+        : getDefaultDashboard(currentUser.role);
+      navigate(destination, { replace: true });
     }
-  }, [currentUser, authLoading, dispatch, navigate]);
+
+    prevUserRef.current = currentUser?.id ?? null;
+  }, [currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -413,7 +569,14 @@ const App: React.FC = () => {
         setPremiumUsername(username);
         // ← NEW: AuthController now includes userId in the 402 body.
         // err.premiumStatus.userId is typed as optional string on PremiumAccessStatus.
-        setPremiumUserId(err.premiumStatus.userId ?? '');
+        // Log a warning if userId is missing — without it the payment submission
+        // would fail silently because the backend requires a valid userId.
+        const resolvedUserId = err.premiumStatus.userId;
+        if (!resolvedUserId) {
+          console.error('[App] 402 response missing userId — payment page cannot proceed', err.premiumStatus);
+          return; // Don't show the payment page if we have no userId
+        }
+        setPremiumUserId(resolvedUserId);
         return;
       }
       dispatch(login({ username, password }) as any);
@@ -423,8 +586,10 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setPremiumStatus(null);
     setPremiumUsername('');
-    setPremiumUserId('');  // ← NEW: clear on logout
+    setPremiumUserId('');
     dispatch(logout());
+    // Clear the prevUserRef so redirect-after-login effect doesn't fire on re-login
+    prevUserRef.current = null;
     navigate('/login', { replace: true });
   };
 
@@ -445,6 +610,8 @@ const App: React.FC = () => {
   const quickLogin = (u: string, p: string) => {
     setUsername(u);
     setPassword(p);
+    // 50 ms: allows React to flush the setUsername/setPassword state updates
+    // before the login thunk reads credentials — prevents stale-closure captures.
     setTimeout(() => dispatch(login({ username: u, password: p }) as any), 50);
   };
 
@@ -457,13 +624,6 @@ const App: React.FC = () => {
       case Role.STAFF:     return '/cp/jobs';
       default:             return '/login';
     }
-  };
-
-  const ProtectedRoute = ({ children, allowedRoles }: { children: JSX.Element; allowedRoles?: Role[] }) => {
-    const token = localStorage.getItem('SROTS_AUTH_TOKEN');
-    if (!currentUser || !token)                                    return <Navigate to="/login" replace />;
-    if (allowedRoles && !allowedRoles.includes(currentUser.role)) return <Navigate to="/unauthorized" replace />;
-    return children;
   };
 
   // ── Premium gate ──────────────────────────────────────────────────────────
@@ -633,61 +793,74 @@ const App: React.FC = () => {
     );
   }
 
-  // ── Logged-in routes — identical to original ──────────────────────────────
+  // ── Authenticated routes ───────────────────────────────────────────────────
   return (
     <ErrorBoundary>
       <Routes>
-        <Route path="/" element={<Navigate to={getDefaultDashboard(currentUser.role)} replace />} />
+
+        {/* ── Root & Login: already logged in → go to dashboard ── */}
+        <Route path="/"      element={<Navigate to={getDefaultDashboard(currentUser.role)} replace />} />
         <Route path="/login" element={<Navigate to={getDefaultDashboard(currentUser.role)} replace />} />
 
-        <Route path="/admin/*" element={
+        {/* ── Admin / SROTS-Dev Portal ─────────────────────────────────────────
+            /admin              → /admin/profile (default view)
+            /admin/:view        → explicit named view (survives refresh)
+            /admin/*            → unknown deep path → /admin/profile
+        ─────────────────────────────────────────────────────────────────────── */}
+        <Route path="/admin"
+          element={<Navigate to="/admin/profile" replace />} />
+
+        <Route path="/admin/:view" element={
           <ProtectedRoute allowedRoles={[Role.ADMIN, Role.SROTS_DEV]}>
-            <Layout user={currentUser}
-              onNavigate={view => navigate(`/admin/${view}`)}
-              currentView={location.pathname.split('/').pop() || 'profile'}
-              onLogout={handleLogout}>
-              <AdminPortal
-                view={location.pathname.split('/').pop() || 'profile'}
-                user={currentUser}
-                onUpdateUser={u => dispatch(updateUser(u))} />
-            </Layout>
+            <AdminRoute onLogout={handleLogout} />
           </ProtectedRoute>
         } />
 
-        <Route path="/cp/*" element={
+        <Route path="/admin/*"
+          element={<Navigate to="/admin/profile" replace />} />
+
+        {/* ── CP Head / Staff Portal ───────────────────────────────────────────
+            /cp              → /cp/jobs (default view)
+            /cp/:view        → explicit named view (survives refresh)
+            /cp/*            → unknown deep path → /cp/jobs
+        ─────────────────────────────────────────────────────────────────────── */}
+        <Route path="/cp"
+          element={<Navigate to="/cp/jobs" replace />} />
+
+        <Route path="/cp/:view" element={
           <ProtectedRoute allowedRoles={[Role.CPH, Role.STAFF]}>
-            <Layout user={currentUser}
-              onNavigate={view => navigate(`/cp/${view}`)}
-              currentView={location.pathname.split('/').pop() || 'jobs'}
-              onLogout={handleLogout}>
-              <CPUserPortal
-                view={location.pathname.split('/').pop() || 'jobs'}
-                user={currentUser}
-                onUpdateUser={u => dispatch(updateUser(u))} />
-            </Layout>
+            <CPRoute onLogout={handleLogout} />
           </ProtectedRoute>
         } />
 
-        <Route path="/student/*" element={
+        <Route path="/cp/*"
+          element={<Navigate to="/cp/jobs" replace />} />
+
+        {/* ── Student Portal ───────────────────────────────────────────────────
+            /student              → /student/jobs (default view)
+            /student/:view        → explicit named view (survives refresh)
+            /student/*            → unknown deep path → /student/jobs
+        ─────────────────────────────────────────────────────────────────────── */}
+        <Route path="/student"
+          element={<Navigate to="/student/jobs" replace />} />
+
+        <Route path="/student/:view" element={
           <ProtectedRoute allowedRoles={[Role.STUDENT]}>
-            <Layout user={currentUser}
-              onNavigate={view => navigate(`/student/${view}`)}
-              currentView={location.pathname.split('/').pop() || 'jobs'}
-              onLogout={handleLogout}>
-              <StudentPortal
-                view={location.pathname.split('/').pop() || 'jobs'}
-                student={currentUser as any}
-                onUpdateUser={u => dispatch(updateUser(u))} />
-            </Layout>
+            <StudentRoute onLogout={handleLogout} />
           </ProtectedRoute>
         } />
 
-        <Route path="/unauthorized" element={
-          <div className="min-h-screen flex items-center justify-center text-2xl font-bold text-red-600">
-            Access Denied
-          </div>
-        } />
-        <Route path="*" element={<Navigate to={getDefaultDashboard(currentUser.role)} replace />} />
+        <Route path="/student/*"
+          element={<Navigate to="/student/jobs" replace />} />
+
+        {/* ── Unauthorized ─────────────────────────────────────────────────── */}
+        <Route path="/unauthorized"
+          element={<UnauthorizedPage onGoBack={() => navigate(getDefaultDashboard(currentUser.role))} />} />
+
+        {/* ── 404 catch-all → role-based dashboard ─────────────────────────── */}
+        <Route path="*"
+          element={<Navigate to={getDefaultDashboard(currentUser.role)} replace />} />
+
       </Routes>
     </ErrorBoundary>
   );

@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { User, Role } from '../../../../types';
-import { Search, UserPlus, ToggleLeft, ToggleRight, Trash2, Pencil } from 'lucide-react';
+import { Search, UserPlus, ToggleLeft, ToggleRight, Trash2, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
+
+const PAGE_SIZE = 10;
 
 interface TeamListProps {
   teamMembers: User[];
@@ -72,67 +74,70 @@ export const TeamList: React.FC<TeamListProps> = ({
   onDelete,
   onEdit,
 }) => {
-  return (
-    <div className="space-y-6">
+  const [page, setPage] = useState(0);
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">Srots Team</h2>
-          <p className="text-sm text-gray-500 mt-1">Manage platform administrators and developers.</p>
+  // Reset to page 0 when search changes
+  React.useEffect(() => { setPage(0); }, [searchQuery, teamMembers.length]);
+
+  const totalPages = Math.ceil(teamMembers.length / PAGE_SIZE);
+  const pageMembers = teamMembers.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  return (
+    <div className="space-y-4">
+
+      {/* Compact header row */}
+      <div className="flex items-center gap-2">
+        <h2 className="text-sm font-bold text-gray-700 shrink-0">Srots Team</h2>
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={13} />
+          <input
+            className="w-full pl-7 pr-3 py-1.5 border rounded-lg text-xs focus:ring-1 focus:ring-blue-200 outline-none bg-gray-50 text-gray-900 border-gray-200 placeholder:text-gray-400 transition-all"
+            placeholder="Search by username, name or email…"
+            value={searchQuery}
+            onChange={e => onSearchChange(e.target.value)}
+          />
         </div>
         {currentUserRole === Role.ADMIN && (
           <button
             onClick={onAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm transition-colors w-full sm:w-auto justify-center font-bold"
+            className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shrink-0 text-xs font-bold"
           >
-            <UserPlus size={16} /> Add Member
+            <UserPlus size={12} /> Add Member
           </button>
         )}
-      </div>
-
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-        <input
-          className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-100 outline-none transition-all shadow-sm bg-white text-gray-900 placeholder-gray-400"
-          placeholder="Search by Username, Name or Email..."
-          value={searchQuery}
-          onChange={e => onSearchChange(e.target.value)}
-        />
       </div>
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[800px]">
-            <thead className="bg-gray-50 text-gray-500 font-medium text-xs uppercase border-b">
+          <table className="w-full text-left min-w-[700px]">
+            <thead className="bg-gray-50 text-gray-500 font-medium text-[10px] uppercase border-b">
               <tr>
-                <th className="px-6 py-4 w-[30%]">Name</th>
-                <th className="px-6 py-4 w-[25%]">Contact</th>
-                <th className="px-6 py-4 w-[15%]">Role</th>
-                <th className="px-6 py-4 w-[15%]">Status</th>
+                <th className="px-4 py-3 w-[30%]">Name</th>
+                <th className="px-4 py-3 w-[25%]">Contact</th>
+                <th className="px-4 py-3 w-[15%]">Role</th>
+                <th className="px-4 py-3 w-[15%]">Status</th>
                 {currentUserRole === Role.ADMIN && (
-                  <th className="px-6 py-4 w-[15%] text-right">Actions</th>
+                  <th className="px-4 py-3 w-[15%] text-right">Actions</th>
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 text-sm">
-              {teamMembers.map(dev => (
-                <tr key={dev.id} className="hover:bg-gray-50/60 transition-colors group">
+            <tbody className="divide-y divide-gray-100 text-xs">
+              {pageMembers.map(dev => (
+                <tr key={dev.id} className="hover:bg-gray-50/60 transition-colors">
 
                   {/* Name + Avatar */}
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center gap-2">
                       <TeamMemberAvatar user={dev} />
                       <div className="min-w-0">
                         <span
-                          className="font-bold text-gray-900 block truncate max-w-[180px]"
+                          className="font-bold text-gray-900 block truncate max-w-[160px] text-xs"
                           title={dev.fullName}
                         >
                           {dev.fullName}
                         </span>
-                        <span className="text-xs text-gray-400 font-mono block truncate max-w-[180px]">
+                        <span className="text-[10px] text-gray-400 font-mono block truncate max-w-[160px]">
                           {(dev as any).username || dev.id}
                         </span>
                       </div>
@@ -140,21 +145,21 @@ export const TeamList: React.FC<TeamListProps> = ({
                   </td>
 
                   {/* Contact */}
-                  <td className="px-6 py-4 text-gray-600">
+                  <td className="px-4 py-2.5 text-gray-600">
                     <div className="flex flex-col gap-0.5">
                       <span
-                        className="truncate block font-medium text-sm max-w-[200px]"
+                        className="truncate block font-medium text-xs max-w-[180px]"
                         title={dev.email}
                       >
                         {dev.email}
                       </span>
-                      <span className="text-xs text-gray-400">{dev.phone || '—'}</span>
+                      <span className="text-[10px] text-gray-400">{dev.phone || '—'}</span>
                     </div>
                   </td>
 
                   {/* Role badge */}
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${
+                  <td className="px-4 py-2.5">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold border uppercase tracking-wider ${
                       dev.role === Role.ADMIN
                         ? 'bg-blue-50 text-blue-700 border-blue-100'
                         : 'bg-slate-100 text-slate-700 border-slate-200'
@@ -164,8 +169,8 @@ export const TeamList: React.FC<TeamListProps> = ({
                   </td>
 
                   {/* Status badge */}
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                  <td className="px-4 py-2.5">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold border ${
                       !dev.isRestricted
                         ? 'bg-green-50 text-green-700 border-green-200'
                         : 'bg-red-50 text-red-700 border-red-200'
@@ -174,24 +179,24 @@ export const TeamList: React.FC<TeamListProps> = ({
                     </span>
                   </td>
 
-                  {/* Actions — ADMIN only, fade in on row hover */}
+                  {/* Actions — ADMIN only */}
                   {currentUserRole === Role.ADMIN && (
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <td className="px-4 py-2.5 text-right">
+                      <div className="flex justify-end gap-1">
 
                         {/* Toggle — only for non-ADMIN members */}
                         {dev.role !== Role.ADMIN && (
                           <button
                             type="button"
                             onClick={e => { e.stopPropagation(); onToggleStatus(dev); }}
-                            className={`p-1.5 rounded-lg transition-colors border ${
+                            className={`p-1 rounded-lg transition-colors border ${
                               dev.isRestricted
                                 ? 'text-green-600 bg-green-50 border-green-200 hover:bg-green-100'
                                 : 'text-amber-500 bg-amber-50 border-amber-200 hover:bg-amber-100'
                             }`}
                             title={dev.isRestricted ? 'Enable Access' : 'Restrict Access'}
                           >
-                            {dev.isRestricted ? <ToggleLeft size={16} /> : <ToggleRight size={16} />}
+                            {dev.isRestricted ? <ToggleLeft size={14} /> : <ToggleRight size={14} />}
                           </button>
                         )}
 
@@ -199,20 +204,20 @@ export const TeamList: React.FC<TeamListProps> = ({
                         <button
                           type="button"
                           onClick={e => { e.stopPropagation(); onEdit(dev); }}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-colors"
+                          className="p-1 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-colors"
                           title="Edit Account"
                         >
-                          <Pencil size={16} />
+                          <Pencil size={14} />
                         </button>
 
                         {/* Delete */}
                         <button
                           type="button"
                           onClick={e => { e.stopPropagation(); onDelete(dev.id); }}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors"
+                          className="p-1 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors"
                           title="Delete Account"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </td>
@@ -220,7 +225,7 @@ export const TeamList: React.FC<TeamListProps> = ({
                 </tr>
               ))}
 
-              {teamMembers.length === 0 && (
+              {pageMembers.length === 0 && (
                 <tr>
                   <td colSpan={currentUserRole === Role.ADMIN ? 5 : 4} className="px-6 py-12 text-center text-gray-400 italic bg-gray-50/50">
                     No team members found matching your search.
@@ -231,6 +236,40 @@ export const TeamList: React.FC<TeamListProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-xs text-gray-500">
+            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, teamMembers.length)} of {teamMembers.length}
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="p-1.5 rounded-lg border text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => (
+              <button
+                key={i}
+                onClick={() => setPage(i)}
+                className={`w-8 h-8 rounded-lg text-xs font-bold border transition-colors ${page === i ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <button
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={page === totalPages - 1}
+              className="p-1.5 rounded-lg border text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

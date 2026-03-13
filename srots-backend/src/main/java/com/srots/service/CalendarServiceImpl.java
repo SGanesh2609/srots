@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,9 @@ public class CalendarServiceImpl implements CalendarService {
     private final UserRepository userRepo;
     private final ObjectMapper objectMapper;
     private final FileService fileService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     public CalendarServiceImpl(EventRepository eventRepo, NoticeRepository noticeRepo,
                                CollegeRepository collegeRepo, UserRepository userRepo,
@@ -98,7 +102,9 @@ public class CalendarServiceImpl implements CalendarService {
         event.setId(UUID.randomUUID().toString());
         event.setCreatedBy(getCurrentUser());
         mapDtoToEvent(dto, event);
-        return mapToEventDTO(eventRepo.save(event));
+        Event saved = eventRepo.save(event);
+        notificationService.notifyEventCreated(saved);
+        return mapToEventDTO(saved);
     }
 
     @Override
@@ -226,7 +232,9 @@ public class CalendarServiceImpl implements CalendarService {
 
         notice.setFileUrl(dto.getFileUrl());
         notice.setFileName(dto.getFileName());
-        return mapToNoticeDTO(noticeRepo.save(notice));
+        Notice saved = noticeRepo.save(notice);
+        notificationService.notifyNoticeCreated(saved);
+        return mapToNoticeDTO(saved);
     }
     
     @Override

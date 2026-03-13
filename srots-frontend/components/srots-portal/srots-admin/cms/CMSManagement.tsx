@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CollegeService } from '../../../../services/collegeService';
 import { College, User, AddressFormData } from '../../../../types';
 import { DeleteConfirmationModal } from '../../../../components/common/DeleteConfirmationModal';
@@ -11,22 +12,41 @@ interface CMSManagementProps {
 }
 
 export const CMSManagement: React.FC<CMSManagementProps> = ({ user }) => {
+    const [searchParams, setSearchParams] = useSearchParams();
+
     const [collegesList, setCollegesList] = useState<College[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
-    
-    const [selectedCollegeId, setSelectedCollegeId] = useState<string | null>(null);
+
+    // Restore selected college from URL on mount
+    const [selectedCollegeId, setSelectedCollegeId] = useState<string | null>(
+        searchParams.get('college')
+    );
+    // When deep-linked to a college that isn't on the current page, hold the fetched object
+    const [deepLinkedCollege, setDeepLinkedCollege] = useState<College | null>(null);
+
     const [showFormModal, setShowFormModal] = useState(false);
     const [editingCollege, setEditingCollege] = useState<College | null>(null);
     const [deleteState, setDeleteState] = useState<{ isOpen: boolean, id: string | null, permanent?: boolean }>({ isOpen: false, id: null, permanent: false });
-  
-    const [includeInactive, setIncludeInactive] = useState(true); // Changed default to true to show inactive colleges
+
+    const [includeInactive, setIncludeInactive] = useState(true);
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [total, setTotal] = useState(0);
 
-    useEffect(() => { 
-        refreshColleges(); 
+    useEffect(() => {
+        refreshColleges();
     }, [searchQuery, includeInactive, page, rowsPerPage, selectedCollegeId]);
+
+    // When collegesList updates, try to resolve a deep-linked college ID that
+    // isn't on the current paginated page by fetching it individually.
+    useEffect(() => {
+        if (!selectedCollegeId) { setDeepLinkedCollege(null); return; }
+        if (collegesList.find(c => c.id === selectedCollegeId)) { setDeepLinkedCollege(null); return; }
+        CollegeService.getCollegeById(selectedCollegeId)
+            .then(college => { if (college) setDeepLinkedCollege(college); else handleSelectCollege(null); })
+            .catch(() => handleSelectCollege(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [collegesList, selectedCollegeId]);
 
     useEffect(() => {
         const maxPage = Math.max(0, Math.ceil(total / rowsPerPage) - 1);
@@ -39,6 +59,16 @@ export const CMSManagement: React.FC<CMSManagementProps> = ({ user }) => {
         const { colleges, total: totalElements } = await CollegeService.getColleges(searchQuery, page, rowsPerPage, includeInactive);
         setCollegesList(colleges); 
         setTotal(totalElements);
+    };
+
+    // Update both local state and URL when a college is selected / deselected
+    const handleSelectCollege = (id: string | null) => {
+        setSelectedCollegeId(id);
+        if (id) {
+            setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('college', id); p.delete('tab'); return p; }, { replace: true });
+        } else {
+            setSearchParams(prev => { const p = new URLSearchParams(prev); p.delete('college'); p.delete('tab'); return p; }, { replace: true });
+        }
     };
 
     const handleOpenAdd = () => { setEditingCollege(null); setShowFormModal(true); };
@@ -67,7 +97,7 @@ export const CMSManagement: React.FC<CMSManagementProps> = ({ user }) => {
         if (deleteState.id) { 
             await CollegeService.deleteCollege(deleteState.id, deleteState.permanent || false); 
             refreshColleges(); 
-            if (selectedCollegeId === deleteState.id) setSelectedCollegeId(null); 
+            if (selectedCollegeId === deleteState.id) handleSelectCollege(null);
             setDeleteState({ isOpen: false, id: null, permanent: false }); 
         } 
     };
@@ -90,7 +120,7 @@ export const CMSManagement: React.FC<CMSManagementProps> = ({ user }) => {
         setPage(0);
     };
 
-    const selectedCollege = collegesList.find(c => c.id === selectedCollegeId);
+    const selectedCollege = collegesList.find(c => c.id === selectedCollegeId) || deepLinkedCollege || undefined;
 
     return (
       <>
@@ -99,7 +129,7 @@ export const CMSManagement: React.FC<CMSManagementProps> = ({ user }) => {
                   colleges={collegesList} 
                   searchQuery={searchQuery}
                   onSearchChange={setSearchQuery}
-                  onSelect={setSelectedCollegeId} 
+                  onSelect={handleSelectCollege}
                   onAdd={handleOpenAdd} 
                   onEdit={handleOpenEdit} 
                   onDelete={requestDeleteCollege}
@@ -113,10 +143,10 @@ export const CMSManagement: React.FC<CMSManagementProps> = ({ user }) => {
                   onChangeRowsPerPage={handleChangeRowsPerPage}
               />
           ) : (
-              <CollegeDetailView 
-                  college={selectedCollege} 
-                  onBack={() => setSelectedCollegeId(null)} 
-                  onRefresh={refreshColleges} 
+              <CollegeDetailView
+                  college={selectedCollege}
+                  onBack={() => handleSelectCollege(null)}
+                  onRefresh={refreshColleges}
                   currentUser={user}
               />
           )}

@@ -20,6 +20,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -30,10 +31,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity 
-@Table(name = "users")
-@Getter @Setter 
-@NoArgsConstructor 
+@Entity
+@Table(name = "users", indexes = {
+    @Index(name = "idx_user_role",       columnList = "role"),
+    @Index(name = "idx_user_college_id", columnList = "college_id"),
+    @Index(name = "idx_user_is_deleted", columnList = "is_deleted"),
+    @Index(name = "idx_user_created_at", columnList = "created_at")
+})
+@Getter @Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class User {
     @Id 
@@ -78,8 +84,7 @@ public class User {
     private Boolean isRestricted = false;
     private Boolean isCollegeHead = false;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
-//    @JsonManagedReference
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private StudentProfile studentProfile;
 

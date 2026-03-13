@@ -4,15 +4,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-// Correct Imports
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -24,12 +21,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.srots.config.UserInfoUserDetails;
+import jakarta.validation.Valid;
 import com.srots.dto.FreeCourseRequest;
 import com.srots.dto.FreeCourseResponse;
 import com.srots.model.FreeCourse.CoursePlatform;
 import com.srots.model.FreeCourse.CourseStatus;
-import com.srots.model.User;
 import com.srots.service.DBMonitoringService;
 import com.srots.service.FreeCourseService;
 
@@ -44,6 +40,13 @@ public class FreeCourseController {
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV','CPH','STAFF','STUDENT')")
     public ResponseEntity<List<String>> getCategories() {
         return ResponseEntity.ok(service.getCategories());
+    }
+
+    /** Returns {technology: count} map for active courses — used to build filter pills with counts */
+    @GetMapping("/tech-counts")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV','CPH','STAFF','STUDENT')")
+    public ResponseEntity<Map<String, Long>> getTechCounts() {
+        return ResponseEntity.ok(service.getTechWithCounts());
     }
 
     @GetMapping("/platforms")
@@ -95,14 +98,14 @@ public class FreeCourseController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV')")
-    public ResponseEntity<FreeCourseResponse> create(@RequestBody FreeCourseRequest request) {
+    public ResponseEntity<FreeCourseResponse> create(@Valid @RequestBody FreeCourseRequest request) {
         return ResponseEntity.ok(service.createCourse(request));
     }
     
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV')")
-    public ResponseEntity<FreeCourseResponse> update(@PathVariable String id, @RequestBody FreeCourseRequest request) {
+    public ResponseEntity<FreeCourseResponse> update(@PathVariable String id, @Valid @RequestBody FreeCourseRequest request) {
         return ResponseEntity.ok(service.updateCourse(id, request));
     }
 

@@ -32,9 +32,15 @@ CREATE TABLE `applications` (
   `current_round` int DEFAULT NULL,
   `applied_by` enum('Self','CP_Admin','CP_Staff') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `placed_at` datetime(6) DEFAULT NULL,
+  `deleted_at` datetime(6) DEFAULT NULL,
+  `deleted_by` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_deleted` bit(1) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `FK65weib1lru9dkrbto5pv389vi` (`job_id`),
-  KEY `FKam71qdmei4tyhyf881aat712w` (`student_id`),
+  KEY `idx_app_student_id` (`student_id`),
+  KEY `idx_app_job_id` (`job_id`),
+  KEY `idx_app_status` (`status`),
+  KEY `idx_app_applied_at` (`applied_at`),
+  KEY `idx_app_is_deleted` (`is_deleted`),
   CONSTRAINT `FK65weib1lru9dkrbto5pv389vi` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`id`),
   CONSTRAINT `FKam71qdmei4tyhyf881aat712w` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -80,7 +86,11 @@ CREATE TABLE `audit_logs` (
   `target_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `target_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `timestamp` datetime(6) DEFAULT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_audit_performed_by` (`performed_by`),
+  KEY `idx_audit_action` (`action`),
+  KEY `idx_audit_timestamp` (`timestamp`),
+  KEY `idx_audit_target_id` (`target_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -96,9 +106,9 @@ CREATE TABLE `college_company_subscriptions` (
   `college_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `company_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`college_id`,`company_id`),
-  KEY `FKbv3hiuw8kgwq6gh4shkgvf9ee` (`added_by_id`),
   KEY `idx_subscription_college` (`college_id`),
   KEY `idx_subscription_company` (`company_id`),
+  KEY `idx_ccs_added_by` (`added_by_id`),
   CONSTRAINT `FK92hc3nux7qogebsqu32lspl9f` FOREIGN KEY (`company_id`) REFERENCES `global_companies` (`id`),
   CONSTRAINT `FKbv3hiuw8kgwq6gh4shkgvf9ee` FOREIGN KEY (`added_by_id`) REFERENCES `users` (`id`),
   CONSTRAINT `FKflk8vf12fmikikj8153pq0vvx` FOREIGN KEY (`college_id`) REFERENCES `colleges` (`id`)
@@ -129,7 +139,9 @@ CREATE TABLE `colleges` (
   `social_media` json DEFAULT NULL,
   `active` bit(1) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_a93ugma3st6063ucmj2dsopyt` (`code`)
+  UNIQUE KEY `UK_a93ugma3st6063ucmj2dsopyt` (`code`),
+  KEY `idx_college_active` (`active`),
+  KEY `idx_college_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -154,7 +166,8 @@ CREATE TABLE `education_records` (
   `score_type` enum('Percentage','CGPA','Grade','Marks') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `semesters_data` json DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `FK450yontk2dfh3sitlhvm35111` (`student_id`),
+  KEY `idx_edu_student_id` (`student_id`),
+  KEY `idx_edu_level` (`level`),
   CONSTRAINT `FK450yontk2dfh3sitlhvm35111` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -182,8 +195,10 @@ CREATE TABLE `events` (
   `title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `event_type` enum('Drive','Class','Exam','Holiday','Meeting','Time_Table','Training','Workshop') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `FK3g7eqy9h9kov3icbumnqmjsj3` (`college_id`),
   KEY `FKc0f6mjaqr4omnnq35klwpiiko` (`created_by_user_id`),
+  KEY `idx_event_college_id` (`college_id`),
+  KEY `idx_event_type` (`event_type`),
+  KEY `idx_event_start_date` (`start_date`),
   CONSTRAINT `FK3g7eqy9h9kov3icbumnqmjsj3` FOREIGN KEY (`college_id`) REFERENCES `colleges` (`id`),
   CONSTRAINT `FKc0f6mjaqr4omnnq35klwpiiko` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -213,6 +228,9 @@ CREATE TABLE `free_courses` (
   KEY `idx_free_courses_name` (`name`),
   KEY `idx_courses_status_filter` (`status`,`technology`,`platform`,`created_at` DESC),
   KEY `idx_verification_check` (`last_verified_at`),
+  KEY `idx_fc_technology` (`technology`),
+  KEY `idx_fc_status` (`status`),
+  KEY `idx_fc_platform` (`platform`),
   CONSTRAINT `FKbt3sedfmoifr2sv820rpck46k` FOREIGN KEY (`posted_by_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -324,12 +342,21 @@ CREATE TABLE `jobs` (
   `deleted_by` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `restored_by` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `updated_by` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `company_logo` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `joining_date` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `service_bond` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `vacancies` int DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `FK3j76toe669x5xwxi7jpgaq1o8` (`college_id`),
-  KEY `FK22dwioep9l8onds5shqpnykrc` (`posted_by_id`),
   KEY `deleted_by` (`deleted_by`),
   KEY `restored_by` (`restored_by`),
   KEY `updated_by` (`updated_by`),
+  KEY `idx_job_college_id` (`college_id`),
+  KEY `idx_job_status` (`status`),
+  KEY `idx_job_type` (`job_type`),
+  KEY `idx_job_work_mode` (`work_mode`),
+  KEY `idx_job_deadline` (`application_deadline`),
+  KEY `idx_job_posted_by` (`posted_by_id`),
+  KEY `idx_job_posted_at` (`posted_at`),
   CONSTRAINT `FK22dwioep9l8onds5shqpnykrc` FOREIGN KEY (`posted_by_id`) REFERENCES `users` (`id`),
   CONSTRAINT `FK3j76toe669x5xwxi7jpgaq1o8` FOREIGN KEY (`college_id`) REFERENCES `colleges` (`id`),
   CONSTRAINT `FKdb3jhmkr5udmmoxlfkvuoxt9f` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`),
@@ -361,8 +388,11 @@ CREATE TABLE `notices` (
   `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `type` enum('Notice','Time_Table','Exam','Drive','Placement','Holiday','Workshop','Training','General') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `FKpoq0o3yla5sqtpp6ewe326ojt` (`college_id`),
   KEY `FKds7qh56j9rbnviq2ixy41xv2n` (`created_by_user_id`),
+  KEY `idx_notice_college_id` (`college_id`),
+  KEY `idx_notice_type` (`type`),
+  KEY `idx_notice_date` (`notice_date`),
+  KEY `idx_notice_created_at` (`created_at`),
   CONSTRAINT `FKds7qh56j9rbnviq2ixy41xv2n` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`),
   CONSTRAINT `FKpoq0o3yla5sqtpp6ewe326ojt` FOREIGN KEY (`college_id`) REFERENCES `colleges` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -383,9 +413,9 @@ CREATE TABLE `post_comments` (
   `text` text COLLATE utf8mb4_unicode_ci,
   `created_at` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `fk_comment_post` (`post_id`),
-  KEY `fk_comment_user` (`user_id`),
-  KEY `fk_comment_parent` (`parent_comment_id`),
+  KEY `idx_comment_post_id` (`post_id`),
+  KEY `idx_comment_user_id` (`user_id`),
+  KEY `idx_comment_parent_id` (`parent_comment_id`),
   CONSTRAINT `fk_comment_parent` FOREIGN KEY (`parent_comment_id`) REFERENCES `post_comments` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_comment_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_comment_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
@@ -403,7 +433,7 @@ CREATE TABLE `post_likes` (
   `post_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `user_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`post_id`,`user_id`),
-  KEY `fk_like_user` (`user_id`),
+  KEY `idx_postlike_user_id` (`user_id`),
   CONSTRAINT `fk_like_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_like_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -427,9 +457,14 @@ CREATE TABLE `posts` (
   `comments_disabled` bit(1) DEFAULT b'0',
   `created_at` datetime(6) DEFAULT NULL,
   `comments_count` int DEFAULT '0',
+  `deleted_at` datetime(6) DEFAULT NULL,
+  `deleted_by` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_deleted` bit(1) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `fk_post_college` (`college_id`),
-  KEY `fk_post_author` (`author_id`),
+  KEY `idx_post_college_id` (`college_id`),
+  KEY `idx_post_author_id` (`author_id`),
+  KEY `idx_post_created_at` (`created_at`),
+  KEY `idx_post_is_deleted` (`is_deleted`),
   CONSTRAINT `fk_post_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`),
   CONSTRAINT `fk_post_college` FOREIGN KEY (`college_id`) REFERENCES `colleges` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -587,6 +622,11 @@ CREATE TABLE `student_profiles` (
   KEY `idx_student_profile_batch` (`batch`),
   KEY `idx_student_profile_branch` (`branch`),
   KEY `idx_student_profile_batch_branch` (`batch`,`branch`),
+  KEY `idx_sp_branch` (`branch`),
+  KEY `idx_sp_batch` (`batch`),
+  KEY `idx_sp_roll_number` (`roll_number`),
+  KEY `idx_sp_placement_cycle` (`placement_cycle`),
+  KEY `idx_sp_premium_end` (`premium_end_date`),
   CONSTRAINT `FK32koy3tgqtaujxhfsn0b9pel2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -753,6 +793,10 @@ CREATE TABLE `users` (
   KEY `idx_users_college_role` (`college_id`,`role`,`is_deleted`),
   KEY `idx_users_college_role_deleted` (`college_id`,`role`,`is_deleted`),
   KEY `idx_users_role_deleted` (`role`,`is_deleted`),
+  KEY `idx_user_role` (`role`),
+  KEY `idx_user_college_id` (`college_id`),
+  KEY `idx_user_is_deleted` (`is_deleted`),
+  KEY `idx_user_created_at` (`created_at`),
   FULLTEXT KEY `ft_users_search` (`full_name`,`email`),
   CONSTRAINT `FKckj8lnp4hl06uc6q7f0lxlmgn` FOREIGN KEY (`parent_user_id`) REFERENCES `users` (`id`),
   CONSTRAINT `FKq8c77pl7fllv195wbwqn13375` FOREIGN KEY (`college_id`) REFERENCES `colleges` (`id`)
@@ -768,4 +812,4 @@ CREATE TABLE `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-02-26 19:55:37
+-- Dump completed on 2026-03-13 14:25:17

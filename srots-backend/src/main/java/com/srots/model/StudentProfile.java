@@ -9,10 +9,16 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Entity 
-@Table(name = "student_profiles")
-@Getter @Setter 
-@NoArgsConstructor 
+@Entity
+@Table(name = "student_profiles", indexes = {
+    @Index(name = "idx_sp_branch",          columnList = "branch"),
+    @Index(name = "idx_sp_batch",           columnList = "batch"),
+    @Index(name = "idx_sp_roll_number",     columnList = "roll_number"),
+    @Index(name = "idx_sp_placement_cycle", columnList = "placement_cycle"),
+    @Index(name = "idx_sp_premium_end",     columnList = "premium_end_date")
+})
+@Getter @Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class StudentProfile {
 

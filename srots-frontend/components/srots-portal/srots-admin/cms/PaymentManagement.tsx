@@ -26,7 +26,7 @@ const StatusBadge: React.FC<{ status: PaymentStatus }> = ({ status }) => {
   };
   const cfg = configs[status];
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${cfg.color}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${cfg.color}`}>
       {cfg.icon} {cfg.label}
     </span>
   );
@@ -54,7 +54,7 @@ const RejectDialog: React.FC<{
   const [reason, setReason] = useState('');
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
+      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-4">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
             <AlertTriangle className="text-red-600" size={20} />
@@ -162,39 +162,36 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({ collegeId,
   };
 
   return (
-    <div className="space-y-5 animate-in fade-in">
+    <div className="space-y-3 animate-in fade-in">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-xl font-bold text-gray-900">Payment Management</h3>
-          <p className="text-sm text-gray-500 mt-0.5">Review and verify premium payment submissions for {collegeName}.</p>
-        </div>
+      <div className="flex items-center gap-2">
+        <h3 className="text-sm font-bold text-gray-700 flex-1">Payment Management</h3>
         <button
           onClick={fetchPayments}
-          className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 text-gray-600 text-sm font-semibold shadow-sm"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border rounded-lg hover:bg-gray-50 text-gray-600 text-xs font-semibold shadow-sm"
         >
-          <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           Refresh
         </button>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+      <div className="flex flex-wrap gap-2">
+        <div className="relative flex-1 min-w-[140px]">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={13} />
           <input
             type="text"
             placeholder="Search by username or UTR number..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm"
+            className="w-full pl-7 pr-3 py-1.5 border rounded-lg focus:ring-1 focus:ring-blue-500 outline-none bg-white text-xs"
           />
         </div>
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          className="px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm font-medium text-gray-700 min-w-[160px]"
+          className="px-3 py-1.5 border rounded-lg focus:ring-1 focus:ring-blue-500 outline-none bg-white text-xs font-medium text-gray-700"
         >
           <option value="">All Statuses</option>
           <option value="PENDING">⏳ Pending</option>

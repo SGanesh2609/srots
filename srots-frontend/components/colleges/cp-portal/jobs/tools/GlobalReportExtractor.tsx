@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Filter, FileSpreadsheet, Trash2, Wand2, Download, RefreshCw, ListX, Users, Loader2, CheckCircle2 } from 'lucide-react';
 import { JobService } from '../../../../../services/jobService';
+import { useToast } from '../../../../common/Toast';
 
 export const GlobalReportExtractor: React.FC = () => {
+  const toast = useToast();
   const [reportFile, setReportFile] = useState<File | null>(null);
   const [fileHeaders, setFileHeaders] = useState<string[]>([]);
   const [excludeHeaderNames, setExcludeHeaderNames] = useState<string[]>([]);
@@ -21,7 +23,7 @@ export const GlobalReportExtractor: React.FC = () => {
                   setExcludeHeaderNames([]);
               } catch (err: any) {
                   console.error("❌ Header fetch failed:", err);
-                  alert(`Failed: ${err.message}`);
+                  toast.error(`Failed: ${err.message}`);
                   setReportFile(null);
               }
           } else {
@@ -40,17 +42,14 @@ export const GlobalReportExtractor: React.FC = () => {
 
   const handleGenerateCustomReport = async () => {
       if (!reportFile) {
-          alert("Upload file first");
+          toast.warning("Upload file first");
           return;
       }
 
       setIsProcessing(true);
       try {
-          console.log('🔄 Processing report...');
           const excludeColsStr = excludeHeaderNames.join(',');
           const result = await JobService.processCustomReport(reportFile, excludeColsStr, reportExcludeInput);
-          
-          console.log('✅ Report processed:', result);
           setProcessingStats({
               originalRows: result.originalRows || 0,
               finalRows: result.finalRows || 0,
@@ -60,7 +59,7 @@ export const GlobalReportExtractor: React.FC = () => {
           setIsCustomReportReady(true);
       } catch (err: any) { 
           console.error('❌ Processing failed:', err);
-          alert(`Failed: ${err.message}`);
+          toast.error(`Failed: ${err.message}`);
       } finally {
           setIsProcessing(false);
       }
@@ -193,18 +192,15 @@ export const GlobalReportExtractor: React.FC = () => {
                                <button 
                                    onClick={async (e) => {
                                        e.preventDefault();
-                                       console.log('🔽 Excel download clicked');
                                        if (!processedReportData) {
-                                           alert("No data");
+                                           toast.warning("No data");
                                            return;
                                        }
                                        try {
-                                           console.log('📤 Calling download service...');
                                            await JobService.downloadCustomReport(processedReportData, 'excel');
-                                           console.log('✅ Download complete');
                                        } catch (err: any) {
                                            console.error('❌ Download failed:', err);
-                                           alert(`Failed: ${err.message}`);
+                                           toast.error(`Failed: ${err.message}`);
                                        }
                                    }}
                                    className="flex-1 px-6 py-3.5 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 flex items-center justify-center gap-2 shadow-lg active:scale-95 transition"
@@ -216,18 +212,15 @@ export const GlobalReportExtractor: React.FC = () => {
                                <button 
                                    onClick={async (e) => {
                                        e.preventDefault();
-                                       console.log('🔽 CSV download clicked');
                                        if (!processedReportData) {
-                                           alert("No data");
+                                           toast.warning("No data");
                                            return;
                                        }
                                        try {
-                                           console.log('📤 Calling download service...');
                                            await JobService.downloadCustomReport(processedReportData, 'csv');
-                                           console.log('✅ Download complete');
                                        } catch (err: any) {
                                            console.error('❌ Download failed:', err);
-                                           alert(`Failed: ${err.message}`);
+                                           toast.error(`Failed: ${err.message}`);
                                        }
                                    }}
                                    className="flex-1 px-6 py-3.5 bg-white border-2 border-green-600 text-green-700 rounded-xl font-bold hover:bg-green-50 flex items-center justify-center gap-2 active:scale-95 transition"
@@ -241,7 +234,6 @@ export const GlobalReportExtractor: React.FC = () => {
                        <button 
                            onClick={(e) => {
                                e.preventDefault();
-                               console.log('🔄 Resetting extractor...');
                                setIsCustomReportReady(false); 
                                setReportFile(null); 
                                setFileHeaders([]);
@@ -251,7 +243,6 @@ export const GlobalReportExtractor: React.FC = () => {
                                setProcessingStats({ originalRows: 0, finalRows: 0, removedFieldsCount: 0 });
                                const fileInput = document.getElementById('extractorFile') as HTMLInputElement;
                                if (fileInput) fileInput.value = '';
-                               console.log('✅ Reset complete');
                            }}
                            className="w-full py-3 bg-gray-100 text-gray-600 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-200 active:scale-95 transition"
                        >

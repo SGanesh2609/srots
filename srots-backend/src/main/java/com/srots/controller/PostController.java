@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.validation.Valid;
+
 import com.srots.dto.CommentRequest;
 import com.srots.dto.CommentResponse;
 import com.srots.dto.PostRequest;
@@ -99,7 +101,7 @@ public class PostController {
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV', 'CPH', 'STAFF')")
-    public ResponseEntity<PostResponse> create(@RequestBody PostRequest request) {
+    public ResponseEntity<PostResponse> create(@Valid @RequestBody PostRequest request) {
         // request.getCollegeId() is used inside postService.createPost
         return ResponseEntity.ok(postService.createPost(request));
     }
@@ -115,7 +117,7 @@ public class PostController {
  // Add high-level comment (Increments count + Max 1 for student)
     @PostMapping("/{id}/comments")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> addComment(@PathVariable String id, @RequestBody CommentRequest request) {
+    public ResponseEntity<Void> addComment(@PathVariable String id, @Valid @RequestBody CommentRequest request) {
         postService.addComment(id, request);
         return ResponseEntity.ok().build();
     }
@@ -126,7 +128,7 @@ public class PostController {
     public ResponseEntity<Void> replyToComment(
             @PathVariable String id, 
             @PathVariable String commentId, 
-            @RequestBody CommentRequest request) {
+            @Valid @RequestBody CommentRequest request) {
         postService.replyToComment(id, commentId, request);
         return ResponseEntity.ok().build();
     }

@@ -4,18 +4,19 @@ import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
+@NoArgsConstructor
+//@AllArgsConstructor
 public class JobHiringStatsDTO {
     private String jobId;
     private String jobTitle;
     private int totalRounds;
     private List<JobRoundProgressDTO> rounds;
-	public JobHiringStatsDTO() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
+    
+    
+
 	public JobHiringStatsDTO(String jobId, String jobTitle, int totalRounds, List<JobRoundProgressDTO> rounds) {
 		super();
 		this.jobId = jobId;

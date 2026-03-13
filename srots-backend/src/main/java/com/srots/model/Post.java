@@ -11,9 +11,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "posts")
-@Data 
-@NoArgsConstructor 
+@Table(name = "posts", indexes = {
+    @Index(name = "idx_post_college_id",  columnList = "college_id"),
+    @Index(name = "idx_post_author_id",   columnList = "author_id"),
+    @Index(name = "idx_post_created_at",  columnList = "created_at"),
+    @Index(name = "idx_post_is_deleted",  columnList = "is_deleted")
+})
+@Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class Post {
     @Id 
@@ -42,8 +47,16 @@ public class Post {
     private Integer commentsCount = 0;
     private Boolean commentsDisabled = false;
 
-    @CreationTimestamp 
+    @CreationTimestamp
     private LocalDateTime createdAt;
+
+    // ── Soft-delete support ────────────────────────────────────────────────────
+    @Column(nullable = false)
+    private Boolean isDeleted = false;
+
+    private LocalDateTime deletedAt;
+
+    private String deletedBy;
 
     // Added to ensure data integrity on deletion
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -51,31 +64,6 @@ public class Post {
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostComment> comments;
-
-	public Post() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-
-	
-
-	public Post(String id, College college, User author, String content, String imageUrls, String documentUrls,
-			Integer likesCount, Integer commentsCount, Boolean commentsDisabled, LocalDateTime createdAt,
-			List<PostLike> likes, List<PostComment> comments) {
-		super();
-		this.id = id;
-		this.college = college;
-		this.author = author;
-		this.content = content;
-		this.imageUrls = imageUrls;
-		this.documentUrls = documentUrls;
-		this.likesCount = likesCount;
-		this.commentsCount = commentsCount;
-		this.commentsDisabled = commentsDisabled;
-		this.createdAt = createdAt;
-		this.likes = likes;
-		this.comments = comments;
-	}
 
 
 	

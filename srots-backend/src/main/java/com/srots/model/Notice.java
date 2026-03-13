@@ -6,7 +6,12 @@ import org.hibernate.annotations.CreationTimestamp;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "notices")
+@Table(name = "notices", indexes = {
+    @Index(name = "idx_notice_college_id", columnList = "college_id"),
+    @Index(name = "idx_notice_type",       columnList = "type"),
+    @Index(name = "idx_notice_date",       columnList = "notice_date"),
+    @Index(name = "idx_notice_created_at", columnList = "created_at")
+})
 public class Notice {
     
     @Id 

@@ -20,7 +20,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "jobs")
+@Table(name = "jobs", indexes = {
+    @Index(name = "idx_job_college_id",  columnList = "college_id"),
+    @Index(name = "idx_job_status",      columnList = "status"),
+    @Index(name = "idx_job_type",        columnList = "job_type"),
+    @Index(name = "idx_job_work_mode",   columnList = "work_mode"),
+    @Index(name = "idx_job_deadline",    columnList = "application_deadline"),
+    @Index(name = "idx_job_posted_by",   columnList = "posted_by_id"),
+    @Index(name = "idx_job_posted_at",   columnList = "posted_at")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -191,6 +199,21 @@ public class Job {
     private String avoidListUrl;
 
     // ═══════════════════════════════════════════════════════════════════════
+    // EXTENDED JOB DETAILS
+    // ═══════════════════════════════════════════════════════════════════════
+    /** URL to company logo image (optional) */
+    private String companyLogo;
+
+    /** Service bond requirement, e.g. "2 years" or null */
+    private String serviceBond;
+
+    /** Expected joining date as a string, e.g. "June 2025" or "Immediate" */
+    private String joiningDate;
+
+    /** Number of open positions */
+    private Integer vacancies;
+
+    // ═══════════════════════════════════════════════════════════════════════
     // RELATIONS
     // ═══════════════════════════════════════════════════════════════════════
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -334,80 +357,9 @@ public class Job {
     
     
 
-    public Job(String id, College college, User postedBy, String title, String companyName,
-               String hiringDepartment, JobType jobType, WorkMode workMode, String location,
-               String salaryRange, String summary, String externalLink, String internalId,
-               String responsibilitiesJson, String qualificationsJson,
-               String preferredQualificationsJson, String benefitsJson,
-               String companyCulture, String physicalDemands, String eeoStatement,
-               LocalDate applicationDeadline, JobStatus status, LocalDateTime postedAt,
-               LocalDateTime updatedAt, User updatedBy, LocalDateTime deletedAt, User deletedBy,
-               LocalDateTime restoredAt, User restoredBy, String deletionReason,
-               BigDecimal minUgScore, String formatUg, BigDecimal min10thScore, String format10th,
-               BigDecimal min12thScore, String format12th, BigDecimal minDiplomaScore,
-               String formatDiploma, Integer maxBacklogs, Boolean isDiplomaEligible,
-               Boolean allowGaps, Integer maxGapYears, String allowedBranches,
-               String eligibleBatches, String roundsJson, String requiredFieldsJson,
-               String attachmentsJson, String avoidListUrl, List<Application> applications) {
-        this.id = id;
-        this.college = college;
-        this.postedBy = postedBy;
-        this.title = title;
-        this.companyName = companyName;
-        this.hiringDepartment = hiringDepartment;
-        this.jobType = jobType;
-        this.workMode = workMode;
-        this.location = location;
-        this.salaryRange = salaryRange;
-        this.summary = summary;
-        this.externalLink = externalLink;
-        this.internalId = internalId;
-        this.responsibilitiesJson = responsibilitiesJson;
-        this.qualificationsJson = qualificationsJson;
-        this.preferredQualificationsJson = preferredQualificationsJson;
-        this.benefitsJson = benefitsJson;
-        this.companyCulture = companyCulture;
-        this.physicalDemands = physicalDemands;
-        this.eeoStatement = eeoStatement;
-        this.applicationDeadline = applicationDeadline;
-        this.status = status;
-        this.postedAt = postedAt;
-        this.updatedAt = updatedAt;
-        this.updatedBy = updatedBy;
-        this.deletedAt = deletedAt;
-        this.deletedBy = deletedBy;
-        this.restoredAt = restoredAt;
-        this.restoredBy = restoredBy;
-        this.deletionReason = deletionReason;
-        this.minUgScore = minUgScore;
-        this.formatUg = formatUg;
-        this.min10thScore = min10thScore;
-        this.format10th = format10th;
-        this.min12thScore = min12thScore;
-        this.format12th = format12th;
-        this.minDiplomaScore = minDiplomaScore;
-        this.formatDiploma = formatDiploma;
-        this.maxBacklogs = maxBacklogs;
-        this.isDiplomaEligible = isDiplomaEligible;
-        this.allowGaps = allowGaps;
-        this.maxGapYears = maxGapYears;
-        this.allowedBranches = allowedBranches;
-        this.eligibleBatches = eligibleBatches;
-        this.roundsJson = roundsJson;
-        this.requiredFieldsJson = requiredFieldsJson;
-        this.attachmentsJson = attachmentsJson;
-        this.avoidListUrl = avoidListUrl;
-        this.applications = applications;
-    }
-
     // ─── Getters & Setters ───────────────────────────────────────────────────
 
-    public Job() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-
-	public String getId() { return id; }
+    public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
     public College getCollege() { return college; }
@@ -550,6 +502,18 @@ public class Job {
 
     public String getAvoidListUrl() { return avoidListUrl; }
     public void setAvoidListUrl(String avoidListUrl) { this.avoidListUrl = avoidListUrl; }
+
+    public String getCompanyLogo() { return companyLogo; }
+    public void setCompanyLogo(String companyLogo) { this.companyLogo = companyLogo; }
+
+    public String getServiceBond() { return serviceBond; }
+    public void setServiceBond(String serviceBond) { this.serviceBond = serviceBond; }
+
+    public String getJoiningDate() { return joiningDate; }
+    public void setJoiningDate(String joiningDate) { this.joiningDate = joiningDate; }
+
+    public Integer getVacancies() { return vacancies; }
+    public void setVacancies(Integer vacancies) { this.vacancies = vacancies; }
 
     public List<Application> getApplications() { return applications; }
     public void setApplications(List<Application> applications) { this.applications = applications; }

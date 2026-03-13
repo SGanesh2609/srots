@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { College, User } from '../../../../types';
 import { CollegeService } from '../../../../services/collegeService';
 import { ResourceService } from '../../../../services/resourceService';
 import { Camera, Building, Loader2, ArrowLeft, CreditCard } from 'lucide-react';
 import { CollegeLogo } from '../../../../components/common/CollegeLogo';
 import { GlobalStudentDirectory } from '../../../global/StudentDirectory';
-import { CPUsersData } from './CPUsersData';
+import { CPTeamManagement } from '../../../global/CPTeamManagement';
 import { ManagingStudentAccounts } from '../../../global/ManagingStudentAccounts';
 import { PaymentManagement } from './PaymentManagement';
 
@@ -22,13 +23,13 @@ type CmsTab = 'students' | 'cp_admin' | 'accounts' | 'payments';
 const StatCard: React.FC<{ loading: boolean; value: number; label: string; color: string }> = ({
   loading, value, label, color,
 }) => (
-  <div className="bg-white p-3 sm:p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center min-w-0">
+  <div className="bg-white p-2.5 rounded-lg border shadow-sm flex flex-col items-center justify-center min-w-0">
     {loading ? (
-      <Loader2 className="animate-spin text-gray-400" size={20} />
+      <Loader2 className="animate-spin text-gray-400" size={16} />
     ) : (
       <>
-        <p className={`text-2xl sm:text-3xl font-bold ${color} leading-none`}>{value}</p>
-        <p className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase mt-1 text-center">{label}</p>
+        <p className={`text-lg font-bold ${color} leading-none`}>{value}</p>
+        <p className="text-[9px] font-bold text-gray-500 uppercase mt-0.5 text-center">{label}</p>
       </>
     )}
   </div>
@@ -38,7 +39,18 @@ const StatCard: React.FC<{ loading: boolean; value: number; label: string; color
 export const CollegeDetailView: React.FC<CollegeDetailViewProps> = ({
   college, onBack, onRefresh, currentUser,
 }) => {
-  const [cmsTab, setCmsTab] = useState<CmsTab>('students');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Restore active tab from URL — survives refresh
+  const [cmsTab, setCmsTab] = useState<CmsTab>(() => {
+    const t = searchParams.get('tab') as CmsTab;
+    return ['students', 'cp_admin', 'accounts', 'payments'].includes(t) ? t : 'students';
+  });
+
+  const handleTabChange = (tab: CmsTab) => {
+    setCmsTab(tab);
+    setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('tab', tab); return p; }, { replace: true });
+  };
   const [stats, setStats] = useState({ studentCount: 0, cpCount: 0, totalJobs: 0, activeJobs: 0 });
   const [loadingStats, setLoadingStats] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -85,15 +97,15 @@ export const CollegeDetailView: React.FC<CollegeDetailViewProps> = ({
     <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border overflow-hidden animate-in fade-in slide-in-from-right-4">
 
       {/* ── Header ───────────────────────────────────────────────────────────── */}
-      <div className="p-4 sm:p-6 border-b bg-gray-50">
+      <div className="p-3 border-b bg-gray-50">
 
         {/* Top row: back + logo + title */}
-        <div className="flex items-start gap-3 sm:gap-4">
+        <div className="flex items-center gap-2">
           <button
             onClick={onBack}
-            className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-500 shrink-0 mt-0.5"
+            className="p-1.5 hover:bg-gray-200 rounded-full transition-colors text-gray-500 shrink-0"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={16} />
           </button>
 
           {/* Logo with upload overlay */}
@@ -102,35 +114,34 @@ export const CollegeDetailView: React.FC<CollegeDetailViewProps> = ({
             onClick={() => !isUploading && logoInputRef.current?.click()}
           >
             {isUploading ? (
-              <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
-                <Loader2 className="animate-spin text-blue-600" size={24} />
+              <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
+                <Loader2 className="animate-spin text-blue-600" size={16} />
               </div>
             ) : (
-              // CollegeLogo handles broken URLs — onError shows initial letter
-              <CollegeLogo src={college.logoUrl} name={college.name} size="lg" />
+              <CollegeLogo src={college.logoUrl} name={college.name} size="sm" />
             )}
             <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[1px]">
-              <Camera className="text-white" size={20} />
+              <Camera className="text-white" size={14} />
             </div>
           </div>
           <input type="file" ref={logoInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
 
           {/* College name + meta */}
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg sm:text-2xl font-bold text-gray-900 leading-tight">{college.name}</h2>
-            <div className="flex items-center gap-2 text-sm text-gray-500 mt-1 flex-wrap">
-              <span className="font-mono bg-gray-200 px-2 py-0.5 rounded text-gray-700 font-bold text-xs sm:text-sm">
+            <h2 className="text-sm font-bold text-gray-900 leading-tight truncate">{college.name}</h2>
+            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              <span className="font-mono bg-gray-200 px-1.5 py-0.5 rounded text-gray-700 font-bold text-[10px]">
                 {college.code}
               </span>
-              <span className="flex items-center gap-1 text-xs sm:text-sm">
-                <Building size={13} /> {college.type || 'N/A'}
+              <span className="flex items-center gap-0.5 text-[10px] text-gray-500">
+                <Building size={10} /> {college.type || 'N/A'}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Stats row — always 3-column grid, responsive sizing */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-4">
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-2 mt-2.5">
           <StatCard loading={loadingStats} value={stats.studentCount} label="Students"    color="text-blue-600"   />
           <StatCard loading={loadingStats} value={stats.cpCount}      label="CP Users"    color="text-purple-600" />
           <StatCard loading={loadingStats} value={stats.activeJobs}   label="Active Jobs" color="text-green-600"  />
@@ -138,12 +149,12 @@ export const CollegeDetailView: React.FC<CollegeDetailViewProps> = ({
       </div>
 
       {/* ── Tabs ─────────────────────────────────────────────────────────────── */}
-      <div className="flex border-b px-2 sm:px-6 bg-white sticky top-0 z-10 overflow-x-auto">
+      <div className="flex border-b px-2 bg-white sticky top-0 z-10 overflow-x-auto">
         {tabs.map(tab => (
           <button
             key={tab.key}
-            onClick={() => setCmsTab(tab.key)}
-            className={`px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-bold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+            onClick={() => handleTabChange(tab.key)}
+            className={`px-3 py-2.5 text-xs font-bold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1 ${
               cmsTab === tab.key
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-800'
@@ -156,12 +167,13 @@ export const CollegeDetailView: React.FC<CollegeDetailViewProps> = ({
       </div>
 
       {/* ── Content ──────────────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto bg-gray-50 p-3 sm:p-6">
+      <div className="flex-1 overflow-y-auto bg-gray-50 p-3">
         {cmsTab === 'students' && (
           <GlobalStudentDirectory collegeId={college.id} isSrotsAdmin={true} onRefresh={loadStats} />
         )}
         {cmsTab === 'cp_admin' && (
-          <CPUsersData
+          <CPTeamManagement
+            mode="admin"
             collegeId={college.id}
             collegeCode={college.code}
             collegeName={college.name}

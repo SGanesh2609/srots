@@ -113,8 +113,10 @@ import com.srots.model.Job.JobStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -128,7 +130,10 @@ public interface JobRepository extends JpaRepository<Job, String> {
 
     /**
      * Enterprise pagination query with full filtering support.
-     * 
+     * LEFT JOIN FETCH j.postedBy prevents N+1 queries when JobMapper accesses
+     * postedBy for each row. A separate countQuery is required because Spring
+     * Data JPA cannot auto-derive COUNT from a FETCH JOIN query.
+     *
      * Supports:
      * - College scoping
      * - Soft-delete awareness (includeArchived flag)
@@ -137,18 +142,32 @@ public interface JobRepository extends JpaRepository<Job, String> {
      * - "My Jobs" filter (postedById)
      * - Server-side pagination + sorting
      */
-    @Query("""
-        SELECT j FROM Job j
-        WHERE j.college.id = :collegeId
-        AND (:includeArchived = true OR j.deletedAt IS NULL)
-        AND (:query IS NULL OR :query = '' OR 
-             LOWER(j.title) LIKE LOWER(CONCAT('%', :query, '%')) OR 
-             LOWER(j.companyName) LIKE LOWER(CONCAT('%', :query, '%')))
-        AND (:jobType IS NULL OR j.jobType = :jobType)
-        AND (:workMode IS NULL OR j.workMode = :workMode)
-        AND (:status IS NULL OR j.status = :status)
-        AND (:postedById IS NULL OR :postedById = '' OR j.postedBy.id = :postedById)
-    """)
+    @Query(
+        value = """
+            SELECT j FROM Job j LEFT JOIN FETCH j.postedBy
+            WHERE j.college.id = :collegeId
+            AND (:includeArchived = true OR j.deletedAt IS NULL)
+            AND (:query IS NULL OR :query = '' OR
+                 LOWER(j.title) LIKE LOWER(CONCAT('%', :query, '%')) OR
+                 LOWER(j.companyName) LIKE LOWER(CONCAT('%', :query, '%')))
+            AND (:jobType IS NULL OR j.jobType = :jobType)
+            AND (:workMode IS NULL OR j.workMode = :workMode)
+            AND (:status IS NULL OR j.status = :status)
+            AND (:postedById IS NULL OR :postedById = '' OR j.postedBy.id = :postedById)
+        """,
+        countQuery = """
+            SELECT COUNT(j) FROM Job j
+            WHERE j.college.id = :collegeId
+            AND (:includeArchived = true OR j.deletedAt IS NULL)
+            AND (:query IS NULL OR :query = '' OR
+                 LOWER(j.title) LIKE LOWER(CONCAT('%', :query, '%')) OR
+                 LOWER(j.companyName) LIKE LOWER(CONCAT('%', :query, '%')))
+            AND (:jobType IS NULL OR j.jobType = :jobType)
+            AND (:workMode IS NULL OR j.workMode = :workMode)
+            AND (:status IS NULL OR j.status = :status)
+            AND (:postedById IS NULL OR :postedById = '' OR j.postedBy.id = :postedById)
+        """
+    )
     Page<Job> findAdminJobs(
         @Param("collegeId") String collegeId,
         @Param("query") String query,
@@ -227,4 +246,61 @@ public interface JobRepository extends JpaRepository<Job, String> {
 	long countByCollegeIdAndStatus(String id, JobStatus active);
 
 	long countByCollegeId(String collegeId);
+
+    // ── Hard Delete Support — Nullify user references on jobs ─────────────────
+    // Jobs are preserved; only the FK references to the deleted user are cleared.
+
+    @Modifying @Transactional
+    @Query("UPDATE Job j SET j.postedBy = null WHERE j.postedBy.id = :userId")
+    void clearPostedBy(@Param("userId") String userId);
+
+    @Modifying @Transactional
+    @Query("UPDATE Job j SET j.updatedBy = null WHERE j.updatedBy.id = :userId")
+    void clearUpdatedBy(@Param("userId") String userId);
+
+    @Modifying @Transactional
+    @Query("UPDATE Job j SET j.deletedBy = null WHERE j.deletedBy.id = :userId")
+    void clearDeletedBy(@Param("userId") String userId);
+
+    @Modifying @Transactional
+    @Query("UPDATE Job j SET j.restoredBy = null WHERE j.restoredBy.id = :userId")
+    void clearRestoredBy(@Param("userId") String userId);
+
+    // Bulk variants for college hard delete (all users in a college at once)
+
+    @Modifying @Transactional
+    @Query("UPDATE Job j SET j.postedBy = null WHERE j.postedBy.id IN :userIds")
+    void clearPostedByIn(@Param("userIds") List<String> userIds);
+
+    @Modifying @Transactional
+    @Query("UPDATE Job j SET j.updatedBy = null WHERE j.updatedBy.id IN :userIds")
+    void clearUpdatedByIn(@Param("userIds") List<String> userIds);
+
+    @Modifying @Transactional
+    @Query("UPDATE Job j SET j.deletedBy = null WHERE j.deletedBy.id IN :userIds")
+    void clearDeletedByIn(@Param("userIds") List<String> userIds);
+
+    @Modifying @Transactional
+    @Query("UPDATE Job j SET j.restoredBy = null WHERE j.restoredBy.id IN :userIds")
+    void clearRestoredByIn(@Param("userIds") List<String> userIds);
+
+    // ── Scheduler: soft-deleted jobs past retention period ────────────────────
+
+    /**
+     * Returns soft-deleted jobs whose deletedAt is older than the given cutoff.
+     * Used by CleanupScheduler to permanently remove stale soft-deleted jobs.
+     */
+    @Query("SELECT j FROM Job j WHERE j.deletedAt IS NOT NULL AND j.deletedAt < :cutoff")
+    List<Job> findSoftDeletedBefore(@Param("cutoff") java.time.LocalDateTime cutoff);
+
+    // ── Notification: job deadline reminder ───────────────────────────────────
+
+    /**
+     * Returns active, non-deleted jobs whose applicationDeadline matches the given date.
+     * Used by the daily deadline-reminder scheduler to find jobs expiring in N days.
+     */
+    @Query("SELECT j FROM Job j WHERE j.deletedAt IS NULL AND j.status = :status AND j.applicationDeadline = :deadline")
+    List<Job> findActiveJobsExpiringOn(
+            @Param("deadline") java.time.LocalDate deadline,
+            @Param("status") Job.JobStatus status);
 }

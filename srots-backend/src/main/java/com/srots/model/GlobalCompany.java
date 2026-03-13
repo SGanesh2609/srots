@@ -44,24 +44,6 @@ public class GlobalCompany {
     @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CollegeCompanySubscription> subscriptions;
 
-	public GlobalCompany() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-
-	public GlobalCompany(String id, String name, String website, String logoUrl, String description, String addressJson,
-			String headquarters, String fullAddress, List<CollegeCompanySubscription> subscriptions) {
-		super();
-		this.id = id;
-		this.name = name;
-		this.website = website;
-		this.logoUrl = logoUrl;
-		this.description = description;
-		this.addressJson = addressJson;
-		this.headquarters = headquarters;
-		this.fullAddress = fullAddress;
-		this.subscriptions = subscriptions;
-	}
 
 	public String getId() {
 		return id;

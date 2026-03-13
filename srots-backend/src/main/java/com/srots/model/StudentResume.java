@@ -33,20 +33,7 @@ public class StudentResume {
     @Column(columnDefinition = "TEXT") private String fileUrl;
     private Boolean isDefault = false;
     @CreationTimestamp private LocalDateTime uploadedAt;
-	public StudentResume() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-	public StudentResume(String id, User student, String fileName, String fileUrl, Boolean isDefault,
-			LocalDateTime uploadedAt) {
-		super();
-		this.id = id;
-		this.student = student;
-		this.fileName = fileName;
-		this.fileUrl = fileUrl;
-		this.isDefault = isDefault;
-		this.uploadedAt = uploadedAt;
-	}
+
 	public String getId() {
 		return id;
 	}

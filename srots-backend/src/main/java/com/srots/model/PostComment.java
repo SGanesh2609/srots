@@ -13,6 +13,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -22,7 +23,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "post_comments")
+@Table(name = "post_comments", indexes = {
+    @Index(name = "idx_comment_post_id",    columnList = "post_id"),
+    @Index(name = "idx_comment_user_id",    columnList = "user_id"),
+    @Index(name = "idx_comment_parent_id",  columnList = "parent_comment_id")
+})
 @Data @NoArgsConstructor @AllArgsConstructor
 public class PostComment {
     @Id @GeneratedValue(strategy = GenerationType.UUID) @Column(columnDefinition = "CHAR(36)")
@@ -40,25 +45,6 @@ public class PostComment {
     @OneToMany(mappedBy = "parentComment", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostComment> replies;
     
-	public PostComment() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-	
-	
-	
-	public PostComment(String id, Post post, PostComment parentComment, User user, String text, LocalDateTime createdAt,
-			List<PostComment> replies) {
-		super();
-		this.id = id;
-		this.post = post;
-		this.parentComment = parentComment;
-		this.user = user;
-		this.text = text;
-		this.createdAt = createdAt;
-		this.replies = replies;
-	}
-
 
 	
 	

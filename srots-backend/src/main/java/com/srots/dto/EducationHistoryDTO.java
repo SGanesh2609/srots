@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
+//@AllArgsConstructor
 public class EducationHistoryDTO {
     private String level;         // e.g., "Class 10" or "Undergraduate"
     private String institution;
@@ -26,6 +26,7 @@ public class EducationHistoryDTO {
     
     
     
+	
 	public EducationHistoryDTO(String level, String institution, String board, String yearOfPassing, String score,
 			String scoreType, Integer currentArrears, String specialization, List<Map<String, Object>> semesters) {
 		super();
@@ -39,22 +40,6 @@ public class EducationHistoryDTO {
 		this.specialization = specialization;
 		this.semesters = semesters;
 	}
-	public EducationHistoryDTO() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-	
-	
-	public EducationHistoryDTO(String level, String institution, String board, String yearOfPassing, String score, String scoreType) {
-	    this.level = level;
-	    this.institution = institution;
-	    this.board = board;
-	    this.yearOfPassing = yearOfPassing;
-	    this.score = score;
-	    this.scoreType = scoreType;
-	    this.currentArrears = 0; // Default value
-	}
-	
 	public String getLevel() {
 		return level;
 	}

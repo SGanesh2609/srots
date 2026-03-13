@@ -107,29 +107,6 @@ public class PremiumPayment {
         }
     }
 
-	public PremiumPayment() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-
-	public PremiumPayment(String id, User user, College college, String utrNumber, String paymentScreenshotUrl,
-			PremiumMonths premiumMonths, BigDecimal amount, String username, PaymentStatus status,
-			LocalDateTime submittedAt, LocalDateTime verifiedAt, User verifiedByAdmin, String rejectionReason) {
-		super();
-		this.id = id;
-		this.user = user;
-		this.college = college;
-		this.utrNumber = utrNumber;
-		this.paymentScreenshotUrl = paymentScreenshotUrl;
-		this.premiumMonths = premiumMonths;
-		this.amount = amount;
-		this.username = username;
-		this.status = status;
-		this.submittedAt = submittedAt;
-		this.verifiedAt = verifiedAt;
-		this.verifiedByAdmin = verifiedByAdmin;
-		this.rejectionReason = rejectionReason;
-	}
 
 	public String getId() {
 		return id;

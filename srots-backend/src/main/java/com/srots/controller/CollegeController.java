@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.validation.Valid;
+
 import com.srots.dto.collegedto.AboutSectionDTO;
 import com.srots.dto.collegedto.BranchDTO;
 import com.srots.dto.collegedto.CollegeRequest;
@@ -79,14 +81,14 @@ public class CollegeController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SROTS_DEV')")
-    public ResponseEntity<CollegeResponse> create(@RequestBody CollegeRequest request) {
+    public ResponseEntity<CollegeResponse> create(@Valid @RequestBody CollegeRequest request) {
         logger.info("Creating college with code: {}", request.getCode());
         return ResponseEntity.ok(collegeService.createCollege(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id and principal.isCollegeHead)")
-    public ResponseEntity<CollegeResponse> update(@PathVariable String id, @RequestBody CollegeRequest request) {
+    public ResponseEntity<CollegeResponse> update(@PathVariable String id, @Valid @RequestBody CollegeRequest request) {
         logger.info("Updating college id: {}", id);
         return ResponseEntity.ok(collegeService.updateCollege(id, request));
     }
@@ -145,14 +147,14 @@ public class CollegeController {
     @PutMapping("/{id}/social")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id and principal.isCollegeHead)")
     public ResponseEntity<SocialMediaDTO> updateSocial(@PathVariable String id,
-                                                       @RequestBody SocialMediaDTO dto) {
+                                                       @Valid @RequestBody SocialMediaDTO dto) {
         return ResponseEntity.ok(collegeService.updateSocialMedia(id, dto));
     }
 
     @PostMapping("/{id}/about")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id and principal.isCollegeHead)")
     public ResponseEntity<AboutSectionDTO> addAboutSection(@PathVariable String id,
-                                                           @RequestBody AboutSectionDTO dto) {
+                                                           @Valid @RequestBody AboutSectionDTO dto) {
         return ResponseEntity.ok(collegeService.addAboutSection(id, dto));
     }
 
@@ -160,7 +162,7 @@ public class CollegeController {
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id and principal.isCollegeHead)")
     public ResponseEntity<AboutSectionDTO> updateAboutSection(@PathVariable String id,
                                                               @PathVariable String sectionId,
-                                                              @RequestBody AboutSectionDTO dto) {
+                                                              @Valid @RequestBody AboutSectionDTO dto) {
         return ResponseEntity.ok(collegeService.updateAboutSection(id, sectionId, dto));
     }
 
@@ -183,7 +185,7 @@ public class CollegeController {
     @PostMapping("/{id}/branches")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id)")
     public ResponseEntity<CollegeResponse> addBranch(@PathVariable String id,
-                                                     @RequestBody BranchDTO branch) {
+                                                     @Valid @RequestBody BranchDTO branch) {
         return ResponseEntity.ok(collegeService.addBranch(id, branch));
     }
 
@@ -191,7 +193,7 @@ public class CollegeController {
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CPH') and principal.collegeId == #id)")
     public ResponseEntity<CollegeResponse> updateBranch(@PathVariable String id,
                                                         @PathVariable String branchCode,
-                                                        @RequestBody BranchDTO branch) {
+                                                        @Valid @RequestBody BranchDTO branch) {
         return ResponseEntity.ok(collegeService.updateBranch(id, branchCode, branch));
     }
 

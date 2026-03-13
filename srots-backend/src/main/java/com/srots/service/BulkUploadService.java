@@ -378,12 +378,12 @@ public class BulkUploadService {
 
 		List<EducationHistoryDTO> eduList = new ArrayList<>();
 		eduList.add(new EducationHistoryDTO("Class 10", data.get(24), data.get(23), data.get(25), data.get(26),
-				data.get(27)));
+				data.get(27), 0, null, null));
 		eduList.add(new EducationHistoryDTO(data.get(28), data.get(30), data.get(29), data.get(31), data.get(32),
-				data.get(33)));
+				data.get(33), 0, null, null));
 
 		EducationHistoryDTO ug = new EducationHistoryDTO("Undergraduate", "College", "University", "2025", data.get(34),
-				"CGPA");
+				"CGPA", 0, null, null);
 		ug.setCurrentArrears(parseInteger(data.get(35)));
 
 

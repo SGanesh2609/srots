@@ -65,7 +65,7 @@ export function mapDtoToJob(dto: any): Job {
 
     // ── Branch / batch  ────────────────────────────────────────────────────
     allowedBranches:      Array.isArray(dto.allowedBranches) ? dto.allowedBranches : [],
-    eligibleBatches:      Array.isArray(dto.eligibleBatches) ? dto.eligibleBatches.map(Number) : [],
+    eligibleBatches:      Array.isArray(dto.eligibleBatches) ? dto.eligibleBatches.filter(Boolean).map(Number).filter(n => !isNaN(n)) : [],
 
     // ── Rounds / docs / required fields ───────────────────────────────────
     rounds:               Array.isArray(dto.rounds) ? dto.rounds : [],
@@ -123,6 +123,11 @@ export function flattenJobFormState(
     maxGapYears:     form.eligibility?.maxGapYears ?? 0,
     allowedBranches: form.eligibility?.allowedBranches ?? [],
     eligibleBatches: form.eligibility?.eligibleBatches ?? [],
+
+    companyLogo:      form.companyLogo,
+    serviceBond:      form.serviceBond,
+    joiningDate:      form.joiningDate,
+    vacancies:        form.vacancies,
 
     // JSON arrays
     responsibilitiesJson:        form.responsibilitiesJson        ?? [],
@@ -207,8 +212,6 @@ export const JobService = {
       postedById: jobData.postedById,
     });
     
-    console.log('[JobService] CREATE payload:', payload);  // ✅ Debug log
-    
     const fd = new FormData();
     fd.append('jobData', JSON.stringify(payload));
     if (jdFiles?.length) jdFiles.forEach(f => fd.append('jdFiles', f));
@@ -230,8 +233,6 @@ export const JobService = {
       collegeId: jobData.collegeId,
       postedById: jobData.postedById,
     });
-    
-    console.log('[JobService] UPDATE payload:', payload);  // ✅ Debug log
     
     const fd = new FormData();
     fd.append('jobData', JSON.stringify(payload));
@@ -284,8 +285,6 @@ export const JobService = {
       params.postedById = filters.ownerId;
     }
 
-    console.log('[JobService] searchJobs params:', params);  // ✅ Debug
-
     const res = await api.get('/jobs', { params });
     const data = res.data;
 
@@ -322,6 +321,10 @@ export const JobService = {
 
   applyToJob: async (jobId: string): Promise<void> => {
     await api.post(`/jobs/${jobId}/apply`);
+  },
+
+  markNotInterested: async (jobId: string): Promise<void> => {
+    await api.post(`/jobs/${jobId}/not-interested`);
   },
 
   // ── Branches API ──────────────────────────────────────────────────────
@@ -367,7 +370,7 @@ export const JobService = {
 
   // ── Export / Download ─────────────────────────────────────────────────
 
-  exportJobList: async (jobId: string, type: 'applicants' | 'eligible', format: 'excel' | 'csv' = 'excel'): Promise<void> => {
+  exportJobList: async (jobId: string, type: 'applicants' | 'eligible' | 'not-interested', format: 'excel' | 'csv' = 'excel'): Promise<void> => {
     const res = await api.get(`/jobs/${jobId}/export-list`, { params: { type, format }, responseType: 'blob' });
     downloadExcelFile(res.data, `Job_${type}_${jobId}.${format === 'csv' ? 'csv' : 'xlsx'}`);
   },

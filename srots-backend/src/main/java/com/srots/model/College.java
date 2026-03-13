@@ -16,6 +16,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -23,8 +24,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity 
-@Table(name = "colleges")
+@Entity
+@Table(name = "colleges", indexes = {
+    @Index(name = "idx_college_active",     columnList = "active"),
+    @Index(name = "idx_college_created_at", columnList = "created_at")
+})
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class College {
     @Id 
@@ -76,45 +80,6 @@ public class College {
     @OneToMany(mappedBy = "college")
     @JsonIgnoreProperties({"college", "studentProfile", "educationRecords", "experiences"})
     private List<User> users;
-
-	public College() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-
-
-
-	
-
-
-
-
-	public College(String id, String name, String code, String type, String email, String phone, String landline,
-			String logoUrl, String addressJson, String socialMedia, String aboutSections, String branches,
-			boolean active, LocalDateTime createdAt, LocalDateTime updatedAt, List<Post> posts, List<Job> jobs,
-			List<User> users) {
-		super();
-		this.id = id;
-		this.name = name;
-		this.code = code;
-		this.type = type;
-		this.email = email;
-		this.phone = phone;
-		this.landline = landline;
-		this.logoUrl = logoUrl;
-		this.addressJson = addressJson;
-		this.socialMedia = socialMedia;
-		this.aboutSections = aboutSections;
-		this.branches = branches;
-		this.active = active;
-		this.createdAt = createdAt;
-		this.updatedAt = updatedAt;
-		this.posts = posts;
-		this.jobs = jobs;
-		this.users = users;
-	}
-
-
 
 
 

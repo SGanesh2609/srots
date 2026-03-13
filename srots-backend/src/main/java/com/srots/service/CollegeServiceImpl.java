@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,9 +16,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.srots.config.CacheConfig;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -31,8 +36,16 @@ import com.srots.dto.collegedto.SocialMediaDTO;
 import com.srots.model.College;
 import com.srots.model.Job;
 import com.srots.model.User;
+import com.srots.repository.ApplicationRepository;
+import com.srots.repository.CollegeCompanySubscriptionRepository;
 import com.srots.repository.CollegeRepository;
+import com.srots.repository.EventRepository;
 import com.srots.repository.JobRepository;
+import com.srots.repository.NoticeRepository;
+import com.srots.repository.PostCommentRepository;
+import com.srots.repository.PostLikeRepository;
+import com.srots.repository.PostRepository;
+import com.srots.repository.PremiumPaymentRepository;
 import com.srots.repository.UserRepository;
 
 @Service
@@ -40,17 +53,26 @@ public class CollegeServiceImpl implements CollegeService {
 
     private static final Logger logger = LoggerFactory.getLogger(CollegeServiceImpl.class);
 
-    @Autowired private CollegeRepository collegeRepo;
-    @Autowired private UserRepository userRepo;
-    @Autowired private JobRepository jobRepo;
-    @Autowired private ObjectMapper mapper;
-    @Autowired private FileService fileService;
+    @Autowired private CollegeRepository                    collegeRepo;
+    @Autowired private UserRepository                       userRepo;
+    @Autowired private JobRepository                        jobRepo;
+    @Autowired private ApplicationRepository                appRepo;
+    @Autowired private PremiumPaymentRepository             premiumPaymentRepo;
+    @Autowired private PostLikeRepository                   postLikeRepo;
+    @Autowired private PostCommentRepository                postCommentRepo;
+    @Autowired private PostRepository                       postRepo;
+    @Autowired private EventRepository                      eventRepo;
+    @Autowired private NoticeRepository                     noticeRepo;
+    @Autowired private CollegeCompanySubscriptionRepository subscriptionRepo;
+    @Autowired private ObjectMapper                         mapper;
+    @Autowired private FileService                          fileService;
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
     private static final Pattern PHONE_PATTERN = Pattern.compile("^\\d{10}$");
     private static final Pattern CODE_PATTERN = Pattern.compile("^[A-Z0-9]+$");
 
     @Override
+    @CacheEvict(value = CacheConfig.COLLEGES, allEntries = true)
     @Transactional
     public CollegeResponse createCollege(CollegeRequest dto) {
         validateRequest(dto, null); // null for create
@@ -65,6 +87,7 @@ public class CollegeServiceImpl implements CollegeService {
     }
 
     @Override
+    @CacheEvict(value = CacheConfig.COLLEGES, allEntries = true)
     @Transactional
     public CollegeResponse updateCollege(String id, CollegeRequest dto) {
         College college = collegeRepo.findById(id)
@@ -80,6 +103,7 @@ public class CollegeServiceImpl implements CollegeService {
     }
 
     @Override
+    @CacheEvict(value = CacheConfig.COLLEGES, allEntries = true)
     @Transactional
     public void softDelete(String id) {
         College college = collegeRepo.findById(id)
@@ -92,11 +116,59 @@ public class CollegeServiceImpl implements CollegeService {
     }
 
     @Override
+    @CacheEvict(value = CacheConfig.COLLEGES, allEntries = true)
     @Transactional
     public void permanentDelete(String id) {
         College college = collegeRepo.findById(id)
                 .orElseThrow(() -> new BadRequestException("College not found with ID: " + id));
-        // File cleanup (logo, about images)
+
+        // ── Step 1: Collect all user IDs belonging to this college ────────────
+        List<User> collegeUsers = userRepo.findByCollegeId(id);
+        List<String> userIds = collegeUsers.stream()
+                .map(User::getId)
+                .collect(Collectors.toList());
+        logger.info("Permanently deleting college {} with {} users", id, userIds.size());
+
+        // ── Step 2: Delete applications by college students (to any job) ──────
+        if (!userIds.isEmpty()) {
+            appRepo.deleteByStudentIdIn(userIds);
+        }
+
+        // ── Step 3: Delete remaining applications targeting this college's jobs ─
+        appRepo.deleteByJobCollegeId(id);
+
+        // ── Step 4: Delete premium payments for this college ──────────────────
+        premiumPaymentRepo.deleteByCollegeId(id);
+
+        // ── Step 5: Delete college-company subscriptions ─────────────────────
+        subscriptionRepo.deleteByCollegeId(id);
+
+        // ── Step 6: Delete events and notices ────────────────────────────────
+        eventRepo.deleteByCollegeId(id);
+        noticeRepo.deleteByCollegeId(id);
+
+        // ── Step 7: Clean up post interactions by college users ───────────────
+        if (!userIds.isEmpty()) {
+            postCommentRepo.deleteByUserIdIn(userIds);
+            postLikeRepo.deleteByUserIdIn(userIds);
+            postRepo.clearAuthorIn(userIds);
+        }
+
+        // ── Step 8: Nullify job audit FK references pointing to college users ─
+        if (!userIds.isEmpty()) {
+            jobRepo.clearPostedByIn(userIds);
+            jobRepo.clearUpdatedByIn(userIds);
+            jobRepo.clearDeletedByIn(userIds);
+            jobRepo.clearRestoredByIn(userIds);
+        }
+
+        // ── Step 9: Delete all college users (JPA cascade removes student
+        //            sub-tables: profile, education, skills, certs, etc.) ──────
+        if (!collegeUsers.isEmpty()) {
+            userRepo.deleteAll(collegeUsers);
+        }
+
+        // ── Step 10: Delete uploaded files (logo, about section images) ───────
         if (college.getLogoUrl() != null) {
             fileService.deleteFile(college.getLogoUrl());
         }
@@ -114,6 +186,9 @@ public class CollegeServiceImpl implements CollegeService {
         } catch (Exception e) {
             logger.error("Error cleaning up about section files for college {}: {}", id, e.getMessage());
         }
+
+        // ── Step 11: Delete the college itself (JPA cascade deletes posts and
+        //             jobs; DB cascade handles post comments/likes on those posts) ─
         collegeRepo.delete(college);
         logger.info("Permanently deleted college: {}", id);
     }
@@ -243,7 +318,9 @@ public class CollegeServiceImpl implements CollegeService {
         return res;
     }
 
-    @Override public List<CollegeResponse> getColleges(String q) { return collegeRepo.searchColleges(q).stream().map(this::convertToResponse).toList(); }
+    @Override
+    @Cacheable(value = CacheConfig.COLLEGES, key = "'all'")
+    public List<CollegeResponse> getColleges(String q) { return collegeRepo.searchColleges(q).stream().map(this::convertToResponse).toList(); }
     @Override public CollegeResponse getCollegeById(String id) { return convertToResponse(collegeRepo.findById(id).orElseThrow(() -> new RuntimeException("College not found with ID: " + id))); }
     @Override public List<Object> getBranchesByCollegeId(String id) { College c = collegeRepo.findById(id).orElseThrow(() -> new RuntimeException("College not found")); return parseJsonList(c.getBranches()); }
     @Override public Object getSocialMediaByCollegeId(String id) { College c = collegeRepo.findById(id).orElseThrow(() -> new RuntimeException("College not found")); try { return mapper.readValue(c.getSocialMedia(), Map.class); } catch (Exception e) { return null; } }

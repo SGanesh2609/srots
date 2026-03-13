@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CalendarEvent, User, Role, Notice } from '../../../types';
 import { CalendarService } from '../../../services/calendarService';
 import { DeleteConfirmationModal } from '../../common/DeleteConfirmationModal';
@@ -20,8 +21,18 @@ interface CalendarViewProps {
 
 export const CalendarView: React.FC<CalendarViewProps> = ({ user }) => {
   const canCreate = user.role === Role.CPH || user.role === Role.STAFF || user.role === Role.ADMIN;
-  
-  const [activeMainTab, setActiveMainTab] = useState<'calendar' | 'notices'>('calendar');
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [activeMainTab, setActiveMainTab] = useState<'calendar' | 'notices'>(() => {
+    const t = searchParams.get('ctab') as 'calendar' | 'notices';
+    return t === 'notices' ? 'notices' : 'calendar';
+  });
+
+  const handleMainTabChange = (tab: 'calendar' | 'notices') => {
+    setActiveMainTab(tab);
+    setSearchParams(prev => { const p = new URLSearchParams(prev); if (tab !== 'calendar') p.set('ctab', tab); else p.delete('ctab'); return p; }, { replace: true });
+  };
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date()); 
@@ -189,8 +200,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ user }) => {
           {/* Main Tab Switcher */}
           <div className="sticky top-0 z-30 bg-gray-50 pb-4 pt-1 w-full">
               <div className="flex bg-white rounded-xl border p-1 shadow-sm w-fit mx-auto">
-                  <button onClick={() => setActiveMainTab('calendar')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeMainTab === 'calendar' ? 'bg-blue-600 text-white shadow' : 'text-gray-600 hover:bg-gray-50'}`}>Calendar Events</button>
-                  <button onClick={() => setActiveMainTab('notices')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeMainTab === 'notices' ? 'bg-blue-600 text-white shadow' : 'text-gray-600 hover:bg-gray-50'}`}>Notices & Time Tables</button>
+                  <button onClick={() => handleMainTabChange('calendar')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeMainTab === 'calendar' ? 'bg-blue-600 text-white shadow' : 'text-gray-600 hover:bg-gray-50'}`}>Calendar Events</button>
+                  <button onClick={() => handleMainTabChange('notices')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeMainTab === 'notices' ? 'bg-blue-600 text-white shadow' : 'text-gray-600 hover:bg-gray-50'}`}>Notices & Time Tables</button>
               </div>
           </div>
 
